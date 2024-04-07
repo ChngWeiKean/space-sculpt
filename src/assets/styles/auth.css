@@ -1,0 +1,29 @@
+body {
+    color: black;
+    background-color: #f4f4f4;
+}
+
+.login-card {
+    width: 1000px;
+    margin: 100px auto 0;
+    padding: 20px;
+    align-self: center;
+    border-radius: 15px;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+input:focus {
+    border-color: blue !important;
+}
+
+.password-meter {
+    height: 10px;
+    width: 100%;
+    background-color: #e0e0e0;
+}
+.password-meter-bar {
+    height: 100%;
+    width: 0;
+    transition: width 0.3s ease;
+}
