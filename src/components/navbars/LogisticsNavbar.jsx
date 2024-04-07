@@ -32,7 +32,6 @@ const LogisticsNavbar = () => {
 			bgColor={"white"}
 			zIndex="999"
 			width="100%"
-			shadow="md"
 			justify="space-between" 
 		>
 			<Flex align="center">
