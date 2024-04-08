@@ -4,6 +4,9 @@ import App from './App.jsx'
 import Login from './pages/auth/Login.jsx'
 import Register from './pages/auth/Register.jsx'
 import RootLayout from './components/layouts/RootLayout.jsx'
+import CustomerLayout from './components/layouts/CustomerLayout.jsx'
+import LogisticsLayout from './components/layouts/LogisticsLayout.jsx'
+import AdminLayout from './components/layouts/AdminLayout.jsx'
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom'
 import { AuthProvider, useAuth } from './components/AuthCtx.jsx'
 import './index.css'
@@ -12,6 +15,8 @@ import CustomerHome from './pages/customer/CustomerHome.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import LogisticsDashboard from './pages/logistics/LogisticsDashboard.jsx'
 import ForgotPassword from './pages/auth/ForgotPassword.jsx'
+import UserList from './pages/admin/UserList.jsx'
+import AddCategory from './pages/admin/AddCategory.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -33,6 +38,14 @@ const router = createBrowserRouter(
 			<Route path="login" element={<Login/>}/>
 			<Route path="register" element={<Register/>}/>
 			<Route path="forgot" element={<ForgotPassword/>}/>
+			<Route element={<CustomerLayout/>}>
+			</Route>
+			<Route element={<LogisticsLayout/>}>
+			</Route>
+			<Route path='/admin' element={<AdminLayout/>}>
+				<Route path="users" element={<UserList/>}/>
+				<Route path="category/add" element={<AddCategory/>}/>
+			</Route>
 		</Route>
 	)
 );
