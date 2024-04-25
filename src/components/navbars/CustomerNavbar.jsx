@@ -14,6 +14,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { BiChevronDown } from "react-icons/bi";
 import { logout } from "../../../api/auth.js";
 import { useAuth } from "../AuthCtx.jsx";
+import { IoHomeOutline, IoCartOutline } from "react-icons/io5";
 
 const CustomerNavbar = () => {
 	const { user } = useAuth();
@@ -32,27 +33,34 @@ const CustomerNavbar = () => {
 			bgColor={"white"}
 			zIndex="999"
 			width="100%"
-			shadow="md"
+			// shadow="md"
 			justify="space-between" 
 		>
 			<Flex align="center">
-				{/* <Avatar
+				<Avatar
 					size="md"
-					src="\src\assets\images\Call_A_Doctor_Logo_NoBg.png"
-				/> */}
-				<Text fontSize="xl" ml={2} fontWeight="bold">
+					src="\src\assets\images\Space_Sculpt_Logo_nobg.png"
+				/> 
+				<Text fontSize="xl" ml={2} fontWeight="700" color="#d69511">
 					Space Sculpt
 				</Text>
 			</Flex>
 			
 			<Flex alignItems="center">
-				<Link as={NavLink} color="teal.500" to="/" marginRight={6} _activeLink={{ color: "#0307fc" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					Home
+				<Link as={NavLink} color="gray.500" to="/" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={2}>
+						<IoHomeOutline/> Home
+					</Flex>
 				</Link>
-				{/* <Link as={NavLink} color="teal.500" to="/clinics" marginRight={6} _activeLink={{ color: "#0307fc" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+				<Link as={NavLink} color="gray.500" to="/cart" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={2}>
+						<IoCartOutline/> Cart
+					</Flex>
+				</Link>
+				{/* <Link as={NavLink} color="gray.500" to="/clinics" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
 					Clinic List
 				</Link>
-				<Link as={NavLink} color="teal.500" to="/requests" marginRight={6} _activeLink={{ color: "#0307fc" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+				<Link as={NavLink} color="gray.500" to="/requests" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
 					Appointment History
 				</Link> */}
 				<Menu marginRight={6}>
@@ -66,7 +74,7 @@ const CustomerNavbar = () => {
 								minW={0}>
 								<Avatar
 								size={'sm'}
-								src="\src\assets\images\Default_User_Profile.png"
+								src="\src\assets\images\Default_User_Profile_2.png"
 							/>
 							</MenuButton>
 							<BiChevronDown />

@@ -46,7 +46,7 @@ const RootLayout = () => {
 													<AdminNavbar/> :
 														<></>
 									}
-									<Box w="100%" h="100%" bg="#f4f4f4" overflow="auto" p={5}>
+									<Box w="100%" h="100%" bg="#f4f4f4" overflow="auto">
 										<Outlet/>
 									</Box>
 								</Grid>

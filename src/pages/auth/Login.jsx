@@ -14,7 +14,7 @@ import {
 	InputRightElement,
 	Link,
 	Text,
-	useToast
+	useToast,
 } from "@chakra-ui/react";
 import {IoMdEye, IoMdEyeOff} from "react-icons/io";
 import {useState} from "react";
@@ -30,6 +30,7 @@ function Login() {
         }
     } = useForm();
     const [show, setShow] = useState(false);
+    const toast = useToast();
     
     const onSubmit = async (data) => {
 		const res = await login(data);
@@ -67,7 +68,7 @@ function Login() {
                         </Text>
                     </Box>
                     <Center my={3}>
-                        <Image src="/src/assets/svg/login.svg" alt="Login" w="96" h="80" />
+                        <Image src="/src/assets/images/Space_Sculpt_Logo_nobg.png" alt="Login" w="96" h="80" />
                     </Center>
                 </Box>
                 <Box my={7} mr={5} w="full">
