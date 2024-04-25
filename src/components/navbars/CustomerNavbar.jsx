@@ -14,6 +14,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { BiChevronDown } from "react-icons/bi";
 import { logout } from "../../../api/auth.js";
 import { useAuth } from "../AuthCtx.jsx";
+import { IoHomeOutline, IoCartOutline } from "react-icons/io5";
 
 const CustomerNavbar = () => {
 	const { user } = useAuth();
@@ -46,13 +47,20 @@ const CustomerNavbar = () => {
 			</Flex>
 			
 			<Flex alignItems="center">
-				<Link as={NavLink} color="teal.500" to="/" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					Home
+				<Link as={NavLink} color="gray.500" to="/" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={2}>
+						<IoHomeOutline/> Home
+					</Flex>
 				</Link>
-				{/* <Link as={NavLink} color="teal.500" to="/clinics" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+				<Link as={NavLink} color="gray.500" to="/cart" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={2}>
+						<IoCartOutline/> Cart
+					</Flex>
+				</Link>
+				{/* <Link as={NavLink} color="gray.500" to="/clinics" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
 					Clinic List
 				</Link>
-				<Link as={NavLink} color="teal.500" to="/requests" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+				<Link as={NavLink} color="gray.500" to="/requests" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
 					Appointment History
 				</Link> */}
 				<Menu marginRight={6}>
