@@ -23,6 +23,8 @@ import {
     ModalFooter,
     ModalHeader,
     ModalOverlay,
+    AlertIcon,
+    Alert,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill } from "react-icons/bs";
@@ -51,6 +53,7 @@ function EditFurniture() {
     const [ subcategory, setSubcategory ] = useState(null);
     const [ subcategories, setSubcategories ] = useState([]);
     const [ category, setCategory ] = useState(null);
+    const [ lowInventory, setLowInventory ] = useState([]);
     const {
         handleSubmit,
         register,
@@ -389,6 +392,11 @@ function EditFurniture() {
     }, [ id ]);
 
     useEffect(() => {
+        const lowInventory = variants.filter((variant) => variant.inventory < 10).map((variant) => variant.color);
+        setLowInventory(lowInventory);
+    }, [ variants ]);
+
+    useEffect(() => {
         if (furniture) {
             setValue("name", furniture?.name);
             setValue("material", furniture?.material);
@@ -402,7 +410,6 @@ function EditFurniture() {
         }
 
         if (variants) {
-            // loop through variants object and set value
             variants.forEach((variant, index) => {
                 setValue(`variants[${index}].color`, variant?.color);
                 setValue(`variants[${index}].inventory`, variant?.inventory);
@@ -576,6 +583,30 @@ function EditFurniture() {
                         </Flex>
                         <Button colorScheme="blue" variant="solid" onClick={handleSubmit(onSubmit)}>Confirm & Submit</Button>
                     </Flex>    
+
+                    <Flex w="full" direction="row" gap={3} mb={5}>
+                        {
+                            lowInventory.length > 0 && (
+                                <Flex w="full" direction="row">
+                                    <Alert status="warning" size={"lg"}>
+                                        <AlertIcon />
+                                        <Text fontSize="sm" fontWeight="semibold">
+                                            Low inventory for the following variants: 
+                                        </Text>
+                                        <Flex direction="row" gap={3} ml={4}>
+                                            <Text fontSize="md" fontWeight={"semibold"} color={"red"}>
+                                                {
+                                                    lowInventory.map((color, index) => (
+                                                        index === lowInventory.length - 1 ? color : color + ', '
+                                                    ))
+                                                }
+                                            </Text>
+                                        </Flex>
+                                    </Alert>
+                                </Flex>
+                            )
+                        }
+                    </Flex>
 
                     <form action="/api/add-furniture" method="post" encType="multipart/form-data">
                         <Flex w="full" direction="column" gap={6}>
