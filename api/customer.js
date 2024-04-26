@@ -70,13 +70,8 @@ export const addToCart = async (furnitureId, userId, variantId) => {
             throw new Error("User or furniture not found");
         }
 
-        if (!user.cart) {
-            user.cart = [];
-        }
-
-        user.cart.push({ id: furnitureId, quantity: 1, variantId: variantId });
-
-        await update(userRef, { cart: user.cart });
+        const cartRef = ref(db, `users/${userId}/cart`);
+        await push(cartRef, { furnitureId: furnitureId, quantity: 1, variantId: variantId });
 
         return { success: true };
     } catch (error) {
@@ -85,7 +80,7 @@ export const addToCart = async (furnitureId, userId, variantId) => {
     }
 }
 
-export const removeFromCart = async (furnitureId, userId) => {
+export const removeFromCart = async (furnitureId, userId, cartId) => {
     try {
         const userRef = ref(db, `users/${userId}`);
         const userSnap = await get(userRef);
@@ -95,18 +90,32 @@ export const removeFromCart = async (furnitureId, userId) => {
             throw new Error("User or cart not found");
         }
 
-        const index = user.cart.findIndex((item) => item.id === furnitureId);
-        if (index === -1) {
-            throw new Error("Item not found in cart");
-        } else {
-            user.cart.splice(index, 1);
-        }
-
-        await update(userRef, { cart: user.cart });
+        const cartRef = ref(db, `users/${userId}/cart/${cartId}`);
+        await set(cartRef, null);
 
         return { success: true };
     } catch (error) {
         console.error("Error removing from cart:", error);
+        throw error;
+    }
+}
+
+export const updateCart = async (furnitureId, userId, quantity, cartId) => {
+    try {
+        const userRef = ref(db, `users/${userId}`);
+        const userSnap = await get(userRef);
+        const user = userSnap.val();
+
+        if (!user || !user.cart) {
+            throw new Error("User or cart not found");
+        }
+
+        const cartRef = ref(db, `users/${userId}/cart/${cartId}`);
+        await update(cartRef, { quantity: quantity });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating cart:", error);
         throw error;
     }
 }

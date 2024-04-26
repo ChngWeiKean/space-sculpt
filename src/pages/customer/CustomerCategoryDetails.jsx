@@ -105,7 +105,7 @@ function CustomerCategoryDetails() {
         const userRef = ref(db, `users/${user?.uid}`);
         onValue(userRef, (snapshot) => {
             const user = snapshot.val();
-            setCart(user?.cart || []);
+            setCart(user?.cart || {});
         });        
     }, [user]);
 
@@ -561,7 +561,7 @@ function CustomerCategoryDetails() {
                                 }
                             </Flex>
                             {
-                                cart?.find((item) => item.variantId === furniture.selectedVariant) ? (
+                                Object.values(cart).find((item) => item.variantId === furniture.selectedVariant) ? (
                                     <Flex w="full" direction="row" justifyContent="center" gap={2}>
                                         <Button w="full" colorScheme="green" variant="solid" size="md" leftIcon={<IoCartOutline />}>Already In Cart</Button>
                                     </Flex>
