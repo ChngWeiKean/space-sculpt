@@ -94,7 +94,7 @@ function CustomerFurnitureDetails() {
         const userRef = ref(db, `users/${user?.uid}`);
         onValue(userRef, (snapshot) => {
             const user = snapshot.val();
-            setCart(user?.cart || []);
+            setCart(user?.cart || {});
         });        
     }, [user]);
 
@@ -507,7 +507,7 @@ function CustomerFurnitureDetails() {
                     </Flex>
 
                     {
-                        cart?.find((item) => item?.variantId === furniture?.selectedVariant) ? (
+                        Object.values(cart).find((item) => item?.variantId === furniture?.selectedVariant) ? (
                             <Flex w="full" direction="row" alignItems="center" gap={2}>
                                 <Button
                                     w="full"
