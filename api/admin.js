@@ -141,6 +141,30 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
         if (subcategory?.id) {
             console.log("Updating subcategory", subcategory);
             const subcategorySnapshot = await get(ref(db, `subcategories/${subcategory?.id}`));
+            const subcategoryImageUrl = subcategorySnapshot.val().image;
+            if (subcategory?.image !== subcategoryImageUrl) {
+                // Update subcategory image
+                const storageRef = sRef(storage, `subcategories/${subcategory.id}`);
+                await uploadBytes(storageRef, subcategory?.image)
+                    .then(() => {
+                        return getDownloadURL(storageRef);
+                    })
+                    .then((url) => {
+                        return update(ref(db, `subcategories/${subcategory?.id}`), {
+                            name: subcategory?.name,
+                            image: url,
+                            category: id
+                        });
+                    });
+            }
+            
+            // Update subcategory name if changed
+            if (subcategory?.name !== subcategorySnapshot.val().name) {
+                await update(ref(db, `subcategories/${subcategory?.id}`), {
+                    name: subcategory?.name
+                });
+            }                  
+
             if (subcategory?.isDeleted) {
                 // Delete subcategory
                 await update(ref(db, `subcategories/${subcategory?.id}`), {
@@ -149,30 +173,6 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
                     deleted_by: auth.currentUser.uid
                 });
             } else {
-                const subcategoryImageUrl = subcategorySnapshot.val().image;
-                if (subcategory?.image !== subcategoryImageUrl) {
-                    // Update subcategory image
-                    const storageRef = sRef(storage, `subcategories/${subcategory.id}`);
-                    await uploadBytes(storageRef, subcategory?.image)
-                        .then(() => {
-                            return getDownloadURL(storageRef);
-                        })
-                        .then((url) => {
-                            return update(ref(db, `subcategories/${subcategory?.id}`), {
-                                name: subcategory?.name,
-                                image: url,
-                                category: id
-                            });
-                        });
-                }
-                
-                // Update subcategory name if changed
-                if (subcategory?.name !== subcategorySnapshot.val().name) {
-                    await update(ref(db, `subcategories/${subcategory?.id}`), {
-                        name: subcategory?.name
-                    });
-                }       
-                
                 if (subcategorySnapshot.val().deleted) {
                     await update(ref(db, `subcategories/${subcategory?.id}`), {
                         deleted_on: null,
@@ -212,32 +212,24 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
     return { success: true };
 }
 
-export const addFurniture = async (data) => {
-    const { subcategory, name, description, image, price, model, height, width, length, texture, inventory } = data;
+export const addFurniture = async (furnitureData, furnitureVariants) => {
+    const { subcategory, name, description, price, height, width, length, material, care_method } = furnitureData;
 
     try {
         const furnitureRef = ref(db, 'furniture');
         const newFurnitureRef = push(furnitureRef);
-        const storageRef = sRef(storage, `furniture/${newFurnitureRef.key}`);
-        let imageUrl;
-
-        await uploadBytes(storageRef, image);
-        imageUrl = await getDownloadURL(storageRef);
-
         await set(ref(db, `furniture/${newFurnitureRef.key}`), {
             subcategory: subcategory,
             name: name,
             description: description,
-            image: imageUrl,
             price: price,
             height: height,
             width: width,
             length: length,
-            texture: texture,
-            inventory: inventory
+            material: material,
+            care_method: care_method
         });
 
-        // update subcategory with furniture id
         const subcategoryRef = ref(db, `subcategories/${subcategory}`);
         const subcategorySnapshot = await get(subcategoryRef);
         const furnitureIds = subcategorySnapshot.val().furniture || [];
@@ -246,14 +238,30 @@ export const addFurniture = async (data) => {
             furniture: furnitureIds
         });
 
-        if (model) {
-            const modelRef = sRef(storage, `3dModels/${newFurnitureRef.key}`);
+        const variantsRef = ref(db, `furniture/${newFurnitureRef.key}/variants`);
+        const variantPromises = furnitureVariants.map(async (variant) => {
+            const { color, image, model, inventory } = variant;
+            const variantRef = push(variantsRef);
+            let variantImageUrl;
+            let variantModelUrl;
+
+            const imageRef = sRef(storage, `furniture/${newFurnitureRef.key}/variants/${variantRef.key}/image`);
+            await uploadBytes(imageRef, image);
+            variantImageUrl = await getDownloadURL(imageRef);
+
+            const modelRef = sRef(storage, `furniture/${newFurnitureRef.key}/variants/${variantRef.key}/model`);
             await uploadBytes(modelRef, model);
-            const modelUrl = await getDownloadURL(modelRef);
-            await update(ref(db, `furniture/${newFurnitureRef.key}`), {
-                model: modelUrl
+            variantModelUrl = await getDownloadURL(modelRef);
+
+            await set(variantRef, {
+                color: color,
+                image: variantImageUrl,
+                model: variantModelUrl,
+                inventory: inventory
             });
-        }
+        });
+
+        await Promise.all(variantPromises);
 
         return { success: true };
     } catch (error) {
@@ -261,49 +269,31 @@ export const addFurniture = async (data) => {
     }
 }
 
-export const updateFurniture = async (data) => {
-    const { id, subcategory, name, description, image, price, model, height, width, length, texture, discount, inventory } = data;
+export const updateFurniture = async (furnitureData, furnitureVariants) => {
+    const { id, subcategory, name, description, price, height, width, length, material, discount, care_method } = furnitureData;
+
+    console.log("Furniture Data", furnitureData);
+    console.log("Furniture Variants", furnitureVariants);
 
     try {
         const furnitureRef = ref(db, `furniture/${id}`);
         const furnitureSnapshot = await get(furnitureRef);
-        const imageUrl = furnitureSnapshot.val().image;
-        const modelUrl = furnitureSnapshot.val().model;
         const currentSubcategory = furnitureSnapshot.val().subcategory;
-        if (image !== imageUrl) {
-            const storageRef = sRef(storage, `furniture/${id}`);
-            await uploadBytes(storageRef, image);
-            const newImageUrl = await getDownloadURL(storageRef);
-            await update(furnitureRef, {
-                name: name,
-                description: description,
-                image: newImageUrl,
-                subcategory: subcategory,
-                price: price,
-                height: height,
-                width: width,
-                length: length,
-                texture: texture,
-                discount: discount,
-                inventory: inventory
-            });
-        } else {
-            await update(furnitureRef, {
-                name: name,
-                description: description,
-                price: price,
-                height: height,
-                subcategory: subcategory,
-                width: width,
-                length: length,
-                texture: texture,
-                discount: discount,
-                inventory: inventory
-            });
-        }
+
+        await update(furnitureRef, {
+            name: name,
+            description: description,
+            price: price,
+            height: height,
+            subcategory: subcategory,
+            width: width,
+            length: length,
+            material: material,
+            discount: discount,
+            care_method: care_method
+        });
 
         if (currentSubcategory !== subcategory) {
-            // update subcategory with furniture id
             const subcategoryRef = ref(db, `subcategories/${subcategory}`); 
             const subcategorySnapshot = await get(subcategoryRef);
             const furnitureIds = subcategorySnapshot.val().furniture || [];
@@ -312,7 +302,6 @@ export const updateFurniture = async (data) => {
                 furniture: furnitureIds
             });
 
-            // remove furniture id from old subcategory
             const oldSubcategoryRef = ref(db, `subcategories/${currentSubcategory}`);
             const oldSubcategorySnapshot = await get(oldSubcategoryRef);
             const oldFurnitureIds = oldSubcategorySnapshot.val().furniture || [];
@@ -325,23 +314,79 @@ export const updateFurniture = async (data) => {
             });
         }
 
-        if (modelUrl && model) {
-            if (model !== modelUrl) {
-                const modelRef = sRef(storage, `3dModels/${id}`);
+        const variantPromises = furnitureVariants.map(async (variant) => {
+            if (variant?.id) {
+                const variantRef = ref(db, `furniture/${id}/variants/${variant.id}`);
+                const variantSnapshot = await get(variantRef);
+                const { color, image, model, inventory } = variant;
+
+                if (variantSnapshot.val().color !== color) {
+                    await update(variantRef, {
+                        color: color
+                    });
+                }
+
+                if (variantSnapshot.val().inventory !== inventory) {
+                    await update(variantRef, {
+                        inventory: inventory
+                    });
+                }
+
+                const imageUrl = variant.image;
+                const modelUrl = variant.model;
+
+                if (variant?.image !== imageUrl) {
+                    const imageRef = sRef(storage, `furniture/${id}/variants/${variant.id}/image`);
+                    await uploadBytes(imageRef, image);
+                    const imageUrl = await getDownloadURL(imageRef);
+                    await update(variantRef, {
+                        image: imageUrl
+                    });
+                }
+
+                if (variant?.model !== modelUrl) {
+                    const modelRef = sRef(storage, `furniture/${id}/variants/${variant.id}/model`);
+                    await uploadBytes(modelRef, model);
+                    const modelUrl = await getDownloadURL(modelRef);
+                    await update(variantRef, {
+                        model: modelUrl
+                    });
+                }
+
+                if (variant?.isDeleted) {
+                    await update(variantRef, {
+                        deleted_on: new Date(),
+                        deleted: true,
+                        deleted_by: auth.currentUser.uid
+                    });
+                } else {
+                    if (variantSnapshot.val().deleted) {
+                        await update(variantRef, {
+                            deleted_on: null,
+                            deleted: false,
+                            deleted_by: null
+                        });
+                    }
+                }
+            } else {
+                const { color, image, model, inventory } = variant;
+                const variantRef = push(ref(db, `furniture/${id}/variants`));
+                const imageRef = sRef(storage, `furniture/${id}/variants/${variantRef.key}/image`);
+                await uploadBytes(imageRef, image);
+                const imageUrl = await getDownloadURL(imageRef);
+                const modelRef = sRef(storage, `furniture/${id}/variants/${variantRef.key}/model`);
                 await uploadBytes(modelRef, model);
-                const newModelUrl = await getDownloadURL(modelRef);
-                await update(furnitureRef, {
-                    model: newModelUrl
+                const modelUrl = await getDownloadURL(modelRef);
+                await set(variantRef, {
+                    color: color,
+                    image: imageUrl,
+                    model: modelUrl,
+                    inventory: inventory
                 });
-            }            
-        } else if (model) {
-            const modelRef = sRef(storage, `3dModels/${id}`);
-            await uploadBytes(modelRef, model);
-            const newModelUrl = await getDownloadURL(modelRef);
-            await update(furnitureRef, {
-                model: newModelUrl
-            });
-        }
+            }
+        });
+
+        await Promise.all(variantPromises);
 
         return { success: true };
     } catch (error) {

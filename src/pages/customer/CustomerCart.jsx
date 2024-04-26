@@ -146,7 +146,7 @@ function CustomerCart() {
                                         <Column field="total" header="Total"></Column>
                                         <Column field="action" header="Actions" body={(rowData) => (
                                             <Flex w="full" direction="row" alignItems="center" gap={4}>
-                                                <Button colorScheme="red" size="sm" leftIcon={<FaTrash/>}>Remove</Button>
+                                                <Button colorScheme="red" size="sm"><FaTrash/></Button>
                                             </Flex>
                                         )}></Column>
                                     </DataTable>

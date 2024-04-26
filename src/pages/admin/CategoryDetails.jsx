@@ -92,7 +92,7 @@ function CategoryDetails() {
     }, [id]);
 
     useEffect(() => {
-        if (!furnitureIds.length || !subcategories.length) return; // Ensure furnitureIds and subcategories are available
+        if (!furnitureIds.length || !subcategories.length) return; 
     
         const furnitureRef = ref(db, 'furniture');
         onValue(furnitureRef, (snapshot) => {
@@ -111,11 +111,17 @@ function CategoryDetails() {
                         ...furnitureData
                     };
                     furniture.push(furnitureItem);
-                    totalInventory += parseInt(furnitureData.inventory);
+                    if (furnitureData.variants) {
+                        Object.keys(furnitureData.variants).forEach(variantId => {
+                            const variant = furnitureData.variants[variantId];
+                            totalInventory += parseInt(variant.inventory);
+                        });
+                    }
                 }
             });
             setFurniture(furniture);
             setInventory(totalInventory);
+            console.log(furniture);
         });
     }, [furnitureIds, subcategories]);
 
@@ -182,10 +188,12 @@ function CategoryDetails() {
     const header = renderHeader();
 
     const nameBodyTemplate = (rowData) => {
+        const variant = rowData?.variants ? Object.values(rowData.variants)[0] : null;
+
         return (
             <Flex w="full" direction="row" alignItems="center" gap={4}>
-                <Avatar size="md" name={rowData.name} src={rowData.image}/>
-                <Text>{rowData.name}</Text>
+                <Avatar size="md" name={rowData?.name} src={variant?.image}/>
+                <Text>{rowData?.name}</Text>
             </Flex>
         );
     };
@@ -257,13 +265,22 @@ function CategoryDetails() {
 
     const inventoryBodyTemplate = (rowData) => {
         return (
-            <Flex w="full" direction="row" gap={4}>
-                {rowData.inventory < 10 ?
-                    <CiWarning color="red" size="30" />
-                    :
-                    <GoSmiley color="green" size="30" />
+            <Flex w="full" direction="column" gap={2}>
+                {
+                    Object.values(rowData.variants).map((variant, index) => (
+                        <Flex key={index} w="full" direction="row" gap={2}>
+                            {
+                                variant.inventory < 10 ? (
+                                    <CiWarning color='red' size='25'/>
+                                ) : (
+                                    <GoSmiley color='green' size='25'/>
+                                )
+                            }
+                            <Text>{variant.color}:</Text>
+                            <Text>{variant.inventory}</Text>
+                        </Flex>
+                    ))
                 }
-                <Text>{rowData.inventory}</Text>
             </Flex>
         );
     };

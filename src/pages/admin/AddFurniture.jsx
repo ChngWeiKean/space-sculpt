@@ -13,12 +13,13 @@ import {
     Divider,
     InputGroup,
     Spinner,
+    AbsoluteCenter,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill } from "react-icons/bs";
 import { RxCross1, RxHeight, RxWidth, RxSize } from "react-icons/rx";
 import { IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline } from "react-icons/io5";
+import { IoBedOutline, IoColorPaletteOutline } from "react-icons/io5";
 import { AiOutlineDash } from "react-icons/ai";
 import { FaPlus, FaTrash  } from "react-icons/fa6";
 import { MdOutlineInventory, MdOutlineTexture } from "react-icons/md";
@@ -45,107 +46,111 @@ function AddFurniture() {
         }
     } = useForm();
 
-    const [isDragActive, setIsDragActive] = useState(false);
-	const [imageSrc, setImageSrc] = useState(null);
-    const [image, setImage] = useState(null);
-	
-	const previewImageRef = useRef(null);
-	const previewImageContainerRef = useRef(null);
+    const initialVariant = { color: '', inventory: 0, image: '', imageSrc: '', model: '', modelSrc: '', isDraggingImage: false, isDraggingModel: false };
+    const [variants, setVariants] = useState([initialVariant]);
 
-    const handleDragEnter = (e) => {
-		e.preventDefault();
-		setIsDragActive(true);
-	};
-	
-	const handleDragOver = (e) => {
-		e.preventDefault();
-		setIsDragActive(true);
-	};
-	
-	const handleDragLeave = () => {
-		setIsDragActive(false);
-	};
-	
-    const populatePreviewImage = (file) => {
-		if (file) {
-			if (isImageFile(file)) {
-				// Read the file and set the image source
-				const reader = new FileReader();
-				reader.onload = (event) => {
-					setImageSrc(reader.result);
-				};
-				reader.readAsDataURL(file);
-			} else {
-				alert("Invalid file type. Please upload an image.");
-			}
-		} else {
-			console.log("No file");
-		}
-	}
-	
-	const handleDrop = (e) => {
-		e.preventDefault();
-		setIsDragActive(false);
-		const file = e.dataTransfer.files[0];
-		populatePreviewImage(file);
-	};
-	
-	const handleFileInputChange = (e) => {
-		const file = e.target.files[0];
-        setImage(file);
-		populatePreviewImage(file);
-	};
-	
-	const isImageFile = (file) => {
-		return file.type.startsWith("image/");
-	};
-    
-    const [model, setModel] = useState(null);
-    const [furnitureModel, setFurnitureModel] = useState(null);
-    const [fileType, setFileType] = useState(null);
-    const [isDragModelActive, setIsDragModelActive] = useState(false);
-
-    const handleModelDragEnter = (e) => {
-		e.preventDefault();
-		setIsDragModelActive(true);
-	};
-	
-	const handleModelDragOver = (e) => {
-		e.preventDefault();
-		setIsDragModelActive(true);
-	};
-	
-	const handleModelDragLeave = () => {
-		setIsDragModelActive(false);
-	};
-
-    const handleModelDrop = (e) => {
-		e.preventDefault();
-		setIsDragModelActive(false);
-		const file = e.dataTransfer.files[0];
-		handleModelInputChange(file);
-	};
-
-    const isModelFile = (file) => {
-        const fileName = file.name.toLowerCase();
-        console.log(fileName);
-        const isGLB = fileName.endsWith('.glb');
-        return isGLB;
+    const handleAddVariant = () => {
+        setVariants([...variants, { ...initialVariant }]);
     };
 
-    const handleModelInputChange = (event) => {
-        const file = event.target.files[0];
-        if (isModelFile(file)) {
-            setFurnitureModel(file);
-            setModel(URL.createObjectURL(file));
-            const fileExtension = file.name.split('.').pop().toLowerCase();
-            setFileType(fileExtension);
-            console.log(fileExtension);
-            console.log("Model uploaded");
-        } else {
-            alert("Invalid file type. Please upload a 3D model.");
-            console.log("Invalid file type. Please upload a 3D model.");
+    const handleRemoveVariant = (indexToRemove) => {
+        if (variants.length > 1) {
+            setVariants(variants.filter((_, index) => index !== indexToRemove));
         }
+    };
+
+    const handleChangeVariant = (index, field, value) => {
+        const updatedVariant = [...variants];
+        updatedVariant[index][field] = value;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantImageInputChange = (index, event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                handleChangeVariant(index, 'imageSrc', reader.result);
+                handleChangeVariant(index, 'image', file);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleVariantImageDragEnter = (index) => {
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingImage = true;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantImageDragOver = (event) => {
+        event.preventDefault();
+    };
+
+    const handleVariantImageDragLeave = (index) => {
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingImage = false;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantImageDrop = (index, event) => {
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                handleChangeVariant(index, 'imageSrc', reader.result);
+                handleChangeVariant(index, 'image', file);
+            };
+            reader.readAsDataURL(file);
+        }
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingImage = false;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantModelInputChange = (index, event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                handleChangeVariant(index, 'modelSrc', reader.result);
+                handleChangeVariant(index, 'model', file);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleVariantModelDragEnter = (index) => {
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingModel = true;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantModelDragOver = (event) => {
+        event.preventDefault();
+    };
+
+    const handleVariantModelDragLeave = (index) => {
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingModel = false;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantModelDrop = (index, event) => {
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                handleChangeVariant(index, 'modelSrc', reader.result);
+                handleChangeVariant(index, 'model', file);
+            };
+            reader.readAsDataURL(file);
+        }
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingModel = false;
+        setVariants(updatedVariant);
     };
 
     const ModelPreview = ({ model }) => {
@@ -190,14 +195,7 @@ function AddFurniture() {
             renderer.setSize(containerRef.current.offsetWidth, containerRef.current.offsetHeight);
             containerRef.current.appendChild(renderer.domElement);
     
-            let loader;
-            if (fileType === 'glb' || fileType === 'gltf') {
-                loader = new GLTFLoader();
-            } else if (fileType === 'obj') {
-                loader = new OBJLoader();
-            } else {
-                return;
-            }
+            let loader = new GLTFLoader();
     
             loader.load(
                 model,
@@ -269,10 +267,10 @@ function AddFurniture() {
                 dispose();
             };
             
-        }, [model, fileType]);
+        }, [model]);
     
         return (
-            <Box ref={containerRef} h="600px" w="full" position="relative">
+            <Box ref={containerRef} h={"245px"} w={"350px"} position="relative">
                 {isLoading && (
                     <Spinner
                         thickness="4px"
@@ -308,12 +306,17 @@ function AddFurniture() {
         setLoading(true);
         const furnitureData = {
             subcategory: id,
-            image: image,
-            model: furnitureModel,
             ...data,
         };
 
-        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 || furnitureData.inventory < 0) {
+        const furnitureVariants = variants.map((variant) => ({
+            color: variant.color,
+            inventory: variant.inventory,
+            image: variant.image,
+            model: variant.model,
+        }));
+
+        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0) {
             toast({
                 title: "Error creating furniture",
                 description: "Please make sure that all number fields are positive",
@@ -325,21 +328,40 @@ function AddFurniture() {
             return;
         }
 
-        if (!image) {
-            toast({
-                title: "Error creating furniture",
-                description: "Furniture image is required",
-                status: "error",
-                duration: 3000,
-                position: "top",
-                isClosable: true,
-            });
-            return;
+        for (let i = 0; i < furnitureVariants.length; i++) {
+            if (furnitureVariants[i].color === '' || furnitureVariants[i].inventory === 0 || furnitureVariants[i].image === '' || furnitureVariants[i].model === '') {
+                toast({
+                    title: "Error creating furniture",
+                    description: "Please make sure that all variant fields are filled",
+                    status: "error",
+                    duration: 3000,
+                    position: "top",
+                    isClosable: true,
+                });
+                setLoading(false);
+                return;
+            }
         }
-        console.log(furnitureData);
+
+        for (let i = 0; i < furnitureVariants.length; i++) {
+            if (furnitureVariants[i].inventory < 0) {
+                toast({
+                    title: "Error creating furniture",
+                    description: "Please make sure that all variant inventory are positive",
+                    status: "error",
+                    duration: 3000,
+                    position: "top",
+                    isClosable: true,
+                });
+                setLoading(false);
+                return;
+            }
+        }
 
         try {
-            await addFurniture(furnitureData);
+            console.log("Furniture Data: ", furnitureData);
+            console.log("Furniture Variants: ", furnitureVariants);
+            await addFurniture(furnitureData, furnitureVariants);
             toast({
                 title: "Furniture created successfully!",
                 status: "success",
@@ -399,7 +421,7 @@ function AddFurniture() {
 
                     <form action="/api/add-furniture" method="post" encType="multipart/form-data">
                         <Flex w="full" direction="column" gap={6}>
-                            <Flex w="full" direction="row" gap={6}>
+                            <Flex w="full" direction="row" gap={8}>
                                 <Flex w="full" direction="column" gap={6}>
                                     <Flex w="full" direction="row" gap={6}>
                                         <FormControl>
@@ -476,19 +498,19 @@ function AddFurniture() {
                                             </FormErrorMessage>
                                         </FormControl>  
 
-                                        <FormControl isInvalid={errors.texture}>
+                                        <FormControl isInvalid={errors.material}>
                                             <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
-                                                Furniture Texture <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                Furniture Material <Text as="span" color="red.500" fontWeight="bold">*</Text>
                                             </FormLabel>
                                             <InputGroup>
                                                 <InputLeftAddon><MdOutlineTexture/></InputLeftAddon>
                                                 <Input
                                                     variant="filled"
                                                     type="text"
-                                                    id="texture"
+                                                    id="material"
                                                     {
-                                                        ...register("texture", {
-                                                            required: "Furniture texture cannot be empty",
+                                                        ...register("material", {
+                                                            required: "Furniture material cannot be empty",
                                                         })
                                                     }
                                                     placeholder="Cloth, Wood, Metal, etc."
@@ -503,7 +525,7 @@ function AddFurniture() {
                                                 />                                        
                                             </InputGroup>
                                             <FormErrorMessage>
-                                                {errors.texture && errors.texture.message}
+                                                {errors.material && errors.material.message}
                                             </FormErrorMessage>
                                         </FormControl>                                          
                                     </Flex>
@@ -634,39 +656,11 @@ function AddFurniture() {
                                             <FormErrorMessage>
                                                 {errors.price && errors.price.message}
                                             </FormErrorMessage>
-                                        </FormControl>    
-                                        
-                                        <FormControl isInvalid={errors.inventory}>
-                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
-                                                Current Inventory <Text as="span" color="red.500" fontWeight="bold">*</Text>
-                                            </FormLabel>
-                                            <InputGroup>
-                                                <InputLeftAddon><MdOutlineInventory/></InputLeftAddon>
-                                                <Input
-                                                    variant="filled"
-                                                    type="number"
-                                                    id="inventory"
-                                                    {
-                                                        ...register("inventory", {
-                                                            required: "Furniture Inventory cannot be empty",
-                                                        })
-                                                    }
-                                                    rounded="xl"
-                                                    borderWidth="1px"
-                                                    borderColor="gray.300"
-                                                    color="gray.900"
-                                                    size="md"
-                                                    focusBorderColor="blue.500"
-                                                    w="full"
-                                                    p={2.5}
-                                                />                                            
-                                            </InputGroup>
-                                            <FormErrorMessage>
-                                                {errors.inventory && errors.inventory.message}
-                                            </FormErrorMessage>
-                                        </FormControl>                       
+                                        </FormControl>                      
                                     </Flex>
+                                </Flex>
 
+                                <Flex w="full" direction="column" gap={6}>
                                     <FormControl isInvalid={errors.description}>
                                         <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
                                             Description <Text as="span" color="red.500" fontWeight="bold">*</Text>
@@ -682,6 +676,7 @@ function AddFurniture() {
                                             }
                                             placeholder="Enter furniture description here..."
                                             rounded="xl"
+                                            h={"150px"}
                                             borderWidth="1px"
                                             borderColor="gray.300"
                                             color="gray.900"
@@ -693,148 +688,262 @@ function AddFurniture() {
                                         <FormErrorMessage>
                                             {errors.description && errors.description.message}
                                         </FormErrorMessage>
-                                    </FormControl>
-
-                                </Flex>
-
-                                <Flex w="full" direction="column" gap={6}>
-                                    <FormControl>
-                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                            Furniture Image <Text as="span" color="red.500" fontWeight="bold">*</Text>
-                                        </FormLabel>
-                                        <Box
-                                            onDragEnter={handleDragEnter}
-                                            onDragOver={handleDragOver}
-                                            onDragLeave={handleDragLeave}
-                                            onDrop={handleDrop}
-                                            rounded="lg"
-                                            borderWidth="2px"
-                                            border={"dashed"}
-                                            borderColor={isDragActive ? "blue.500" : "gray.300"}
-                                            p={8}
-                                            textAlign="center"
-                                            position={"relative"}
-                                            cursor="pointer"
-                                        >
-                                            <Input
-                                                type="file"
-                                                accept="image/*"
-                                                opacity={0}
-                                                width="100%"
-                                                height="100%"
-                                                id="furniture_image"
-                                                position="absolute"
-                                                top={0}
-                                                left={0}
-                                                zIndex={1}
-                                                cursor="pointer"
-                                                isRequired
-                                                onChange={handleFileInputChange}
-                                            />
-                                            <Flex direction="column" alignItems="center">
-                                                <BsFillCloudArrowDownFill
-                                                    onDragEnter={handleDragEnter}
-                                                    onDragOver={handleDragOver}
-                                                    onDragLeave={handleDragLeave}
-                                                    onDrop={handleDrop}
-                                                    size={32}
-                                                    color={isDragActive ? "blue" : "gray"}
-                                                />
-                                                <Text mb={2} fontSize="sm" fontWeight="semibold">
-                                                    {isDragActive ? "Drop the file here" : "Drag & Drop or Click to upload"}
-                                                </Text>
-                                                <Text fontSize="xs" color="gray.500">
-                                                    (SVG, PNG, JPG, or JPEG)
-                                                </Text>
-                                            </Flex>
-                                        </Box>
-                                    </FormControl>  
-                                    <Box
-                                        w="full"
-                                        h="300px"
-                                        id="preview-image-container"
-                                        bg={!imageSrc ? "gray.200" : "transparent"}
-                                        rounded="lg"
-                                        display="flex"
-                                        flexDir="column"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        mt={4}
-                                        overflow="hidden"
-                                        ref={previewImageContainerRef}
-                                    >
-                                        <img
-                                            id="preview-image"
-                                            src={imageSrc || ""}
-                                            alt={imageSrc ? "Preview" : ""}
-                                            display={imageSrc ? "block" : "none"}
-                                            ref={previewImageRef}
-                                            style={{ 
-                                                height: "100%", 
-                                                objectFit: "contain", 
-                                                objectPosition: "center" 
-                                            }}
+                                    </FormControl>    
+                                    <FormControl isInvalid={errors.care_method}>
+                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                            How to Care <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                        </FormLabel>        
+                                        <Textarea
+                                            variant="filled"
+                                            type="text"
+                                            id="care_method"
+                                            {
+                                                ...register("care_method", {
+                                                    required: "Furniture care method cannot be empty",
+                                                })
+                                            }
+                                            placeholder="Enter furniture care method here..."
+                                            rounded="xl"
+                                            h={"150px"}
+                                            borderWidth="1px"
+                                            borderColor="gray.300"
+                                            color="gray.900"
+                                            size="md"
+                                            focusBorderColor="blue.500"
+                                            w="full"
+                                            p={2.5}
                                         />
-                                    </Box>         
+                                        <FormErrorMessage>
+                                            {errors.care_method && errors.care_method.message}
+                                        </FormErrorMessage>
+                                    </FormControl>                                      
                                 </Flex>
                             </Flex>
-                            <Flex w="full" direction="column" gap={3}>
-                                <FormControl>
-                                    <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                        3D Model
-                                    </FormLabel>
-                                    <Box
-                                            onDragEnter={handleModelDragEnter}
-                                            onDragOver={handleModelDragOver}
-                                            onDragLeave={handleModelDragLeave}
-                                            onDrop={handleModelDrop}
-                                            rounded="lg"
-                                            borderWidth="2px"
-                                            border={"dashed"}
-                                            borderColor={isDragModelActive ? "blue.500" : "gray.300"}
-                                            p={8}
-                                            textAlign="center"
-                                            position={"relative"}
-                                            cursor="pointer"
-                                        >
-                                            <Input
-                                                type="file"
-                                                accept=".glb"
-                                                opacity={0}
-                                                width="100%"
-                                                height="100%"
-                                                id="3d_model"
-                                                position="absolute"
-                                                top={0}
-                                                left={0}
-                                                zIndex={1}
-                                                cursor="pointer"
-                                                isRequired
-                                                onChange={handleModelInputChange}
-                                            />
-                                            <Flex direction="column" alignItems="center">
-                                                <BsFillCloudArrowDownFill
-                                                    onDragEnter={handleModelDragEnter}
-                                                    onDragOver={handleModelDragOver}
-                                                    onDragLeave={handleModelDragLeave}
-                                                    onDrop={handleModelDrop}
-                                                    size={32}
-                                                    color={isDragModelActive ? "blue" : "gray"}
-                                                />
-                                                <Text mb={2} fontSize="sm" fontWeight="semibold">
-                                                    {isDragModelActive ? "Drop the file here" : "Drag & Drop or Click to upload"}
-                                                </Text>
-                                                <Text fontSize="xs" color="gray.500">
-                                                    (.GLB)
-                                                </Text>
+                            <Flex w="full" gap={6} alignItems="center">
+                                <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
+                                <Text fontSize="xl" fontWeight="700" color="#d69511">Variants</Text>
+                                <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
+                            </Flex>
+                            <Flex w="full" direction="column" gap={6}>
+                                {
+                                    variants.map((variant, index) => (
+                                        <Flex key={index} gap={6} direction="column" w="full">
+                                            <Flex w="full" direction="row" gap={6}>
+                                                <Flex w="full" direction="column" gap={6}>
+                                                    <FormControl isInvalid={errors.variants && errors.variants[index]?.color}>
+                                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                                            Color Variant <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                        </FormLabel>
+                                                        <InputGroup>
+                                                            <InputLeftAddon><IoColorPaletteOutline/></InputLeftAddon>
+                                                            <Input
+                                                                variant="filled"
+                                                                type="text"
+                                                                id={`variant_color_${index}`}
+                                                                value={variant.color}
+                                                                onChange={(e) => handleChangeVariant(index, 'color', e.target.value)}
+                                                                rounded="xl"
+                                                                borderWidth="1px"
+                                                                borderColor="gray.300"
+                                                                color="gray.900"
+                                                                size="md"
+                                                                focusBorderColor="blue.500"
+                                                                w="full"
+                                                                p={2.5}
+                                                            />                                            
+                                                        </InputGroup>
+                                                        <FormErrorMessage>
+                                                            {errors.variants && errors.variants[index]?.color && errors.variants[index]?.color.message}
+                                                        </FormErrorMessage>
+                                                    </FormControl>   
+                                                    <FormControl>
+                                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                            Furniture Variant Image <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                        </FormLabel>
+                                                        <Box
+                                                            onDragEnter = {() => handleVariantImageDragEnter(index)}
+                                                            onDragOver={handleVariantImageDragOver}
+                                                            onDragLeave={() => handleVariantImageDragLeave(index)}
+                                                            onDrop={(e) => handleVariantImageDrop(index, e)}
+                                                            rounded="lg"
+                                                            borderWidth="2px"
+                                                            border={"dashed"}
+                                                            borderColor={variant.isDraggingImage ? "blue.500" : "gray.300"}
+                                                            p={4}
+                                                            textAlign="center"
+                                                            position={"relative"}
+                                                            cursor="pointer"
+                                                        >
+                                                            <Input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                opacity={0}
+                                                                width="100%"
+                                                                height="100%"
+                                                                id="furniture_image"
+                                                                position="absolute"
+                                                                top={0}
+                                                                left={0}
+                                                                zIndex={1}
+                                                                cursor="pointer"
+                                                                isRequired
+                                                                onChange={(e) => handleVariantImageInputChange(index, e)}
+                                                            />
+                                                            <Flex direction="column" alignItems="center">
+                                                                <BsFillCloudArrowDownFill
+                                                                    onDragEnter = {() => handleVariantImageDragEnter(index)}
+                                                                    onDragOver={handleVariantImageDragOver}
+                                                                    onDragLeave={() => handleVariantImageDragLeave(index)}
+                                                                    onDrop={(e) => handleVariantImageDrop(index, e)}
+                                                                    size={32}
+                                                                    color={variant.isDraggingImage ? "blue" : "gray"}
+                                                                />
+                                                                <Text mb={2} fontSize="sm" fontWeight="semibold">
+                                                                    {variant.isDraggingImage ? "Drop the file here" : "Drag & Drop or Click to upload"}
+                                                                </Text>
+                                                                <Text fontSize="xs" color="gray.500">
+                                                                    (SVG, PNG, JPG, or JPEG)
+                                                                </Text>
+                                                            </Flex>
+                                                        </Box>
+                                                    </FormControl>                  
+                                                </Flex>
+                                                <Flex w="full" direction="column" gap={6}>
+                                                    <FormControl isInvalid={errors.variants && errors.variants[index]?.inventory}>
+                                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                                            Current Inventory <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                        </FormLabel>
+                                                        <InputGroup>
+                                                            <InputLeftAddon><MdOutlineInventory/></InputLeftAddon>
+                                                            <Input
+                                                                variant="filled"
+                                                                type="number"
+                                                                id={`variant_inventory_${index}`}
+                                                                value={variant.inventory}
+                                                                onChange={(e) => handleChangeVariant(index, 'inventory', e.target.value)}
+                                                                rounded="xl"
+                                                                borderWidth="1px"
+                                                                borderColor="gray.300"
+                                                                color="gray.900"
+                                                                size="md"
+                                                                focusBorderColor="blue.500"
+                                                                w="full"
+                                                                p={2.5}
+                                                            />                                            
+                                                        </InputGroup>
+                                                        <FormErrorMessage>
+                                                            {errors.variants && errors.variants[index]?.inventory && errors.variants[index]?.inventory.message}
+                                                        </FormErrorMessage>
+                                                    </FormControl>      
+
+                                                    <FormControl>
+                                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                            Furniture Variant 3D Model
+                                                        </FormLabel>
+                                                        <Box
+                                                                onDragEnter = {() => handleVariantModelDragEnter(index)}
+                                                                onDragOver={handleVariantModelDragOver}
+                                                                onDragLeave={() => handleVariantModelDragLeave(index)}
+                                                                onDrop={(e) => handleVariantModelDrop(index, e)}
+                                                                rounded="lg"
+                                                                borderWidth="2px"
+                                                                border={"dashed"}
+                                                                borderColor={variant.isDraggingModel ? "blue.500" : "gray.300"}
+                                                                p={4}
+                                                                textAlign="center"
+                                                                position={"relative"}
+                                                                cursor="pointer"
+                                                            >
+                                                                <Input
+                                                                    type="file"
+                                                                    accept=".glb"
+                                                                    opacity={0}
+                                                                    width="100%"
+                                                                    height="100%"
+                                                                    id="3d_model"
+                                                                    position="absolute"
+                                                                    top={0}
+                                                                    left={0}
+                                                                    zIndex={1}
+                                                                    cursor="pointer"
+                                                                    isRequired
+                                                                    onChange={(e) => handleVariantModelInputChange(index, e)}
+                                                                />
+                                                                <Flex direction="column" alignItems="center">
+                                                                    <BsFillCloudArrowDownFill
+                                                                        onDragEnter = {() => handleVariantModelDragEnter(index)}
+                                                                        onDragOver={handleVariantModelDragOver}
+                                                                        onDragLeave={() => handleVariantModelDragLeave(index)}
+                                                                        onDrop={(e) => handleVariantModelDrop(index, e)}
+                                                                        size={32}
+                                                                        color={variant.isDraggingModel ? "blue" : "gray"}
+                                                                    />
+                                                                    <Text mb={2} fontSize="sm" fontWeight="semibold">
+                                                                        {variant.isDraggingModel ? "Drop the file here" : "Drag & Drop or Click to upload"}
+                                                                    </Text>
+                                                                    <Text fontSize="xs" color="gray.500">
+                                                                        (.GLB)
+                                                                    </Text>
+                                                                </Flex>
+                                                            </Box>
+                                                    </FormControl>                                                
+                                                </Flex>
+                                                <Box
+                                                    w="full"
+                                                    h="245px"
+                                                    id={`preview-image-container-${index}`}
+                                                    bg={!variant.imageSrc ? "gray.200" : "transparent"}
+                                                    rounded="lg"
+                                                    display="flex"
+                                                    flexDir="column"
+                                                    alignItems="center"
+                                                    justifyContent="center"
+                                                    mt={4}
+                                                    overflow="hidden" 
+                                                >
+                                                    <img
+                                                        id={`preview-image-${index}`}
+                                                        src={variant.imageSrc || ""}
+                                                        alt={variant.imageSrc ? "Preview" : ""}
+                                                        display={variant.imageSrc ? "block" : "none"}
+                                                        style={{
+                                                            height: "100%", 
+                                                            objectFit: "contain", 
+                                                            objectPosition: "center" 
+                                                        }}
+                                                    />
+                                                </Box>      
+                                                <Box
+                                                    w="full"
+                                                    h="245px"
+                                                    id={`preview-model-container-${index}`}
+                                                    bg={!variant.modelSrc ? "gray.200" : "transparent"}
+                                                    rounded="lg"
+                                                    display="flex"
+                                                    flexDir="column"
+                                                    alignItems="center"
+                                                    justifyContent="center"
+                                                    mt={4}
+                                                    overflow="hidden" 
+                                                >
+                                                    {
+                                                        variant.model && <ModelPreview model={variant.modelSrc}/>
+                                                    }
+                                                </Box>      
+                                                <Divider h={"15rem"} orientation="vertical" borderWidth="1px" borderColor="gray.300"/>       
+                                                <Flex h="auto" alignItems="center" justifyContent="center" gap={4} direction="column">
+                                                    {index > 0 && (
+                                                        <Button colorScheme="red" variant="solid" onClick={() => handleRemoveVariant(index)}><FaTrash size="20px"/></Button>
+                                                    )}
+                                                    {index === variants.length - 1 ? (
+                                                        <Button colorScheme="green" variant="solid" onClick={handleAddVariant}><FaPlus size="20px"/></Button>
+                                                    ) : null}
+                                                </Flex>                          
                                             </Flex>
-                                        </Box>
-                                </FormControl>
-                                <Box>
-                                    {
-                                        model && <ModelPreview model={model}/>
-                                    }
-                                </Box>
+                                            <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
+                                        </Flex>
+                                    ))
+                                }
                             </Flex>
                         </Flex>
                     </form>
