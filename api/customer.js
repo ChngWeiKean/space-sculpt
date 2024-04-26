@@ -56,7 +56,7 @@ export const addToFavourites = async (furnitureId, userId) => {
     }
 };
 
-export const addToCart = async (furnitureId, userId) => {
+export const addToCart = async (furnitureId, userId, variantId) => {
     try {
         const userRef = ref(db, `users/${userId}`);
         const userSnap = await get(userRef);
@@ -74,7 +74,7 @@ export const addToCart = async (furnitureId, userId) => {
             user.cart = [];
         }
 
-        user.cart.push({ id: furnitureId, quantity: 1 });
+        user.cart.push({ id: furnitureId, quantity: 1, variantId: variantId });
 
         await update(userRef, { cart: user.cart });
 
