@@ -220,7 +220,6 @@ function CategoryDetails() {
     const salesBodyTemplate = (rowData) => {
         return (
             <Flex w="full" direction="row" alignItems="center" gap={4}>
-                <MdOutlineSell color="#d69511" size="30" />
                 <Flex w="full" direction="column">
                     <Text>Sold: {rowData.quantity_sold || 0}</Text>
                     <Text>Revenue: RM {rowData.quantity_sold * rowData.price || 0}</Text>
@@ -268,16 +267,16 @@ function CategoryDetails() {
             <Flex w="full" direction="column" gap={2}>
                 {
                     Object.values(rowData.variants).map((variant, index) => (
-                        <Flex key={index} w="full" direction="row" gap={2}>
+                        <Flex key={index} w="full" direction="row" gap={1} alignItems="center">
                             {
                                 variant.inventory < 10 ? (
-                                    <CiWarning color='red' size='25'/>
+                                    <CiWarning color='red' size='20'/>
                                 ) : (
-                                    <GoSmiley color='green' size='25'/>
+                                    <GoSmiley color='green' size='20'/>
                                 )
                             }
                             <Text>{variant.color}:</Text>
-                            <Text>{variant.inventory}</Text>
+                            <Text fontWeight="600">{variant.inventory}</Text>
                         </Flex>
                     ))
                 }

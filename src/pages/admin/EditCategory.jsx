@@ -132,7 +132,12 @@ function EditCategory() {
                         id: childSnapshot.key,
                         ...childSnapshot.val()
                     };
-                    totalInventory += Number(data.inventory); 
+                    if (data.variants) {
+                        Object.keys(data.variants).forEach(variantId => {
+                            const variant = data.variants[variantId];
+                            totalInventory += parseInt(variant.inventory);
+                        });
+                    }
                     totalSales += Number(data.sales);
                     furniture.push(data);
                 });
