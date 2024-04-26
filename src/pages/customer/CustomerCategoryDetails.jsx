@@ -25,6 +25,7 @@ import {
     useToast,
     SimpleGrid,
     Badge,
+    Tooltip,
 } from "@chakra-ui/react";
 import {useRef, useState, useEffect, memo, useCallback} from "react";
 import { IoBedOutline, IoCartOutline } from "react-icons/io5";
@@ -59,7 +60,21 @@ function CustomerCategoryDetails() {
     const [furnitureIds, setFurnitureIds] = useState([]);
     const [searchSubcategoryQuery, setSearchSubcategoryQuery] = useState("");
     const [searchFurnitureQuery, setSearchFurnitureQuery] = useState("");
+    const [searchFurniturePriceQuery, setSearchFurniturePriceQuery] = useState("");
+    const [searchFurnitureColorQuery, setSearchFurnitureColorQuery] = useState("");
+    const [searchFurnitureMaterialQuery, setSearchFurnitureMaterialQuery] = useState("");
+    const [sortBy, setSortBy] = useState("");
+    const [filterByFavourites, setFilterByFavourites] = useState(false);
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+    const [materialFilters, setMaterialFilters] = useState([]);
+    const [colorFilters, setColorFilters] = useState([]);
+    const priceRangeFilter = {
+        "0-199": { min: 0, max: 199 },
+        "200-399": { min: 200, max: 399 },
+        "400-599": { min: 400, max: 599 },
+        "600-799": { min: 600, max: 799 },
+        "800+": { min: 800, max: 999999 }
+    }
 
     useEffect(() => {
         const categoryRef = ref(db, `categories/${id}`);
@@ -98,18 +113,48 @@ function CustomerCategoryDetails() {
         const furnitureRef = ref(db, 'furniture');
         onValue(furnitureRef, (snapshot) => {
             const furniture = [];
+            const materials = [];
+            const colors = [];
             snapshot.forEach((furnitureSnapshot) => {
                 if (furnitureIds.includes(furnitureSnapshot.key)) {
                     const subcategoryRef = ref(db, `subcategories/${furnitureSnapshot.val().subcategory}`);
                     get(subcategoryRef).then((subcategorySnapshot) => {
                         const subcategory = subcategorySnapshot.val().name;
-                        console.log(subcategory);
-                        furniture.push({
-                            id: furnitureSnapshot.key,
-                            subcategoryName: subcategory,
-                            ...furnitureSnapshot.val()
+                        let allVariantsOutOfStock = true;
+                        Object.values(furnitureSnapshot.val().variants).forEach((variant) => {
+                            if (variant.inventory > 0) {
+                                allVariantsOutOfStock = false;
+                            }
                         });
+                        if (allVariantsOutOfStock) {
+                            return;
+                        } else {
+                            const variants = Object.values(furnitureSnapshot.val().variants);
+                            const firstVariantImage = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).image : null;
+                            const firstVariantId = variants.length > 0 ? Object.keys(furnitureSnapshot.val().variants).find((variant) => furnitureSnapshot.val().variants[variant].inventory > 0) : null;
+                            const firstVariantColor = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).color : null;
+                            furniture.push({
+                                id: furnitureSnapshot.key,
+                                subcategoryName: subcategory,
+                                mainImage: firstVariantImage,
+                                selectedVariant: firstVariantId,
+                                selectedColor: firstVariantColor,
+                                ...furnitureSnapshot.val()
+                            });
+                            if (!materials.includes(furnitureSnapshot.val().material)) {
+                                materials.push(furnitureSnapshot.val().material);
+                            }
+                            variants.forEach((variant) => {
+                                const trimmedColor = variant.color.trim();
+                                if (!colors.includes(trimmedColor)) {
+                                    colors.push(trimmedColor);
+                                }
+                            });                            
+                        }
+
+                        setColorFilters(colors);
                         setFurniture(furniture);
+                        setMaterialFilters(materials);
                     }).catch((error) => {
                         console.error("Error fetching subcategory name:", error);
                     });
@@ -117,6 +162,24 @@ function CustomerCategoryDetails() {
             });
         });
     }, [furnitureIds]);
+
+    const handleVariantClick = (selectedFurniture, variant) => {
+        const variantImage = selectedFurniture.variants[variant].image;
+        const variantColor = selectedFurniture.variants[variant].color;
+        const updatedFurnitureData = furniture.map((item) => {
+            if (item.id === selectedFurniture.id) {
+                return {
+                    ...item,
+                    mainImage: variantImage,
+                    selectedVariant: variant,
+                    selectedColor: variantColor
+                };
+            }
+            return item;
+        });
+        setFurniture(updatedFurnitureData);
+        console.log(updatedFurnitureData);
+    };
 
     const filteredSubcategories = subcategories.filter((subcategory) =>
         subcategory.name.toLowerCase().includes(searchSubcategoryQuery.toLowerCase())
@@ -131,7 +194,6 @@ function CustomerCategoryDetails() {
         : furniture;
 
     const PriceTemplate = (rowData) => {
-        console.log(rowData);
         let discountedPrice = 0.0;
         const discount = Number(rowData.discount);
         const price = Number(rowData.price);
@@ -176,11 +238,32 @@ function CustomerCategoryDetails() {
         await addToFavourites(furnitureId, user?.uid);
     }
 
+    const sortFurniture = (a, b) => {
+        if (sortBy === "price_ascending") {
+            return a.price - b.price;
+        } else if (sortBy === "price_descending") {
+            return b.price - a.price;
+        } else if (sortBy === "ratings") {
+            return b.ratings - a.ratings;
+        } else if (sortBy === "height") {
+            return b.height - a.height;
+        } else if (sortBy === "length") {
+            return b.length - a.length;
+        } else if (sortBy === "width") {
+            return b.width - a.width;
+        } else if (sortBy === "newest") {
+            return new Date(b.created_on) - new Date(a.created_on);
+        } else if (sortBy === "oldest") {
+            return new Date(a.created_on) - new Date(b.created_on);
+        }
+        return 0;
+    };
+
     const toast = useToast();
 
-    const addFurnitureToCart = async (furnitureId, furnitureName) => {
+    const addFurnitureToCart = async (furnitureId, furnitureName, variantId) => {
         try {
-            await addToCart(furnitureId, user?.uid);
+            await addToCart(furnitureId, user?.uid, variantId);
             toast({
                 title: "Added to cart",
                 description: furnitureName + " has been added to your cart.",
@@ -220,7 +303,7 @@ function CustomerCategoryDetails() {
                 
                 <Flex direction="column" w="full">
                     <Flex w="full" direction="row" justifyContent="space-between">
-                        <Text ml={2} color="#d69511" fontSize="xl" fontWeight="bold">Subcategories</Text>
+                        <Text ml={2} color="#d69511" fontSize="xl" fontWeight="bold">Filter By Subcategories</Text>
                         <Box>
                             <InputGroup>
                                 <InputLeftElement
@@ -265,7 +348,7 @@ function CustomerCategoryDetails() {
                         {filteredSubcategories?.map((subcategory, index) => (
                             <Box key={index} onClick={() => handleSubcategoryClick(subcategory)} direction="column" alignItems="center" minW="200px" minH="200px" maxW="200px" maxH="200px" transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', color: '#d69511' }}>
                                 <img src={subcategory?.image} alt={subcategory?.name} style={{ width: "100%", height: "80%", objectFit: "contain" }} />
-                                <Text mt={1} textAlign="center" fontSize="md" fontWeight="600" >{subcategory?.name}</Text>
+                                <Text mt={1} textAlign="center" fontSize="md" fontWeight="600" color={subcategory === selectedSubcategory ? "#d69511" : "black"}>{subcategory?.name}</Text>
                             </Box>    
                         ))}
                     </Flex>                       
@@ -273,26 +356,110 @@ function CustomerCategoryDetails() {
             </Flex>
 
             <Flex w="full" h="auto" direction="column" gap={5}>
-                <Flex w="30%">
-                    <InputGroup>
-                        <InputLeftElement
-                            pointerEvents="none"
-                            children={<BiSearchAlt2 color="gray.300" />}
-                        />
-                        <Input
-                            w="full"
-                            placeholder="Search furniture..."
+                <Flex w="full" direction="row" gap={5}>
+                    <Flex>
+                        <InputGroup>
+                            <InputLeftElement
+                                pointerEvents="none"
+                                children={<BiSearchAlt2 color="gray.300" />}
+                            />
+                            <Input
+                                w="full"
+                                placeholder="Search furniture..."
+                                size="md"
+                                focusBorderColor="blue.500"
+                                borderRadius="lg"
+                                borderColor="gray.300"
+                                backgroundColor="white"
+                                color="gray.800"
+                                value={searchFurnitureQuery}
+                                onChange={(e) => setSearchFurnitureQuery(e.target.value)}
+                            />
+                        </InputGroup>
+                    </Flex>  
+                    <Flex>
+                        <Select
+                            placeholder="Filter by Price Range"   
                             size="md"
                             focusBorderColor="blue.500"
                             borderRadius="lg"
                             borderColor="gray.300"
                             backgroundColor="white"
                             color="gray.800"
-                            value={searchFurnitureQuery}
-                            onChange={(e) => setSearchFurnitureQuery(e.target.value)}
-                        />
-                    </InputGroup>
-                </Flex>  
+                            onChange={(e) => { setSearchFurniturePriceQuery(e.target.value); }}
+                        >
+                            {
+                                Object.keys(priceRangeFilter).map((priceRange, index) => (
+                                    <option key={index} value={priceRange}>RM {priceRange}</option>
+                                ))
+                            }
+                        </Select>
+                    </Flex>      
+                    <Flex>
+                        <Select
+                            placeholder="Filter by Material"   
+                            size="md"
+                            focusBorderColor="blue.500"
+                            borderRadius="lg"
+                            borderColor="gray.300"
+                            backgroundColor="white"
+                            color="gray.800"
+                            onChange={(e) => { setSearchFurnitureMaterialQuery(e.target.value); }}
+                        >
+                            {
+                                materialFilters.map((material, index) => (
+                                    <option key={index} value={material}>{material}</option>
+                                ))
+                            }
+                        </Select>
+                    </Flex>   
+                    <Flex>
+                        <Select
+                            placeholder="Filter by Color"   
+                            size="md"
+                            focusBorderColor="blue.500"
+                            borderRadius="lg"
+                            borderColor="gray.300"
+                            backgroundColor="white"
+                            color="gray.800"
+                            onChange={(e) => { setSearchFurnitureColorQuery(e.target.value); }}
+                        >
+                            {
+                                colorFilters.map((color, index) => (
+                                    <option key={index} value={color}>{color}</option>
+                                ))
+                            }
+                        </Select>
+                    </Flex>     
+                    <Flex>
+                        <Select
+                            placeholder="Sort by"
+                            size="md"
+                            focusBorderColor="blue.500"
+                            borderRadius="lg"
+                            borderColor="gray.300"
+                            backgroundColor="white"
+                            color="gray.800"
+                            onChange={(e) => { setSortBy(e.target.value); }}
+                        >
+                            <option value="price_ascending">Price: Low to High</option>
+                            <option value="price_descending">Price: High to Low</option>
+                            <option value="newest">Newest</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="ratings">Ratings</option>
+                            <option value="height">Height</option>
+                            <option value="length">Length</option>
+                            <option value="width">Width</option>
+                        </Select>
+                    </Flex>              
+                    <Flex>
+                        {
+                            filterByFavourites ?
+                                <Button colorScheme="red" variant="solid" size="md" leftIcon={<IoIosHeart />} onClick={(e) => {e.preventDefault(); setFilterByFavourites(false)}}>Remove Filter</Button>
+                              : <Button colorScheme="blue" variant="solid" size="md" leftIcon={<IoIosHeartEmpty />} onClick={(e) => {e.preventDefault(); setFilterByFavourites(true)}}>Filter by Favourites</Button>
+                        }
+                    </Flex>
+                </Flex>
                 <SimpleGrid
                     columns={[1, 1, 2, 3, 4]}
                     gap={10}
@@ -302,9 +469,24 @@ function CustomerCategoryDetails() {
                         .filter((furniture) =>
                             furniture.name.toLowerCase().includes(searchFurnitureQuery.toLowerCase())
                         )
+                        .filter((furniture) =>
+                            filterByFavourites ? user?.favourites?.includes(furniture.id) : true
+                        )
+                        .filter((furniture) => {
+                            const price = Number(furniture.price);
+                            const priceRange = priceRangeFilter[searchFurniturePriceQuery];
+                            return priceRange ? price >= priceRange.min && price <= priceRange.max : true;
+                        })
+                        .filter((furniture) =>
+                            searchFurnitureMaterialQuery === "" ? true : furniture.material === searchFurnitureMaterialQuery
+                        )
+                        .filter((furniture) =>
+                            searchFurnitureColorQuery === "" ? true : Object.values(furniture.variants).some((variant) => variant.color === searchFurnitureColorQuery)
+                        )
+                        .sort(sortFurniture)
                         .map((furniture, index) => (
                         <Box as={NavLink} to={`/furniture/${furniture.id}/details`} key={index} direction="column" alignItems="center" minW="340px" minH="480px" maxW="340px" maxH="480px" transition="transform 0.2s" _hover={{ color: '#d69511'}}>
-                            <img src={furniture.image} alt={furniture.name} style={{ width: "100%", height: "70%", objectFit: "contain" }} />
+                            <img src={furniture?.mainImage} alt={furniture?.name} style={{ width: "100%", height: "200px", objectFit: "contain" }} />
                             <Flex w="full" mt={3} justifyContent="space-between">
                                 <Box display='flex' alignItems='center'>
                                     {
@@ -326,12 +508,16 @@ function CustomerCategoryDetails() {
                                         {furniture?.ratings || 0} ratings
                                     </Box>
                                 </Box>              
-                                <Flex gap={2} alignItems="center" color='red' onClick={() => toggleLike(furniture?.id)} transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }}>
+                                <Flex gap={2} alignItems="center" color='red' onClick={(e) => {e.preventDefault(); toggleLike(furniture?.id);}} transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }}>
                                     {user?.favourites?.includes(furniture?.id) ? <IoIosHeart size={"25px"}/> : <IoIosHeartEmpty size={"25px"}/>} <Text fontSize="sm">({furniture?.favourites?.length || 0})</Text>
                                 </Flex>
                             </Flex>
                             <Flex w="full" direction="row" alignItems="center" justifyContent="space-between" mt={2}>
-                                <Text fontSize="xl" fontWeight="700">{furniture.name}</Text>
+                                <Flex direction="row" gap={3} alignItems="center">
+                                    <Text fontSize="xl" fontWeight="700">{furniture.name}</Text>
+                                    <Text fontSize="sm" fontWeight="500" color="gray.500">{furniture?.selectedColor}</Text>
+                                </Flex>
+                                
                                 {
                                     furniture?.discount > 0 ? (
                                         <Badge colorScheme="red" fontSize="md" color="red">-{furniture?.discount}%</Badge>   
@@ -348,14 +534,39 @@ function CustomerCategoryDetails() {
                                 <PriceTemplate {...furniture}/>
                             </Flex>
 
+                            <Flex w="full" direction="row" gap={4} mb={3}>
+                                {
+                                    Object.keys(furniture?.variants).map((variant, index) => (
+                                        furniture?.variants[variant].inventory > 0 ? (
+                                            <Tooltip key={index} label={furniture?.variants[variant].color} aria-label="Variant color" placement="top">
+                                                <Box
+                                                    transition="transform 0.2s"
+                                                    _hover={{ transform: 'scale(1.1)' }}
+                                                    outline= {furniture?.selectedVariant == variant ? '1px solid blue' : 'none'}
+                                                    p={1}
+                                                    onClick={(e) => { e.preventDefault(); handleVariantClick(furniture, variant); }}
+                                                >
+                                                    <img src={furniture?.variants[variant].image} alt={furniture?.variants[variant].name} style={{ width: "50px", height: "50px", objectFit: "contain" }} />
+                                                </Box>                                                
+                                            </Tooltip>
+                                        ) : (
+                                            <Tooltip key={index} label={furniture?.variants[variant].color} aria-label="Variant color" placement="top">
+                                                <Box key={index} onClick={(e) => { e.preventDefault(); }}>
+                                                    <img src={furniture?.variants[variant].image} alt={furniture?.variants[variant].name} style={{ width: "50px", height: "50px", objectFit: "contain", filter: "grayscale(100%)" }} />
+                                                </Box>
+                                            </Tooltip>
+                                        )
+                                    ))
+                                }
+                            </Flex>
                             {
-                                cart?.find((item) => item.id === furniture.id) ? (
+                                cart?.find((item) => item.variantId === furniture.selectedVariant) ? (
                                     <Flex w="full" direction="row" justifyContent="center" gap={2}>
                                         <Button w="full" colorScheme="green" variant="solid" size="md" leftIcon={<IoCartOutline />}>Already In Cart</Button>
                                     </Flex>
                                 ) : (
                                     <Flex w="full" direction="row" justifyContent="center" gap={2}>
-                                        <Button w="full" colorScheme="blue" variant="solid" size="md" leftIcon={<IoCartOutline />} onClick={() => addFurnitureToCart(furniture.id, furniture.name)}>Add to Cart</Button>
+                                        <Button w="full" colorScheme="blue" variant="solid" size="md" leftIcon={<IoCartOutline />} onClick={(e) => {e.preventDefault(); addFurnitureToCart(furniture.id, furniture.name, furniture.selectedVariant);}}>Add to Cart</Button>
                                     </Flex>
                                 )
                             }

@@ -3,19 +3,21 @@ import {
     Flex,
     Box,
     Button,
-    Input,
-    FormControl,
-    FormLabel,
-    FormErrorMessage,
-    InputLeftAddon,
-    InputRightAddon,
-    Textarea,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
+    useDisclosure,
     useToast,
     Divider,
     InputGroup,
     Spinner,
     Select,
     Badge,
+    Tooltip,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill } from "react-icons/bs";
@@ -28,7 +30,7 @@ import { GrThreeD } from "react-icons/gr";
 import { FaImage, FaRegFileImage } from "react-icons/fa6";
 import { AiOutlineDash } from "react-icons/ai";
 import { FaPlus, FaTrash, FaStar, FaStarHalf } from "react-icons/fa6";
-import { MdOutlineInventory, MdOutlineTexture } from "react-icons/md";
+import { MdOutlineInventory, MdOutlineTexture, MdLightbulbOutline } from "react-icons/md";
 import { Form, useForm } from "react-hook-form";
 import { NavLink, useParams } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
@@ -38,7 +40,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
-import { addToFavourites } from "../../../api/customer.js";
+import { addToFavourites, addToCart } from "../../../api/customer.js";
 
 function CustomerFurnitureDetails() {
     const { id } = useParams();
@@ -46,9 +48,8 @@ function CustomerFurnitureDetails() {
     const [furniture, setFurniture] = useState(null);
     const [subcategory, setSubcategory] = useState(null);
     const [cart, setCart] = useState([]);
-    const [model, setModel] = useState(null);
-    const [fileType, setFileType] = useState(null);
     const [displayMode, setDisplayMode] = useState('image');
+    const { isOpen, onOpen, onClose } = useDisclosure()
 
     const handleImageClick = () => {
         setDisplayMode('image');
@@ -61,13 +62,23 @@ function CustomerFurnitureDetails() {
     useEffect(() => {
         const furnitureRef = ref(db, `furniture/${id}`);
         onValue(furnitureRef, (snapshot) => {
+            const furnitureVariants = Object.values(snapshot.val().variants);
+            const firstVariantImage = furnitureVariants.length > 0 ? furnitureVariants.find((variant) => variant.inventory > 0).image : null;
+            const firstVariantModel = furnitureVariants.length > 0 ? furnitureVariants.find((variant) => variant.inventory > 0).model : null;
+            const firstVariantId = furnitureVariants.length > 0 ? Object.keys(snapshot.val().variants).find((key) => snapshot.val().variants[key].inventory > 0) : null;
+            const firstVariantColor = furnitureVariants.length > 0 ? furnitureVariants.find((variant) => variant.inventory > 0).color : null;
+            const firstVariantInventory = furnitureVariants.length > 0 ? furnitureVariants.find((variant) => variant.inventory > 0).inventory : null;
             let data = {
                 id: snapshot.key,
+                mainImage: firstVariantImage,
+                selectedVariant: firstVariantId,
+                model: firstVariantModel,
+                selectedColor: firstVariantColor,
+                inventory: firstVariantInventory,
                 ...snapshot.val()
             }
             setFurniture(data);
-            setModel(data?.model);
-            setFileType("glb");
+            console.log(data);
             const subcategoryRef = ref(db, `subcategories/${data.subcategory}`);
             onValue(subcategoryRef, (snapshot) => {
                 let data = {
@@ -86,6 +97,21 @@ function CustomerFurnitureDetails() {
             setCart(user?.cart || []);
         });        
     }, [user]);
+
+    const handleVariantClick = (selectedFurniture, variant) => {
+        const variantImage = selectedFurniture.variants[variant].image;
+        const variantColor = selectedFurniture.variants[variant].color;
+        const variantModel = selectedFurniture.variants[variant].model;
+        const variantInventory = selectedFurniture.variants[variant].inventory;
+        setFurniture({
+            ...selectedFurniture,
+            mainImage: variantImage,
+            selectedVariant: variant,
+            selectedColor: variantColor,
+            model: variantModel,
+            inventory: variantInventory
+        });
+    };
 
     const ModelPreview = ({ model }) => {
         const [isLoading, setLoading] = useState(true);
@@ -129,14 +155,7 @@ function CustomerFurnitureDetails() {
             renderer.setSize(containerRef.current.offsetWidth, containerRef.current.offsetHeight);
             containerRef.current.appendChild(renderer.domElement);
     
-            let loader;
-            if (fileType === 'glb' || fileType === 'gltf') {
-                loader = new GLTFLoader();
-            } else if (fileType === 'obj') {
-                loader = new OBJLoader();
-            } else {
-                return;
-            }
+            let loader = new GLTFLoader();
     
             loader.load(
                 model,
@@ -208,7 +227,7 @@ function CustomerFurnitureDetails() {
                 dispose();
             };
             
-        }, [model, fileType]);
+        }, [model]);
     
         return (
             <Box ref={containerRef} h="35rem" w="40rem" position="relative">
@@ -230,7 +249,6 @@ function CustomerFurnitureDetails() {
     };
 
     const PriceTemplate = (rowData) => {
-        console.log(rowData);
         let discountedPrice = 0.0;
         const discount = Number(rowData.discount);
         const price = Number(rowData.price);
@@ -288,11 +306,11 @@ function CustomerFurnitureDetails() {
         );
     }
 
-    const TextureTemplate = (rowData) => {
+    const MaterialTemplate = (rowData) => {
         return (
             <Flex w="full" direction="column" gap={2}>
-                <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">Texture</Text>
-                <Text fontSize="md" fontWeight="600" letterSpacing="wide">{rowData.texture}</Text>
+                <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">Material</Text>
+                <Text fontSize="md" fontWeight="600" letterSpacing="wide">{rowData.material}</Text>
             </Flex>
         );
     };
@@ -314,6 +332,32 @@ function CustomerFurnitureDetails() {
         await addToFavourites(furnitureId, user?.uid);
     };
 
+    const toast = useToast();
+
+    const addFurnitureToCart = async (furnitureId, furnitureName, variantId) => {
+        try {
+            await addToCart(furnitureId, user?.uid, variantId);
+            toast({
+                title: "Added to cart",
+                description: furnitureName + " has been added to your cart.",
+                status: "success",
+                position: "top",
+                duration: 9000,
+                isClosable: true,
+            });            
+        } catch (error) {
+            console.error("Error adding to cart:", error);
+            toast({
+                title: "Error adding to cart",
+                description: "An error occurred while adding " + furnitureName + " to your cart.",
+                status: "error",
+                position: "top",
+                duration: 9000,
+                isClosable: true,
+            });
+        }
+    }
+
     return (
         <Flex w="full" h="full" p={4} gap={7} bg="#f4f4f4" direction="column">
             <Flex w="full" direction="row" gap={4}>
@@ -332,18 +376,44 @@ function CustomerFurnitureDetails() {
                             </Flex>    
                         )                        
                     }
+                    <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
+                    <Flex onClick={onOpen} direction="column"  alignItems="center" color="blue.500" transition="transform 0.2s" _hover={{ transform: 'scale(1.1)' }}>
+                        <MdLightbulbOutline size="40px"/>
+                        <Text>How to Care</Text>
+                    </Flex>
+
+                    <Modal size='xl' isOpen={isOpen} onClose={onClose}>
+                        <ModalOverlay
+                            bg='blackAlpha.300'
+                        />
+                        <ModalContent>
+                            <ModalHeader>
+                                <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">How to Care</Text>
+                            </ModalHeader>
+                            <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                            <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                            <ModalBody>
+                                <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">{furniture?.care_method}</Text>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button colorScheme="blue" mr={3} onClick={onClose}>
+                                    Close
+                                </Button>
+                            </ModalFooter>
+                        </ModalContent>
+                    </Modal>                        
                 </Flex>
                 <Flex w="100rem" direction="column" gap={4}>
                     {
                         displayMode === 'image' && (
                             <Flex w="full">
-                                <img src={furniture?.image} alt={furniture?.name} style={{ objectFit: "contain", width: "100%", height: "100%" }}/>
+                                <img src={furniture?.mainImage} alt={furniture?.name} style={{ objectFit: "contain", width: "100%", height: "100%" }}/>
                             </Flex>
                         )
                     }
                     {
                         displayMode === 'model' && (
-                            <ModelPreview model={model}/>
+                            <ModelPreview model={furniture?.model}/>
                         )
                     }
                 </Flex>
@@ -393,10 +463,43 @@ function CustomerFurnitureDetails() {
                     <Flex w="full" direction="row">
                         <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">{furniture?.description}</Text>
                     </Flex>
+                    <Flex w="full" direction="row" gap={4} mb={3}>
+                        {
+                            furniture?.variants && Object.keys(furniture?.variants).length > 1 ? (
+                                Object.keys(furniture?.variants).map((variant, index) => (
+                                    furniture?.variants[variant]?.inventory > 0 ? (
+                                        <Tooltip key={index} label={furniture?.variants[variant]?.color} aria-label="Variant color" placement="top">
+                                            <Box
+                                                transition="transform 0.2s"
+                                                _hover={{ transform: 'scale(1.1)' }}
+                                                outline= {furniture?.selectedVariant == variant ? '1px solid blue' : 'none'}
+                                                p={1}
+                                                onClick={(e) => { e.preventDefault(); handleVariantClick(furniture, variant); }}
+                                            >
+                                                <img src={furniture?.variants[variant]?.image} alt={furniture?.variants[variant]?.name} style={{ width: "75px", height: "75px", objectFit: "contain" }} />
+                                            </Box>                                                
+                                        </Tooltip>
+                                    ) : (
+                                        <Tooltip key={index} label={furniture?.variants[variant]?.color} aria-label="Variant color" placement="top">
+                                            <Box key={index} onClick={(e) => { e.preventDefault(); }} position={"relative"}>
+                                                <Badge colorScheme="red" fontSize="2xs" color="red" position="absolute" bottom="-1" right="-1">Out of Stock</Badge>
+                                                <img src={furniture?.variants[variant]?.image} alt={furniture?.variants[variant]?.name} style={{ width: "75px", height: "75px", objectFit: "contain", filter: "grayscale(100%)" }} />
+                                            </Box>
+                                        </Tooltip>
+                                    )
+                                ))
+                            ) : null
+                        }
+                    </Flex>
                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
                     <Flex w="full" direction="row" gap={2}>
                         <DimensionTemplate {...furniture}/>
-                        <TextureTemplate {...furniture}/>
+
+                        <Flex w="full" direction="column" gap={4}>
+                            <MaterialTemplate {...furniture}/>
+
+                        </Flex>
+                    
                     </Flex>
                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
                     <Flex direction="row" my={2}>
@@ -404,7 +507,7 @@ function CustomerFurnitureDetails() {
                     </Flex>
 
                     {
-                        cart?.find((item) => item.id === furniture.id) ? (
+                        cart?.find((item) => item?.variantId === furniture?.selectedVariant) ? (
                             <Flex w="full" direction="row" alignItems="center" gap={2}>
                                 <Button
                                     w="full"
@@ -424,16 +527,22 @@ function CustomerFurnitureDetails() {
                                     variant="solid"
                                     borderRadius="full"
                                     leftIcon={<IoCartOutline />}
-                                    onClick={(e) => {e.preventDefault(); addFurnitureToCart(furniture?.id, furniture?.name);}}
+                                    onClick={(e) => {e.preventDefault(); addFurnitureToCart(furniture?.id, furniture?.name, furniture?.selectedVariant);}}
                                 >
                                     Add To Cart
                                 </Button>
                             </Flex>
                         )
                     }
-
                 </Flex>
             </Flex>
+
+            <Flex w="full" gap={6} alignItems="center">
+                <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
+                <Text w="55%" fontSize="xl" fontWeight="700" color="#d69511">Reviews & Recommendations</Text>
+                <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
+            </Flex>
+            
             <Flex w="full" direction="row" gap={4}>
 
             </Flex>

@@ -24,12 +24,16 @@ export const createCategoryAndSubcategories = async (categoryData, subcategoryDa
                 categoryImageUrl = url;
                 return set(ref(db, `categories/${newCategoryRef.key}`), {
                     name: category_name,
-                    image: categoryImageUrl
+                    image: categoryImageUrl,
+                    created_on: new Date(),
+                    created_by: auth.currentUser.uid,
                 });
             });
     } else {
         categoryUploadPromise = set(ref(db, `categories/${newCategoryRef.key}`), {
-            name: category_name
+            name: category_name,
+            created_on: new Date(),
+            created_by: auth.currentUser.uid,
         });
     }
 
@@ -39,24 +43,16 @@ export const createCategoryAndSubcategories = async (categoryData, subcategoryDa
                 return { success: true };
             }
 
-            // Create a reference to the subcategories collection
             const subcategoryRef = ref(db, 'subcategories');
-
-            // Create an array to store subcategory IDs
             const subcategoryIds = [];
 
-            // Create promises to upload subcategory data and images
             const subcategoryPromises = subcategoryData.map((subcategory) => {
                 const { name, image } = subcategory;
 
-                // Push a new subcategory reference
                 const newSubcategoryRef = push(subcategoryRef);
-
-                // Create a storage reference for the subcategory image
                 const storageRef = sRef(storage, `subcategories/${newSubcategoryRef.key}`);
                 let subcategoryImageUrl;
 
-                // Upload subcategory image if available
                 if (image) {
                     return uploadBytes(storageRef, image)
                         .then(() => {
@@ -64,34 +60,32 @@ export const createCategoryAndSubcategories = async (categoryData, subcategoryDa
                         })
                         .then((url) => {
                             subcategoryImageUrl = url;
-                            // Set subcategory data including the category ID
                             return set(ref(db, `subcategories/${newSubcategoryRef.key}`), {
                                 name: name,
                                 image: subcategoryImageUrl,
-                                category: newCategoryRef.key // Store the category ID
+                                created_on: new Date(),
+                                created_by: auth.currentUser.uid,
+                                category: newCategoryRef.key
                             });
                         })
                         .then(() => {
-                            // Push the subcategory ID to the array
                             subcategoryIds.push(newSubcategoryRef.key);
                         });
                 } else {
-                    // Set subcategory data including the category ID
                     return set(ref(db, `subcategories/${newSubcategoryRef.key}`), {
                         name: name,
-                        category: newCategoryRef.key // Store the category ID
+                        category: newCategoryRef.key, 
+                        created_on: new Date(),
+                        created_by: auth.currentUser.uid,
                     })
                     .then(() => {
-                        // Push the subcategory ID to the array
                         subcategoryIds.push(newSubcategoryRef.key);
                     });
                 }
             });
 
-            // Wait for all subcategory promises to complete
             return Promise.all(subcategoryPromises)
                 .then(() => {
-                    // Update the category with the array of subcategory IDs
                     return update(ref(db, `categories/${newCategoryRef.key}`), {
                         subcategories: subcategoryIds
                     });
@@ -106,15 +100,10 @@ export const createCategoryAndSubcategories = async (categoryData, subcategoryDa
 };
 
 export const updateCategoryAndSubcategories = async (id, categoryData, subcategoryData) => {
-
-    console.log("Category Data", categoryData);
-    console.log("Subcategory Data", subcategoryData);
-
     const categorySnapshot = await get(ref(db, `categories/${id}`))
     const categoryImageUrl = categorySnapshot.val().image;
-    console.log("Category Image URL", categoryImageUrl);
+
     if (categoryData?.category_image !== categoryImageUrl) {
-        // Update category image
         const storageRef = sRef(storage, `categories/${id}`);
         await uploadBytes(storageRef, categoryData?.category_image)
             .then(() => {
@@ -123,7 +112,9 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
             .then((url) => {
                 return update(ref(db, `categories/${id}`), {
                     name: categoryData?.category_name,
-                    image: url
+                    image: url,
+                    updated_on: new Date(),
+                    updated_by: auth.currentUser.uid,
                 });
             });
     }
@@ -131,7 +122,9 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
     // Update category name if changed
     if (categoryData?.category_name !== categorySnapshot.val().name) {
         await update(ref(db, `categories/${id}`), {
-            name: categoryData?.category_name
+            name: categoryData?.category_name,
+            updated_on: new Date(),
+            updated_by: auth.currentUser.uid,
         });
     }
 
@@ -153,7 +146,9 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
                         return update(ref(db, `subcategories/${subcategory?.id}`), {
                             name: subcategory?.name,
                             image: url,
-                            category: id
+                            category: id,
+                            updated_on: new Date(),
+                            updated_by: auth.currentUser.uid,
                         });
                     });
             }
@@ -161,7 +156,9 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
             // Update subcategory name if changed
             if (subcategory?.name !== subcategorySnapshot.val().name) {
                 await update(ref(db, `subcategories/${subcategory?.id}`), {
-                    name: subcategory?.name
+                    name: subcategory?.name,
+                    updated_on: new Date(),
+                    updated_by: auth.currentUser.uid,
                 });
             }                  
 
@@ -170,14 +167,18 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
                 await update(ref(db, `subcategories/${subcategory?.id}`), {
                     deleted_on: new Date(),
                     deleted: true,
-                    deleted_by: auth.currentUser.uid
+                    deleted_by: auth.currentUser.uid,
+                    updated_on: new Date(),
+                    updated_by: auth.currentUser.uid,
                 });
             } else {
                 if (subcategorySnapshot.val().deleted) {
                     await update(ref(db, `subcategories/${subcategory?.id}`), {
                         deleted_on: null,
                         deleted: false,
-                        deleted_by: null
+                        deleted_by: null,
+                        updated_on: new Date(),
+                        updated_by: auth.currentUser.uid,
                     });
                 }
             }
@@ -197,7 +198,9 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
                     return set(ref(db, `subcategories/${newSubcategoryRef.key}`), {
                         name: subcategory?.name,
                         image: url,
-                        category: id
+                        category: id,
+                        updated_on: new Date(),
+                        updated_by: auth.currentUser.uid,
                     });
                 });
             updatedSubcategoryIds.push(newSubcategoryRef.key);
@@ -227,7 +230,9 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
             width: width,
             length: length,
             material: material,
-            care_method: care_method
+            care_method: care_method,
+            created_on: new Date(),
+            created_by: auth.currentUser.uid,
         });
 
         const subcategoryRef = ref(db, `subcategories/${subcategory}`);
@@ -290,7 +295,9 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
             length: length,
             material: material,
             discount: discount,
-            care_method: care_method
+            care_method: care_method,
+            updated_on: new Date(),
+            updated_by: auth.currentUser.uid,
         });
 
         if (currentSubcategory !== subcategory) {
