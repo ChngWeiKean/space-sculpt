@@ -534,7 +534,7 @@ function CustomerCategoryDetails() {
                                 <PriceTemplate {...furniture}/>
                             </Flex>
 
-                            <Flex w="full" direction="row" gap={4} mb={3}>
+                            <Flex w="full" direction="row" gap={5} mb={3}>
                                 {
                                     Object.keys(furniture?.variants).map((variant, index) => (
                                         furniture?.variants[variant].inventory > 0 ? (
@@ -546,13 +546,14 @@ function CustomerCategoryDetails() {
                                                     p={1}
                                                     onClick={(e) => { e.preventDefault(); handleVariantClick(furniture, variant); }}
                                                 >
-                                                    <img src={furniture?.variants[variant].image} alt={furniture?.variants[variant].name} style={{ width: "50px", height: "50px", objectFit: "contain" }} />
+                                                    <img src={furniture?.variants[variant].image} alt={furniture?.variants[variant].name} style={{ width: "60px", height: "60px", objectFit: "contain" }} />
                                                 </Box>                                                
                                             </Tooltip>
                                         ) : (
                                             <Tooltip key={index} label={furniture?.variants[variant].color} aria-label="Variant color" placement="top">
-                                                <Box key={index} onClick={(e) => { e.preventDefault(); }}>
-                                                    <img src={furniture?.variants[variant].image} alt={furniture?.variants[variant].name} style={{ width: "50px", height: "50px", objectFit: "contain", filter: "grayscale(100%)" }} />
+                                                <Box key={index} onClick={(e) => { e.preventDefault(); }} position="relative">
+                                                    <Badge colorScheme="red" fontSize="3xs" color="red" position="absolute" bottom="-1" right="-1">Out of Stock</Badge>
+                                                    <img src={furniture?.variants[variant].image} alt={furniture?.variants[variant].name} style={{ width: "60px", height: "60px", objectFit: "contain", filter: "grayscale(100%)" }} />
                                                 </Box>
                                             </Tooltip>
                                         )
