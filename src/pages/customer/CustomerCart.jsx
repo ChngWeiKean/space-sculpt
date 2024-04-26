@@ -133,35 +133,44 @@ function CustomerCart() {
                         <Text fontSize="2xl" fontWeight="700" color="#d69511">Shopping Cart</Text>  
                     </Flex>
                     <Divider my={5}/>
-                    <Flex w="70%" direction="row" alignItems="center" gap={4}>
-                        {
-                            cart.length > 0 ? (
-                                <Box w="full">
-                                    <DataTable 
-                                        value={furniture}
-                                    >
-                                        <Column field="name" header="Furniture" body={nameBodyTemplate}></Column>
-                                        <Column field="price" header="Price" body={priceBodyTemplate}></Column>
-                                        <Column field="quantity" header="Quantity"></Column>
-                                        <Column field="total" header="Total"></Column>
-                                        <Column field="action" header="Actions" body={(rowData) => (
-                                            <Flex w="full" direction="row" alignItems="center" gap={4}>
-                                                <Button colorScheme="red" size="sm"><FaTrash/></Button>
-                                            </Flex>
-                                        )}></Column>
-                                    </DataTable>
-                                </Box>
-                            ) : (
-                                <Flex w="full" direction="column" alignItems="center" gap={4}>
-                                    <Text fontSize="lg" fontWeight="700">Your cart is empty</Text>
-                                    <Text fontSize="md" fontWeight="400">Please add items to your cart</Text>
+                    {
+                        cart.length === 0 ? (
+                            <Flex w="full" direction="column" alignItems="center" gap={4}>
+                                <Text fontSize="xl" fontWeight="700">Your cart is empty</Text>
+                                <Text fontSize="lg" fontWeight="400">Looks like you haven't added anything to your cart yet</Text>
+                                <Button colorScheme="blue" size="lg" onClick={() => window.history.back()}>Start Shopping</Button>
+                            </Flex>
+                        ) : (
+                            <Flex w="full" direction="column">
+                                <Flex w="70%" direction="row" alignItems="center" gap={4}>
+                                    {
+                                        cart.length > 0 && (
+                                            <Box w="full">
+                                                <DataTable 
+                                                    value={furniture}
+                                                >
+                                                    <Column field="name" header="Furniture" body={nameBodyTemplate}></Column>
+                                                    <Column field="price" header="Price" body={priceBodyTemplate}></Column>
+                                                    <Column field="quantity" header="Quantity"></Column>
+                                                    <Column field="total" header="Total"></Column>
+                                                    <Column field="action" header="Actions" body={(rowData) => (
+                                                        <Flex w="full" direction="row" alignItems="center" gap={4}>
+                                                            <Button colorScheme="red" size="sm"><FaTrash/></Button>
+                                                        </Flex>
+                                                    )}></Column>
+                                                </DataTable>
+                                            </Box>
+                                        ) 
+                                    }
                                 </Flex>
-                            )
-                        }
-                    </Flex>
-                    <Flex w="30%" direction="column" alignItems="center" gap={4}>
+                                <Flex w="30%" direction="column" alignItems="center" gap={4}>
 
-                    </Flex>
+                                </Flex>                                
+                            </Flex>
+                        )
+                            
+                    }
+
                 </Flex>
             </Box>
         </Flex>
