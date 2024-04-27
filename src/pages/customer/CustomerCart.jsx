@@ -32,7 +32,7 @@ import { AiOutlineDash } from "react-icons/ai";
 import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
 import { MdOutlineInventory, MdOutlineTexture } from "react-icons/md";
 import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams } from 'react-router-dom';
+import { NavLink, useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
 import { DataTable } from 'primereact/datatable';
@@ -174,16 +174,17 @@ function CustomerCart() {
         const discount = Number(rowData.discount);
         const price = Number(rowData.price);
         if (discount > 0) {
-            discountedPrice = price - (price * discount / 100);
+            discountedPrice = price - (price * discount / 100).toFixed(2);
         } else {
             discountedPrice = price;
         }
+        const total = discountedPrice * rowData.quantity;
 
         return (
             <Flex w="full" direction="row" gap={2} >
                 <Flex direction="row" gap={2}>
                     <Text fontWeight={600} color={"green"}>RM</Text>
-                    <Text>{discountedPrice * rowData.quantity}</Text>                
+                    <Text>{total.toFixed(2)}</Text>                
                 </Flex>                        
             </Flex>
         );
@@ -258,6 +259,13 @@ function CustomerCart() {
         );
     }
 
+    const navigate = useNavigate();
+
+    const handleCheckout = () => {
+        const items = furniture.filter((item) => item.inventory > 0);
+        navigate('/cart/checkout', { state: items });
+    }
+
     return (
         <Flex w="full" minH="full" p={4} gap={7} bg="#f4f4f4" direction="column" alignItems="center">
             <Box w="90%" h="full" bg="white" boxShadow="md" p={10}> 
@@ -304,7 +312,7 @@ function CustomerCart() {
                                         </DataTable>
                                     </Box>
                                 </Flex>
-                                <Flex w="30%" direction="column" alignItems="center" px={10} gap={5}>
+                                <Flex w="30%" direction="column" alignItems="center" pl={10} gap={5}>
                                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
                                     <Text fontSize="xl" fontWeight="600">Order Summary</Text>
                                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
@@ -318,8 +326,8 @@ function CustomerCart() {
                                                 <Text fontSize="md">{item.name} ({item.color})</Text>
                                                 {
                                                     item.discount > 0 ? (
-                                                        <Text fontSize="md">RM {(item.price - (item.price * item.discount / 100)) * item.quantity}</Text>
-                                                    ) : <Text fontSize="md">RM {item.price * item.quantity}</Text>
+                                                        <Text fontSize="md">RM {((item.price - (item.price * item.discount / 100)) * item.quantity).toFixed(2)}</Text>
+                                                    ) : <Text fontSize="md">RM {(item.price * item.quantity).toFixed(2)}</Text>
                                                 }
                                             </Flex>
                                         ))
@@ -338,11 +346,11 @@ function CustomerCart() {
                                                         }
                                                     }
                                                     return acc;
-                                                }, 0)
+                                                }, 0).toFixed(2)
                                             }
                                         </Text>
                                     </Flex>
-                                    <Button w="full" colorScheme="blue" size="lg">Checkout</Button>
+                                    <Button w="full" colorScheme="blue" size="lg" onClick={handleCheckout}>Checkout</Button>
                                 </Flex>                                
                             </Flex>
                         )
