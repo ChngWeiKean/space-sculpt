@@ -24,6 +24,7 @@ import EditFurniture from './pages/admin/EditFurniture.jsx'
 import CustomerCategoryDetails from './pages/customer/CustomerCategoryDetails.jsx'
 import CustomerFurnitureDetails from './pages/customer/CustomerFurnitureDetails.jsx'
 import CustomerCart from './pages/customer/CustomerCart.jsx'
+import CustomerCheckout from './pages/customer/CustomerCheckout.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -49,6 +50,7 @@ const router = createBrowserRouter(
 				<Route path="category/:id" element={<CustomerCategoryDetails/>}/>
 				<Route path="furniture/:id/details" element={<CustomerFurnitureDetails/>}/>
 				<Route path="cart" element={<CustomerCart/>}/>
+				<Route path="cart/checkout" element={<CustomerCheckout/>}/>
 			</Route>
 			<Route element={<LogisticsLayout/>}>
 			</Route>

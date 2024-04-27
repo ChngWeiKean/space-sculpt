@@ -255,6 +255,8 @@ function CustomerFurnitureDetails() {
         if (discount > 0) {
             discountedPrice = price - (price * discount / 100);
         }
+
+        const hasDecimal = (price % 1 !== 0) || (discountedPrice % 1 !== 0);
     
         return (
             <Flex w="full" direction="row" gap={2}>
@@ -264,16 +266,16 @@ function CustomerFurnitureDetails() {
                             <Flex direction="row" gap={3}>
                                 <Flex direction="row" gap={2}>
                                     <Text fontWeight={600} fontSize="lg" color={"green"}>RM</Text>
-                                    <Text fontWeight={600} fontSize="3xl">{discountedPrice}</Text>                
+                                    <Text fontWeight={600} fontSize="3xl">{discountedPrice.toFixed(hasDecimal ? 2 : 0)}</Text>                
                                 </Flex>                            
-                                <Text fontWeight={600} fontSize="3xl" color={"red"} textDecoration="line-through">{rowData.price}</Text>                                
+                                <Text fontWeight={600} fontSize="3xl" color={"red"} textDecoration="line-through">{Number(rowData.price).toFixed(hasDecimal ? 2 : 0)}</Text>                                
                             </Flex>                       
                         </Flex>
     
                     ) : (
                         <Flex direction="row" gap={2}>
                             <Text fontWeight={600} fontSize="lg" color={"green"}>RM</Text>
-                            <Text fontWeight={600} fontSize="3xl">{rowData.price}</Text>                
+                            <Text fontWeight={600} fontSize="3xl">{Number(rowData.price).toFixed(hasDecimal ? 2 : 0)}</Text>                
                         </Flex>                        
                     )
                 }
