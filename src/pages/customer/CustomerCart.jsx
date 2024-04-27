@@ -16,6 +16,8 @@ import {
     Spinner,
     Select,
     Badge,
+    Alert,
+    AlertIcon,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill } from "react-icons/bs";
@@ -80,6 +82,7 @@ function CustomerCart() {
                                     const furnitureItem = {
                                         id: snapshot.key,
                                         quantity: item.quantity,
+                                        added_on: item.created_on,
                                         image: variantData.image,
                                         color: variantData.color,
                                         inventory: variantData.inventory,
@@ -110,7 +113,12 @@ function CustomerCart() {
 
     const nameBodyTemplate = (rowData) => {
         return (
-            <Flex w="full" direction="row" alignItems="center" gap={8}>
+            <Flex w="full" direction="row" alignItems="center" gap={8} position="relative">
+                {
+                    rowData.inventory == 0 ? (
+                        <Badge colorScheme="red" fontSize="lg" position="absolute" top={10} left={-6} style={{ transform: 'rotate(-45deg)'}}>Out of Stock</Badge>
+                    ) : null
+                }
                 <img src={rowData?.image} alt={rowData?.name} style={{ width: "100px", height: "100px", objectFit: "contain" }} />
                 <Flex w="full" direction="column" gap={2}>
                     <Text fontSize="lg" fontWeight="700" color="#d69511">{rowData.name}</Text>
@@ -184,14 +192,12 @@ function CustomerCart() {
     const toast = useToast();
 
     const handleIncrement = async (rowData) => {
-        console.log("Incrementing");
         const updatedQuantity = rowData.quantity + 1;
         rowData.quantity = updatedQuantity;
         await updateCart(rowData.id, user.uid, updatedQuantity, rowData.cartId);
     };
     
     const handleDecrement = async (rowData) => {
-        console.log("Decrementing");
         if (rowData.quantity > 1) {
             const updatedQuantity = rowData.quantity - 1;
             rowData.quantity = updatedQuantity;
@@ -225,17 +231,29 @@ function CustomerCart() {
     const quantityBodyTemplate = (rowData) => {
         return (
             <Flex w="full" direction="row" gap={5} alignItems="center">
-                <Box transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }} onClick={() => handleDecrement(rowData)}>
-                    {
-                        rowData.quantity > 1 ? (
+                {
+                    rowData.quantity > 1 && rowData.inventory > 0 ? (
+                        <Box transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }} onClick={() => handleDecrement(rowData)}>
                             <FaMinus />
-                        ) : null
-                    }
-                </Box>
+                        </Box>                        
+                    ) : (
+                        <Box>
+                            <FaMinus />
+                        </Box>    
+                    )   
+                }
                 <Text fontWeight={600}>{rowData.quantity}</Text>
-                <Box transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }} onClick={() => handleIncrement(rowData)}>
-                    <FaPlus />
-                </Box>
+                {
+                    rowData.inventory > 0 ? (
+                        <Box transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }} onClick={() => handleIncrement(rowData)}>
+                            <FaPlus />
+                        </Box>
+                    ) : (
+                        <Box>
+                            <FaPlus />
+                        </Box>    
+                    )
+                }
             </Flex>
         );
     }
@@ -249,6 +267,18 @@ function CustomerCart() {
                         <Text fontSize="2xl" fontWeight="700" color="#d69511">Shopping Cart</Text>  
                     </Flex>
                     <Divider my={5}/>
+                    {
+                        furniture.some((item) => item.inventory == 0) ? (
+                            <Flex w="full" direction="row" mb={5}>
+                                <Alert status="warning" size={"lg"}>
+                                    <AlertIcon />
+                                    <Text fontSize="sm" fontWeight="semibold">
+                                        Some items in your cart are out of stock. Items will not be considered for checkout.
+                                    </Text>
+                                </Alert>
+                            </Flex>
+                        ) : null
+                    }
                     {
                         !cart ? (
                             <Flex w="full" direction="column" alignItems="center" gap={4}>
@@ -279,13 +309,17 @@ function CustomerCart() {
                                     <Text fontSize="xl" fontWeight="600">Order Summary</Text>
                                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
                                     {
-                                        furniture.map((item) => (
+                                        furniture
+                                            .slice() 
+                                            .sort((a, b) => new Date(a.added_on) - new Date(b.added_on))
+                                            .filter((item) => item.inventory > 0)
+                                            .map((item) => (
                                             <Flex w="full" direction="row" justifyContent="space-between" key={item.id}>
-                                                <Text fontSize="lg">{item.name}</Text>
+                                                <Text fontSize="md">{item.name} ({item.color})</Text>
                                                 {
                                                     item.discount > 0 ? (
-                                                        <Text fontSize="lg">RM {(item.price - (item.price * item.discount / 100)) * item.quantity}</Text>
-                                                    ) : <Text fontSize="lg">RM {item.price * item.quantity}</Text>
+                                                        <Text fontSize="md">RM {(item.price - (item.price * item.discount / 100)) * item.quantity}</Text>
+                                                    ) : <Text fontSize="md">RM {item.price * item.quantity}</Text>
                                                 }
                                             </Flex>
                                         ))
@@ -293,13 +327,20 @@ function CustomerCart() {
                                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
                                     <Flex w="full" direction="row" justifyContent="space-between">
                                         <Text fontSize="lg" fontWeight="700">Total</Text>
-                                        <Text fontSize="lg" fontWeight="700">RM {furniture.reduce((acc, item) => {
-                                            if (item.discount > 0) {
-                                                return acc + ((item.price - (item.price * item.discount / 100)) * item.quantity);
-                                            } else {
-                                                return acc + (item.price * item.quantity);
+                                        <Text fontSize="lg" fontWeight="700">
+                                            RM {
+                                                furniture.reduce((acc, item) => {
+                                                    if (item.inventory > 0) {
+                                                        if (item.discount > 0) {
+                                                            return acc + ((item.price - (item.price * item.discount / 100)) * item.quantity);
+                                                        } else {
+                                                            return acc + (item.price * item.quantity);
+                                                        }
+                                                    }
+                                                    return acc;
+                                                }, 0)
                                             }
-                                        }, 0)}</Text>
+                                        </Text>
                                     </Flex>
                                     <Button w="full" colorScheme="blue" size="lg">Checkout</Button>
                                 </Flex>                                

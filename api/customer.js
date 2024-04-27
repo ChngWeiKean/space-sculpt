@@ -71,7 +71,12 @@ export const addToCart = async (furnitureId, userId, variantId) => {
         }
 
         const cartRef = ref(db, `users/${userId}/cart`);
-        await push(cartRef, { furnitureId: furnitureId, quantity: 1, variantId: variantId });
+        await push(cartRef, { 
+                furnitureId: furnitureId, 
+                quantity: 1, 
+                variantId: variantId,
+                created_on: new Date().toISOString()
+             });
 
         return { success: true };
     } catch (error) {
