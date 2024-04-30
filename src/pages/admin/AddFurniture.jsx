@@ -8,6 +8,7 @@ import {
     FormLabel,
     FormErrorMessage,
     InputLeftAddon,
+    InputRightAddon,
     Textarea,
     useToast,
     Divider,
@@ -316,7 +317,7 @@ function AddFurniture() {
             model: variant.model,
         }));
 
-        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0) {
+        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 || furnitureData.weight < 0) {
             toast({
                 title: "Error creating furniture",
                 description: "Please make sure that all number fields are positive",
@@ -434,7 +435,7 @@ function AddFurniture() {
                                                 id="subcategory"
                                                 defaultValue={subcategory?.name}
                                                 isReadOnly
-                                                rounded="xl"
+                                                rounded="md"
                                                 borderWidth="1px"
                                                 borderColor="gray.300"
                                                 color="gray.900"
@@ -454,7 +455,7 @@ function AddFurniture() {
                                                 id="category"
                                                 defaultValue={category?.name}
                                                 isReadOnly
-                                                rounded="xl"
+                                                rounded="md"
                                                 borderWidth="1px"
                                                 borderColor="gray.300"
                                                 color="gray.900"
@@ -483,7 +484,7 @@ function AddFurniture() {
                                                         })
                                                     }
                                                     placeholder="Kitchenware"
-                                                    rounded="xl"
+                                                    rounded="md"
                                                     borderWidth="1px"
                                                     borderColor="gray.300"
                                                     color="gray.900"
@@ -514,7 +515,7 @@ function AddFurniture() {
                                                         })
                                                     }
                                                     placeholder="Cloth, Wood, Metal, etc."
-                                                    rounded="xl"
+                                                    rounded="md"
                                                     borderWidth="1px"
                                                     borderColor="gray.300"
                                                     color="gray.900"
@@ -535,7 +536,7 @@ function AddFurniture() {
                                         <Flex w="full" direction="row" gap={6} alignItems="center">
                                             <FormControl isInvalid={errors.height}>
                                                 <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
-                                                    Height (CM) <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                    Height (cm) <Text as="span" color="red.500" fontWeight="bold">*</Text>
                                                 </FormLabel>
                                                 <InputGroup>
                                                     <InputLeftAddon><RxHeight/></InputLeftAddon>
@@ -548,7 +549,7 @@ function AddFurniture() {
                                                                 required: "Furniture Height cannot be empty",
                                                             })
                                                         }
-                                                        rounded="xl"
+                                                        rounded="md"
                                                         borderWidth="1px"
                                                         borderColor="gray.300"
                                                         color="gray.900"
@@ -565,7 +566,7 @@ function AddFurniture() {
 
                                             <FormControl isInvalid={errors.width}>
                                                 <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
-                                                    Width (CM) <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                    Width (cm) <Text as="span" color="red.500" fontWeight="bold">*</Text>
                                                 </FormLabel>
                                                 <InputGroup>
                                                     <InputLeftAddon><RxWidth/></InputLeftAddon>
@@ -578,7 +579,7 @@ function AddFurniture() {
                                                                 required: "Furniture Width cannot be empty",
                                                             })
                                                         }
-                                                        rounded="xl"
+                                                        rounded="md"
                                                         borderWidth="1px"
                                                         borderColor="gray.300"
                                                         color="gray.900"
@@ -596,7 +597,7 @@ function AddFurniture() {
 
                                             <FormControl isInvalid={errors.length}>
                                                 <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
-                                                    Length (CM) <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                    Length (cm) <Text as="span" color="red.500" fontWeight="bold">*</Text>
                                                 </FormLabel>
                                                 <InputGroup>
                                                     <InputLeftAddon><RxSize/></InputLeftAddon>
@@ -609,7 +610,7 @@ function AddFurniture() {
                                                                 required: "Furniture Length cannot be empty",
                                                             })
                                                         }
-                                                        rounded="xl"
+                                                        rounded="md"
                                                         borderWidth="1px"
                                                         borderColor="gray.300"
                                                         color="gray.900"
@@ -642,7 +643,7 @@ function AddFurniture() {
                                                             required: "Furniture Price cannot be empty",
                                                         })
                                                     }
-                                                    rounded="xl"
+                                                    rounded="md"
                                                     borderWidth="1px"
                                                     borderColor="gray.300"
                                                     color="gray.900"
@@ -656,7 +657,37 @@ function AddFurniture() {
                                             <FormErrorMessage>
                                                 {errors.price && errors.price.message}
                                             </FormErrorMessage>
-                                        </FormControl>                      
+                                        </FormControl>
+                                        <FormControl isInvalid={errors.weight}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                                Weight (kg) <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                            </FormLabel>
+                                            <InputGroup>
+                                                <Input
+                                                    variant="filled"
+                                                    type="number"
+                                                    id="weight"
+                                                    {
+                                                        ...register("weight", {
+                                                            required: "Furniture weight cannot be empty",
+                                                        })
+                                                    }
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    p={2.5}
+                                                />      
+                                                <InputRightAddon>kg</InputRightAddon>                                     
+                                            </InputGroup>
+
+                                            <FormErrorMessage>
+                                                {errors.weight && errors.weight.message}
+                                            </FormErrorMessage>
+                                        </FormControl>   
                                     </Flex>
                                 </Flex>
 
@@ -675,7 +706,7 @@ function AddFurniture() {
                                                 })
                                             }
                                             placeholder="Enter furniture description here..."
-                                            rounded="xl"
+                                            rounded="md"
                                             h={"150px"}
                                             borderWidth="1px"
                                             borderColor="gray.300"
@@ -703,7 +734,7 @@ function AddFurniture() {
                                                 })
                                             }
                                             placeholder="Enter furniture care method here..."
-                                            rounded="xl"
+                                            rounded="md"
                                             h={"150px"}
                                             borderWidth="1px"
                                             borderColor="gray.300"
@@ -742,7 +773,7 @@ function AddFurniture() {
                                                                 id={`variant_color_${index}`}
                                                                 value={variant.color}
                                                                 onChange={(e) => handleChangeVariant(index, 'color', e.target.value)}
-                                                                rounded="xl"
+                                                                rounded="md"
                                                                 borderWidth="1px"
                                                                 borderColor="gray.300"
                                                                 color="gray.900"
@@ -821,7 +852,7 @@ function AddFurniture() {
                                                                 id={`variant_inventory_${index}`}
                                                                 value={variant.inventory}
                                                                 onChange={(e) => handleChangeVariant(index, 'inventory', e.target.value)}
-                                                                rounded="xl"
+                                                                rounded="md"
                                                                 borderWidth="1px"
                                                                 borderColor="gray.300"
                                                                 color="gray.900"
