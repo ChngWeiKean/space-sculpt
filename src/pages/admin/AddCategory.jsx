@@ -316,7 +316,7 @@ function AddCategory() {
                                                 })
                                             }
                                             placeholder="Kitchenware"
-                                            rounded="xl"
+                                            rounded="md"
                                             borderWidth="1px"
                                             borderColor="gray.300"
                                             color="gray.900"
@@ -429,7 +429,7 @@ function AddCategory() {
                                                         value={subcategory.name}
                                                         onChange={(e) => handleChangeSubcategory(index, 'name', e.target.value)}
                                                         placeholder="Subcategory Name"
-                                                        rounded="xl"
+                                                        rounded="md"
                                                         id={`subcategory_name_${index}`}
                                                         borderWidth="1px"
                                                         borderColor="gray.300"

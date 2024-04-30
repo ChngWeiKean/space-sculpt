@@ -3,6 +3,7 @@ import { getAnalytics } from "firebase/analytics";
 import { getDatabase } from "firebase/database"
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import { activate, fetchAndActivate, fetchConfig, getRemoteConfig, getValue } from "firebase/remote-config";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCDxiqzHnOMsW0CaKV7sZCZPmDjy81XZRM",
@@ -20,3 +21,4 @@ export const analytics = getAnalytics(app);
 export const db = getDatabase(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+export const remoteConfig = getRemoteConfig(app);

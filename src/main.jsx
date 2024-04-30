@@ -25,6 +25,11 @@ import CustomerCategoryDetails from './pages/customer/CustomerCategoryDetails.js
 import CustomerFurnitureDetails from './pages/customer/CustomerFurnitureDetails.jsx'
 import CustomerCart from './pages/customer/CustomerCart.jsx'
 import CustomerCheckout from './pages/customer/CustomerCheckout.jsx'
+import CustomerProfile from './pages/customer/CustomerProfile.jsx'
+import CustomerAddAddress from './pages/customer/CustomerAddAddress.jsx'
+import CustomerEditAddress from './pages/customer/CustomerEditAddress.jsx'
+import CustomerAddCard from './pages/customer/CustomerAddCard.jsx'
+import CustomerEditCard from './pages/customer/CustomerEditCard.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -51,6 +56,11 @@ const router = createBrowserRouter(
 				<Route path="furniture/:id/details" element={<CustomerFurnitureDetails/>}/>
 				<Route path="cart" element={<CustomerCart/>}/>
 				<Route path="cart/checkout" element={<CustomerCheckout/>}/>
+				<Route path="profile" element={<CustomerProfile/>}/>
+				<Route path="add-address" element={<CustomerAddAddress/>}/>
+				<Route path="edit-address/:id" element={<CustomerEditAddress/>}/>
+				<Route path="add-card" element={<CustomerAddCard/>}/>
+				<Route path="edit-card/:id" element={<CustomerEditCard/>}/>
 			</Route>
 			<Route element={<LogisticsLayout/>}>
 			</Route>

@@ -54,6 +54,7 @@ function EditFurniture() {
     const [ subcategories, setSubcategories ] = useState([]);
     const [ category, setCategory ] = useState(null);
     const [ lowInventory, setLowInventory ] = useState([]);
+    const [ outOfStock, setOutOfStock ] = useState([]);
     const {
         handleSubmit,
         register,
@@ -392,8 +393,10 @@ function EditFurniture() {
     }, [ id ]);
 
     useEffect(() => {
-        const lowInventory = variants.filter((variant) => variant.inventory < 10).map((variant) => variant.color);
+        const lowInventory = variants.filter((variant) => variant.inventory < 10 && variant.inventory > 0).map((variant) => variant.color);
         setLowInventory(lowInventory);
+        const outOfStock = variants.filter((variant) => variant.inventory == 0).map((variant) => variant.color);
+        setOutOfStock(outOfStock);
     }, [ variants ]);
 
     useEffect(() => {
@@ -404,6 +407,7 @@ function EditFurniture() {
             setValue("width", furniture?.width);
             setValue("length", furniture?.length);
             setValue("price", furniture?.price);
+            setValue("weight", furniture?.weight);
             setValue("discount", furniture?.discount || 0);
             setValue("description", furniture?.description);
             setValue("care_method", furniture?.care_method);
@@ -444,7 +448,7 @@ function EditFurniture() {
             isDeleted: variant.isDeleted
         }));
 
-        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 ) {
+        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 || furnitureData.weight < 0) {
             toast({
                 title: "Error creating furniture",
                 description: "Please make sure that all number fields are positive",
@@ -584,7 +588,7 @@ function EditFurniture() {
                         <Button colorScheme="blue" variant="solid" onClick={handleSubmit(onSubmit)}>Confirm & Submit</Button>
                     </Flex>    
 
-                    <Flex w="full" direction="row" gap={3} mb={5}>
+                    <Flex w="full" direction="column" gap={3} mb={5}>
                         {
                             lowInventory.length > 0 && (
                                 <Flex w="full" direction="row">
@@ -598,6 +602,27 @@ function EditFurniture() {
                                                 {
                                                     lowInventory.map((color, index) => (
                                                         index === lowInventory.length - 1 ? color : color + ', '
+                                                    ))
+                                                }
+                                            </Text>
+                                        </Flex>
+                                    </Alert>
+                                </Flex>
+                            )
+                        }
+                        {
+                            outOfStock.length > 0 && (
+                                <Flex w="full" direction="row">
+                                    <Alert status="error" size={"lg"}>
+                                        <AlertIcon />
+                                        <Text fontSize="sm" fontWeight="semibold">
+                                            Out of stock for the following variants: 
+                                        </Text>
+                                        <Flex direction="row" gap={3} ml={4}>
+                                            <Text fontSize="md" fontWeight={"semibold"} color={"red"}>
+                                                {
+                                                    outOfStock.map((color, index) => (
+                                                        index === outOfStock.length - 1 ? color : color + ', '
                                                     ))
                                                 }
                                             </Text>
@@ -621,7 +646,7 @@ function EditFurniture() {
                                                 variant="filled"
                                                 type="text"
                                                 id="subcategory"
-                                                rounded="xl"
+                                                rounded="md"
                                                 defaultValue={subcategory?.id || ""}
                                                 {
                                                     ...register("subcategory", {
@@ -654,7 +679,7 @@ function EditFurniture() {
                                                 id="category"
                                                 defaultValue={category?.name || ""}
                                                 isReadOnly
-                                                rounded="xl"
+                                                rounded="md"
                                                 borderWidth="1px"
                                                 borderColor="gray.300"
                                                 color="gray.900"
@@ -684,7 +709,7 @@ function EditFurniture() {
                                                         })
                                                     }
                                                     placeholder="Kitchenware"
-                                                    rounded="xl"
+                                                    rounded="md"
                                                     borderWidth="1px"
                                                     borderColor="gray.300"
                                                     color="gray.900"
@@ -716,7 +741,7 @@ function EditFurniture() {
                                                         })
                                                     }
                                                     placeholder="Cloth, Wood, Metal, etc."
-                                                    rounded="xl"
+                                                    rounded="md"
                                                     borderWidth="1px"
                                                     borderColor="gray.300"
                                                     color="gray.900"
@@ -751,7 +776,7 @@ function EditFurniture() {
                                                                 required: "Furniture height is required"
                                                             })
                                                         }
-                                                        rounded="xl"
+                                                        rounded="md"
                                                         borderWidth="1px"
                                                         borderColor="gray.300"
                                                         color="gray.900"
@@ -782,7 +807,7 @@ function EditFurniture() {
                                                                 required: "Furniture width is required"
                                                             })
                                                         }
-                                                        rounded="xl"
+                                                        rounded="md"
                                                         borderWidth="1px"
                                                         borderColor="gray.300"
                                                         color="gray.900"
@@ -814,7 +839,7 @@ function EditFurniture() {
                                                                 required: "Furniture length is required"
                                                             })
                                                         }
-                                                        rounded="xl"
+                                                        rounded="md"
                                                         borderWidth="1px"
                                                         borderColor="gray.300"
                                                         color="gray.900"
@@ -848,7 +873,7 @@ function EditFurniture() {
                                                             required: "Furniture price is required"
                                                         })
                                                     }
-                                                    rounded="xl"
+                                                    rounded="md"
                                                     borderWidth="1px"
                                                     borderColor="gray.300"
                                                     color="gray.900"
@@ -864,6 +889,38 @@ function EditFurniture() {
                                             </FormErrorMessage>
                                         </FormControl>         
 
+                                        <FormControl isInvalid={errors.weight}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                                Weight (kg) <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                            </FormLabel>
+                                            <InputGroup>
+                                                <Input
+                                                    variant="filled"
+                                                    type="number"
+                                                    id="weight"
+                                                    defaultValue={furniture?.weight || 0}
+                                                    {
+                                                        ...register("weight", {
+                                                            required: "Furniture weight cannot be empty",
+                                                        })
+                                                    }
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    p={2.5}
+                                                />      
+                                                <InputRightAddon>kg</InputRightAddon>                                     
+                                            </InputGroup>
+
+                                            <FormErrorMessage>
+                                                {errors.weight && errors.weight.message}
+                                            </FormErrorMessage>
+                                        </FormControl>   
+
                                         <FormControl isInvalid={errors.discount}>
                                             <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
                                                 Discount
@@ -877,7 +934,7 @@ function EditFurniture() {
                                                     {
                                                         ...register("discount")
                                                     }
-                                                    rounded="xl"
+                                                    rounded="md"
                                                     borderWidth="1px"
                                                     borderColor="gray.300"
                                                     color="gray.900"
@@ -912,7 +969,7 @@ function EditFurniture() {
                                                 })
                                             }
                                             placeholder="Enter furniture description here..."
-                                            rounded="xl"
+                                            rounded="md"
                                             h={"150px"}
                                             borderWidth="1px"
                                             borderColor="gray.300"
@@ -941,7 +998,7 @@ function EditFurniture() {
                                                 })
                                             }
                                             placeholder="Enter furniture care method here..."
-                                            rounded="xl"
+                                            rounded="md"
                                             h={"150px"}
                                             borderWidth="1px"
                                             borderColor="gray.300"
@@ -982,7 +1039,7 @@ function EditFurniture() {
                                                                 id={`variant_color_${index}`}
                                                                 value={variant?.color || ""}
                                                                 onChange={(e) => handleChangeVariant(index, 'color', e.target.value)}
-                                                                rounded="xl"
+                                                                rounded="md"
                                                                 borderWidth="1px"
                                                                 borderColor="gray.300"
                                                                 color="gray.900"
@@ -1061,7 +1118,7 @@ function EditFurniture() {
                                                                 id={`variant_inventory_${index}`}
                                                                 value={variant.inventory}
                                                                 onChange={(e) => handleChangeVariant(index, 'inventory', e.target.value)}
-                                                                rounded="xl"
+                                                                rounded="md"
                                                                 borderWidth="1px"
                                                                 borderColor="gray.300"
                                                                 color="gray.900"

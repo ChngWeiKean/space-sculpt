@@ -91,7 +91,7 @@ function Login() {
                                         })
                                     }
                                     placeholder="john.doe@gmail.com"
-                                    rounded="xl"
+                                    rounded="md"
                                     borderWidth="1px"
                                     borderColor="gray.300"
                                     color="gray.900"
@@ -120,7 +120,7 @@ function Login() {
                                             })
                                         }
                                         placeholder="•••••••••"
-                                        rounded="xl"
+                                        rounded="md"
                                         borderWidth="1px"
                                         borderColor="gray.300"
                                         color="gray.900"
