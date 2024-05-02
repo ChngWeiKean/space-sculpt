@@ -344,7 +344,7 @@ export const update_password = async (data, new_password) => {
 }
 
 export const addCard = async (userId, card) => {
-    const { number, name, expiry, cvc } = card;
+    const { number, name, expiry, cvc, billing_address } = card;
 
     fetchAndActivate(remoteConfig)
         .then(() => {
@@ -353,6 +353,7 @@ export const addCard = async (userId, card) => {
             const encrypted_expiry = encrypt(expiry, private_key);
             const encrypted_name = encrypt(name, private_key);
             const encrypted_cvc = encrypt(cvc, private_key);
+            const encrypted_billing_address = encrypt(billing_address, private_key);
 
             const cardRef = ref(db, `users/${userId}/cards`);
             const newCardRef = push(cardRef);
@@ -361,7 +362,8 @@ export const addCard = async (userId, card) => {
                 number: encrypted_number,
                 name: encrypted_name,
                 cvc: encrypted_cvc,
-                expiry: encrypted_expiry
+                expiry: encrypted_expiry,
+                billing_address: encrypted_billing_address
             });            
         })
         .catch((err) => {
@@ -370,7 +372,7 @@ export const addCard = async (userId, card) => {
 }
 
 export const editCard = async (userId, cardId, card) => {
-    const { number, name, expiry, cvc } = card;
+    const { number, name, expiry, cvc, billing_address } = card;
 
     fetchAndActivate(remoteConfig)
         .then(() => {
@@ -379,16 +381,30 @@ export const editCard = async (userId, cardId, card) => {
             const encrypted_expiry = encrypt(expiry, private_key);
             const encrypted_name = encrypt(name, private_key);
             const encrypted_cvc = encrypt(cvc, private_key);
+            const encrypted_billing_address = encrypt(billing_address, private_key);
 
             const cardRef = ref(db, `users/${userId}/cards/${cardId}`);
             update(cardRef, {
                 number: encrypted_number,
                 name: encrypted_name,
                 cvc: encrypted_cvc,
-                expiry: encrypted_expiry
+                expiry: encrypted_expiry,
+                billing_address: encrypted_billing_address
             });            
         })
         .catch((err) => {
             console.error(err);
         });
+}
+
+export const deleteCard = async (userId, cardId) => {
+    try {
+        const cardRef = ref(db, `users/${userId}/cards/${cardId}`);
+        await set(cardRef, null);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting card:", error);
+        throw error;
+    }
 }

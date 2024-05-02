@@ -6,23 +6,19 @@ import {
     Input,
     FormControl,
     FormLabel,
-    FormErrorMessage,
-    FormHelperText,
-    InputLeftAddon,
-    InputRightElement,
-    IconButton,
-    InputRightAddon,
     Textarea,
+    InputLeftAddon,
     useToast,
-    Divider,
     InputGroup,
-    Spinner,
-    Select,
-    Badge,
-    Alert,
-    AlertIcon,
-    Avatar,
-    InputLeftElement,
+    Divider,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalCloseButton,
+    ModalBody,
+    ModalFooter,
+    useDisclosure,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill, BsPinMap } from "react-icons/bs";
@@ -47,7 +43,7 @@ import { db } from "../../../api/firebase";
 import Cards from 'react-credit-cards-2';
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
 import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
-import { addCard, editCard } from "../../../api/customer.js";
+import { addCard, deleteCard, editCard } from "../../../api/customer.js";
 import { encrypt, decrypt } from 'n-krypta'
 import {fetchAndActivate, getValue} from "firebase/remote-config";
 import {remoteConfig} from "../../../api/firebase.js";
@@ -73,6 +69,7 @@ function CustomerEditCard() {
     });
     const [cards, setCards] = useState([]);
     const [ currentCard, setCurrentCard ] = useState({});
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
     const handleInputChange = (evt) => {
         const { name, value } = evt.target;
@@ -100,6 +97,7 @@ function CustomerEditCard() {
                                 card.expiry = decrypt(card.expiry, private_key);
                                 card.name = decrypt(card.name, private_key);
                                 card.cvc = decrypt(card.cvc, private_key);
+                                card.billing_address = decrypt(card.billing_address, private_key);
                                 setCurrentCard(card);
                                 setState({
                                     number: card.number,
@@ -114,6 +112,7 @@ function CustomerEditCard() {
                                 card.expiry = decrypt(card.expiry, private_key);
                                 card.name = decrypt(card.name, private_key);
                                 card.cvc = decrypt(card.cvc, private_key);
+                                card.billing_address = decrypt(card.billing_address, private_key);
                                 cardNumbers.push(card.number);                                
                             }
                         }
@@ -123,7 +122,32 @@ function CustomerEditCard() {
             });
     }, [user]);
 
-    const toast = useToast();
+    const toast = useToast();    
+
+    const handleDelete = async () => {
+        try {
+            await deleteCard(user.uid, id);
+            toast({
+                title: "Card Deleted",
+                description: "Card has been successfully deleted.",
+                status: "success",
+                position: "top",
+                duration: 9000,
+                isClosable: true,
+            });
+            window.history.back();
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Error",
+                description: "An error occurred while deleting the card.",
+                status: "error",
+                position: "top",
+                duration: 9000,
+                isClosable: true,
+            });
+        }
+    }
 
     const onSubmit = async (data) => {
         let cardData = {
@@ -131,6 +155,7 @@ function CustomerEditCard() {
             expiry: state.expiry,
             cvc: state.cvc,
             name: state.name,
+            billing_address: data.billing_address,
         }
 
         if (cardData.number.length < 16 || cardData.number.length > 16) {
@@ -155,6 +180,17 @@ function CustomerEditCard() {
                 isClosable: true,
             });
             return;
+        }
+
+        if (cardData.billing_address === "") {
+            toast({
+                title: "Invalid Billing Address",
+                description: "Please enter a valid expiry date.",
+                status: "error",
+                position: "top",
+                duration: 9000,
+                isClosable: true,                
+            })
         }
 
         if (cardData.expiry.length < 4 || cardData.expiry.length > 4) {
@@ -224,8 +260,41 @@ function CustomerEditCard() {
                     <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
                     <Text fontSize="2xl" fontWeight="700" color="#d69511">Add New Credit/Debit Card</Text>  
                 </Flex>
-                <Button colorScheme="blue" size="md" variant="solid" onClick={handleSubmit(onSubmit)}>Confirm & Submit</Button>
+                <Flex>
+                    <Button colorScheme="blue" size="md" variant="solid" onClick={handleSubmit(onSubmit)}>Confirm & Submit</Button>
+                    <Button colorScheme="red" size="md" variant="solid" onClick={onOpen} gap={3} ml={5}>
+                        <FaTrash /> Delete Card
+                    </Button>                         
+                </Flex>
+     
+
+                <Modal size='xl' isOpen={isOpen} onClose={onClose}>
+                    <ModalOverlay
+                        bg='blackAlpha.300'
+                    />
+                    <ModalContent>
+                        <ModalHeader>
+                            <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">Confirmation to Delete Card</Text>
+                        </ModalHeader>
+                        <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                        <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                        <ModalBody>
+                            <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">
+                                Are you sure you want to delete this card? This action cannot be undone.
+                            </Text>
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button colorScheme="red" mr={3} onClick={handleDelete}>
+                                Delete
+                            </Button>
+                            <Button colorScheme="blue" mr={3} onClick={onClose}>
+                                Close
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>     
             </Flex> 
+            
             <Flex w="full" h="full" direction="column" position="relative" alignItems="center" gap={4}>
                 <Box position="absolute" zIndex={99}>
                     <Cards  
@@ -264,9 +333,6 @@ function CustomerEditCard() {
                                         w="full"
                                     />
                                 </InputGroup>
-                                <FormHelperText fontSize="xs">
-                                    Please enter your card number. It should be a series of digits typically found on the front of your card.
-                                </FormHelperText>
                             </FormControl>
                             <FormControl id="name">
                                 <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">
@@ -293,9 +359,6 @@ function CustomerEditCard() {
                                         w="full"
                                     />
                                 </InputGroup>
-                                <FormHelperText fontSize="xs">
-                                    The name on your card.
-                                </FormHelperText>
                             </FormControl>
                             <Flex w="full" direction="row" gap={4}>
                                 <Flex w="70%">
@@ -324,9 +387,6 @@ function CustomerEditCard() {
                                                 w="full"
                                             />
                                         </InputGroup>
-                                        <FormHelperText fontSize="xs">
-                                            The month and year your card expires.
-                                        </FormHelperText>
                                     </FormControl>
                                 </Flex>
                                 <Flex w="30%">
@@ -355,12 +415,33 @@ function CustomerEditCard() {
                                                 w="full"
                                             />
                                         </InputGroup>
-                                        <FormHelperText fontSize="xs">
-                                            The 3-digit number on the back of your card.
-                                        </FormHelperText>
                                     </FormControl>
                                 </Flex>
                             </Flex>
+                            <FormControl id="billing_address">
+                                <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">
+                                    Billing Address
+                                </FormLabel>
+                                <Textarea 
+                                    variant="filled"
+                                    type="text"
+                                    id="billing_address"
+                                    name="billing_address"
+                                    defaultValue={currentCard.billing_address || ""}
+                                    {
+                                        ...register("billing_address", {
+                                            required: "Billing address cannot be empty"
+                                        })
+                                    }
+                                    placeholder="Billing address associated with this card"
+                                    rounded="md"
+                                    borderWidth="1px"
+                                    borderColor="gray.300"
+                                    color="gray.900"
+                                    focusBorderColor="blue.500"
+                                    w="full"
+                                />
+                            </FormControl>
                         </Flex>
                     </form>
                 </Flex>

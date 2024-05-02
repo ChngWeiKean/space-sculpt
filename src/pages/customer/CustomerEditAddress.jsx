@@ -4,27 +4,20 @@ import {
     Box,
     Button,
     Input,
-    FormControl,
-    FormLabel,
-    FormErrorMessage,
-    InputLeftAddon,
-    InputRightElement,
     InputLeftElement,
-    IconButton,
-    InputRightAddon,
-    Textarea,
     useToast,
-    Divider,
     InputGroup,
-    Spinner,
-    Select,
-    Badge,
-    Alert,
-    AlertIcon,
-    AlertTitle,
-    AlertDescription,
     HStack,
+    useDisclosure,
     Switch,
+    Divider,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalCloseButton,
+    ModalBody,
+    ModalFooter,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill, BsPinMap } from "react-icons/bs";
@@ -48,7 +41,7 @@ import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
 import { onValue, ref, query, orderByChild, equalTo, set, get } from "firebase/database";
 import { Autocomplete, GoogleMap, InfoWindow, Marker, LoadScript } from "@react-google-maps/api";
-import { updateAddress, updateDefaultAddress } from "../../../api/customer.js";
+import { deleteAddress, updateAddress, updateDefaultAddress } from "../../../api/customer.js";
 
 function CustomerEditAddress() {
     const {
@@ -72,6 +65,7 @@ function CustomerEditAddress() {
 		lng: 100.3327,
 	});
 	const inputRef = useRef();
+    const { isOpen, onOpen, onClose } = useDisclosure();
 	
 	const handlePlaceSelect = () => {
 		if (inputRef.current && inputRef.current.getPlace) {
@@ -166,6 +160,29 @@ function CustomerEditAddress() {
         }
     }
 
+    const handleDeleteAddress = async () => {
+        try {
+            await deleteAddress(user.uid, id);
+            toast({
+                title: "Address deleted successfully",
+                status: "success",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+            window.history.back();
+        } catch (error) {
+            console.error("Error deleting address:", error);
+            toast({
+                title: "Error deleting address",
+                status: "error",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
+    }
+
     const onSubmit = async (data) => {
         const addressData = {
             name: address.name,
@@ -205,7 +222,7 @@ function CustomerEditAddress() {
                             <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
                             <Text fontSize="2xl" fontWeight="700" color="#d69511">Edit Address</Text>                      
                         </Flex>
-                        <Flex gap={12} alignItems="center">
+                        <Flex gap={5} alignItems="center">
                             <Flex gap={3}>
                                 <Text fontSize="sm" fontWeight="500" color="gray.500">Set as default address?</Text>
                                 <Switch 
@@ -216,7 +233,36 @@ function CustomerEditAddress() {
                                     onChange={(e) => {handleUpdateAddress()}}
                                 />
                             </Flex>
-                            <Button colorScheme="blue" size="md" variant="solid" onClick={handleSubmit(onSubmit)}>Confirm & Submit</Button>                
+                            <Button colorScheme="blue" size="md" variant="solid" onClick={handleSubmit(onSubmit)}>Confirm & Submit</Button>      
+                            <Button colorScheme="red" size="md" variant="solid" onClick={onOpen} gap={3}>
+                                <FaTrash /> Delete Address
+                            </Button>          
+
+                            <Modal size='xl' isOpen={isOpen} onClose={onClose}>
+                                <ModalOverlay
+                                    bg='blackAlpha.300'
+                                />
+                                <ModalContent>
+                                    <ModalHeader>
+                                        <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">Confirmation to Delete {address && address.name}</Text>
+                                    </ModalHeader>
+                                    <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                                    <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                                    <ModalBody>
+                                        <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">
+                                            Are you sure you want to delete this address? This action cannot be undone.
+                                        </Text>
+                                    </ModalBody>
+                                    <ModalFooter>
+                                        <Button colorScheme="red" mr={3} onClick={handleDeleteAddress}>
+                                            Delete
+                                        </Button>
+                                        <Button colorScheme="blue" mr={3} onClick={onClose}>
+                                            Close
+                                        </Button>
+                                    </ModalFooter>
+                                </ModalContent>
+                            </Modal>      
                         </Flex>
                     </Flex> 
                     <Box

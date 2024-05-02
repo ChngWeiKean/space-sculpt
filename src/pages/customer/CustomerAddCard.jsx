@@ -114,6 +114,7 @@ function CustomerAddCard() {
             expiry: state.expiry,
             cvc: state.cvc,
             name: state.name,
+            billing_address: data.billing_address,
         }
 
         if (cardData.number.length < 16 || cardData.number.length > 16) {
@@ -138,6 +139,17 @@ function CustomerAddCard() {
                 isClosable: true,
             });
             return;
+        }
+
+        if (cardData.billing_address === "") {
+            toast({
+                title: "Invalid Billing Address",
+                description: "Please enter a valid expiry date.",
+                status: "error",
+                position: "top",
+                duration: 9000,
+                isClosable: true,                
+            })
         }
 
         if (cardData.expiry.length < 4 || cardData.expiry.length > 4) {
@@ -247,9 +259,6 @@ function CustomerAddCard() {
                                         w="full"
                                     />
                                 </InputGroup>
-                                <FormHelperText fontSize="xs">
-                                    Please enter your card number. It should be a series of digits typically found on the front of your card.
-                                </FormHelperText>
                             </FormControl>
                             <FormControl id="name">
                                 <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">
@@ -276,9 +285,6 @@ function CustomerAddCard() {
                                         w="full"
                                     />
                                 </InputGroup>
-                                <FormHelperText fontSize="xs">
-                                    The name on your card.
-                                </FormHelperText>
                             </FormControl>
                             <Flex w="full" direction="row" gap={4}>
                                 <Flex w="70%">
@@ -307,9 +313,6 @@ function CustomerAddCard() {
                                                 w="full"
                                             />
                                         </InputGroup>
-                                        <FormHelperText fontSize="xs">
-                                            The month and year your card expires.
-                                        </FormHelperText>
                                     </FormControl>
                                 </Flex>
                                 <Flex w="30%">
@@ -338,12 +341,32 @@ function CustomerAddCard() {
                                                 w="full"
                                             />
                                         </InputGroup>
-                                        <FormHelperText fontSize="xs">
-                                            The 3-digit number on the back of your card.
-                                        </FormHelperText>
                                     </FormControl>
                                 </Flex>
                             </Flex>
+                            <FormControl id="billing_address">
+                                <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">
+                                    Billing Address
+                                </FormLabel>
+                                <Textarea 
+                                    variant="filled"
+                                    type="text"
+                                    id="billing_address"
+                                    name="billing_address"
+                                    {
+                                        ...register("billing_address", {
+                                            required: "Billing address cannot be empty"
+                                        })
+                                    }
+                                    placeholder="Billing address associated with this card"
+                                    rounded="md"
+                                    borderWidth="1px"
+                                    borderColor="gray.300"
+                                    color="gray.900"
+                                    focusBorderColor="blue.500"
+                                    w="full"
+                                />
+                            </FormControl>
                         </Flex>
                     </form>
                 </Flex>
