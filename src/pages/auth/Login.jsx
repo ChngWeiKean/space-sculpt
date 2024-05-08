@@ -62,13 +62,13 @@ function Login() {
                     gridTemplateColumns="1fr 1fr"
                 >
                 <Box my={7} w="full">
-                    <Box ml={10}>
-                        <Text fontSize="xl" fontWeight="bold">
-                            Space Sculpt
-                        </Text>
-                    </Box>
                     <Center my={3}>
-                        <Image src="/src/assets/images/Space_Sculpt_Logo_nobg.png" alt="Login" w="96" h="80" />
+                        <Flex w="full" direction="column" alignItems="center" justifyContent="center" gap={5}>
+                            <Image src="/src/assets/images/Space_Sculpt_Logo_nobg.png" alt="Login" w="96" h="80" />
+                            <Text fontSize="2xl" fontWeight="700">
+                                Space Sculpt
+                            </Text>                            
+                        </Flex>
                     </Center>
                 </Box>
                 <Box my={7} mr={5} w="full">

@@ -12,11 +12,10 @@ import {
 } from "@chakra-ui/react";
 import { NavLink, useLocation } from "react-router-dom";
 import { BiChevronDown } from "react-icons/bi";
-import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
 import { logout } from "../../../api/auth.js";
 import { useAuth } from "../AuthCtx.jsx";
 
-const LogisticsNavbar = () => {
+const DeliveryDriverNavbar = () => {
 	const { user } = useAuth();
 	const location = useLocation();
 	const currentPath = location.pathname;
@@ -47,15 +46,14 @@ const LogisticsNavbar = () => {
 			
 			<Flex alignItems="center">
 				<Link as={NavLink} color="gray.500" to="/" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					<Flex alignItems="center" gap={2}>
-						<IoHomeOutline/> Home
-					</Flex>
+					Home
 				</Link>
-				<Link as={NavLink} color="gray.500" to="/settings" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					<Flex alignItems="center" gap={2}>
-						<IoSettingsOutline/> Settings
-					</Flex>
+				{/* <Link as={NavLink} color="gray.500" to="/clinics" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					Clinic List
 				</Link>
+				<Link as={NavLink} color="gray.500" to="/requests" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					Appointment History
+				</Link> */}
 				<Menu marginRight={6}>
 					<MenuButton as={Link} color="teal.500" display="flex" alignItems="center">
 						<Flex alignItems="center">
@@ -89,4 +87,4 @@ const LogisticsNavbar = () => {
 	)
 }
 
-export default LogisticsNavbar;
+export default DeliveryDriverNavbar;
