@@ -317,7 +317,7 @@ function AddFurniture() {
             model: variant.model,
         }));
 
-        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 || furnitureData.weight < 0) {
+        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 || furnitureData.weight < 0 || furnitureData.cost < 0) {
             toast({
                 title: "Error creating furniture",
                 description: "Please make sure that all number fields are positive",
@@ -326,6 +326,7 @@ function AddFurniture() {
                 position: "top",
                 isClosable: true,
             });
+            setLoading(false);
             return;
         }
 
@@ -656,6 +657,36 @@ function AddFurniture() {
 
                                             <FormErrorMessage>
                                                 {errors.price && errors.price.message}
+                                            </FormErrorMessage>
+                                        </FormControl>
+                                        <FormControl isInvalid={errors.cost}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                                Cost <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                            </FormLabel>
+                                            <InputGroup>
+                                                <InputLeftAddon>RM</InputLeftAddon>
+                                                <Input
+                                                    variant="filled"
+                                                    type="number"
+                                                    id="cost"
+                                                    {
+                                                        ...register("cost", {
+                                                            required: "Furniture Cost cannot be empty",
+                                                        })
+                                                    }
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    p={2.5}
+                                                />                                           
+                                            </InputGroup>
+
+                                            <FormErrorMessage>
+                                                {errors.cost && errors.cost.message}
                                             </FormErrorMessage>
                                         </FormControl>
                                         <FormControl isInvalid={errors.weight}>
