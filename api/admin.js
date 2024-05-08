@@ -216,7 +216,7 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
 }
 
 export const addFurniture = async (furnitureData, furnitureVariants) => {
-    const { subcategory, name, description, price, height, width, length, material, care_method, weight } = furnitureData;
+    const { subcategory, name, description, price, height, width, length, material, care_method, weight, cost } = furnitureData;
 
     try {
         const furnitureRef = ref(db, 'furniture');
@@ -231,6 +231,7 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
             length: length,
             material: material,
             weight: weight,
+            cost: cost,
             care_method: care_method,
             created_on: new Date(),
             created_by: auth.currentUser.uid,
@@ -276,7 +277,7 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
 }
 
 export const updateFurniture = async (furnitureData, furnitureVariants) => {
-    const { id, subcategory, name, description, price, height, width, length, material, discount, care_method, weight } = furnitureData;
+    const { id, subcategory, name, description, price, height, width, length, material, discount, care_method, weight, cost } = furnitureData;
 
     console.log("Furniture Data", furnitureData);
     console.log("Furniture Variants", furnitureVariants);
@@ -296,6 +297,7 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
             length: length,
             material: material,
             weight: weight,
+            cost: cost,
             discount: discount,
             care_method: care_method,
             updated_on: new Date(),

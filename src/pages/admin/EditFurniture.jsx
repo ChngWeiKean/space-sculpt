@@ -43,7 +43,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
-// import { editFurniture } from "../../../api/admin";
 import JSZip from 'jszip';
 import { updateFurniture } from "../../../api/admin";
 
@@ -52,6 +51,7 @@ function EditFurniture() {
     const [ furniture, setFurniture ] = useState(null);
     const [ subcategory, setSubcategory ] = useState(null);
     const [ subcategories, setSubcategories ] = useState([]);
+    const [ filterInventory, setFilterInventory ] = useState("");
     const [ category, setCategory ] = useState(null);
     const [ lowInventory, setLowInventory ] = useState([]);
     const [ outOfStock, setOutOfStock ] = useState([]);
@@ -410,6 +410,7 @@ function EditFurniture() {
             setValue("weight", furniture?.weight);
             setValue("discount", furniture?.discount || 0);
             setValue("description", furniture?.description);
+            setValue("cost", furniture?.cost);
             setValue("care_method", furniture?.care_method);
         }
 
@@ -448,7 +449,7 @@ function EditFurniture() {
             isDeleted: variant.isDeleted
         }));
 
-        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 || furnitureData.weight < 0) {
+        if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 || furnitureData.weight < 0 || furnitureData.cost < 0) {
             toast({
                 title: "Error creating furniture",
                 description: "Please make sure that all number fields are positive",
@@ -457,6 +458,7 @@ function EditFurniture() {
                 position: "top",
                 isClosable: true,
             });
+            setLoading(false);
             return;
         }
 
@@ -484,6 +486,7 @@ function EditFurniture() {
                 position: "top",
                 isClosable: true,
             });
+            setLoading(false);
             return;
         }
 
@@ -889,6 +892,38 @@ function EditFurniture() {
                                             </FormErrorMessage>
                                         </FormControl>         
 
+                                        <FormControl isInvalid={errors.cost}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                                Cost <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                            </FormLabel>
+                                            <InputGroup>
+                                                <InputLeftAddon>RM</InputLeftAddon>
+                                                <Input
+                                                    variant="filled"
+                                                    type="number"
+                                                    id="cost"
+                                                    defaultValue={furniture?.cost || 0}
+                                                    {
+                                                        ...register("cost", {
+                                                            required: "Furniture cost is required"
+                                                        })
+                                                    }
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    p={2.5}
+                                                />                                           
+                                            </InputGroup>
+
+                                            <FormErrorMessage>
+                                                {errors.cost && errors.cost.message}
+                                            </FormErrorMessage>
+                                        </FormControl>         
+
                                         <FormControl isInvalid={errors.weight}>
                                             <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
                                                 Weight (kg) <Text as="span" color="red.500" fontWeight="bold">*</Text>
@@ -1019,11 +1054,38 @@ function EditFurniture() {
                                 <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
                                 <Text fontSize="xl" fontWeight="700" color="#d69511">Variants</Text>
                                 <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
+                                <Select
+                                    variant="filled"
+                                    type="text"
+                                    id="inventory"
+                                    rounded="md"
+                                    borderWidth="1px"
+                                    borderColor="gray.300"
+                                    color="gray.900"
+                                    size="md"
+                                    focusBorderColor="blue.500"
+                                    w="full"
+                                    onChange={(e) => setFilterInventory(e.target.value)}
+                                >
+                                    <option value="all">All Variants</option>
+                                    <option value="low">Low Inventory (less than 10)</option>
+                                    <option value="out">Out of Stock (0)</option>
+                                </Select>
                             </Flex>
 
                             <Flex w="full" direction="column" gap={6}>
                                 {
-                                    Object.values(variants).map((variant, index) => (
+                                    Object.values(variants)
+                                        .filter((variant) => {
+                                            if (filterInventory === 'low') {
+                                                return variant.inventory < 10 && variant.inventory > 0;
+                                            } else if (filterInventory === 'out') {
+                                                return variant.inventory == 0;
+                                            } else {
+                                                return true;
+                                            }
+                                        })
+                                        .map((variant, index) => (
                                         <Flex key={index} gap={6} direction="column" w="full">
                                             <Flex w="full" direction="row" gap={6}>
                                                 <Flex w="full" direction="column" gap={6}>
