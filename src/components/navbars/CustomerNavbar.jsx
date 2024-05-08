@@ -57,12 +57,6 @@ const CustomerNavbar = () => {
 						<IoCartOutline/> Cart
 					</Flex>
 				</Link>
-				{/* <Link as={NavLink} color="gray.500" to="/clinics" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					Clinic List
-				</Link>
-				<Link as={NavLink} color="gray.500" to="/requests" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					Appointment History
-				</Link> */}
 				<Menu marginRight={6}>
 					<MenuButton as={Link} color="teal.500" display="flex" alignItems="center">
 						<Flex alignItems="center">

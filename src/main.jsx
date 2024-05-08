@@ -30,6 +30,9 @@ import CustomerAddAddress from './pages/customer/CustomerAddAddress.jsx'
 import CustomerEditAddress from './pages/customer/CustomerEditAddress.jsx'
 import CustomerAddCard from './pages/customer/CustomerAddCard.jsx'
 import CustomerEditCard from './pages/customer/CustomerEditCard.jsx'
+import AddUser from './pages/admin/AddUser.jsx'
+import ViewUser from './pages/admin/ViewUser.jsx'
+import LogisticsSettings from './pages/logistics/LogisticsSettings.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -63,6 +66,7 @@ const router = createBrowserRouter(
 				<Route path="edit-card/:id" element={<CustomerEditCard/>}/>
 			</Route>
 			<Route element={<LogisticsLayout/>}>
+				<Route path="settings" element={<LogisticsSettings/>}/>
 			</Route>
 			<Route path='/admin' element={<AdminLayout/>}>
 				<Route path="users" element={<UserList/>}/>
@@ -71,6 +75,8 @@ const router = createBrowserRouter(
 				<Route path="category/:id/edit" element={<EditCategory/>}/>
 				<Route path="subcategory/add-furniture/:id" element={<AddFurniture/>}/>
 				<Route path="furniture/:id/edit" element={<EditFurniture/>}/>
+				<Route path="users/add" element={<AddUser/>}/>
+				<Route path="users/:id/view" element={<ViewUser/>}/>
 			</Route>
 		</Route>
 	)

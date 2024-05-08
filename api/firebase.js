@@ -22,3 +22,9 @@ export const db = getDatabase(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const remoteConfig = getRemoteConfig(app);
+
+const secondaryApp = initializeApp(firebaseConfig, "Admin");
+export const secondaryAuth = getAuth(secondaryApp);
+export const secondaryDB = getDatabase(secondaryApp);
+
+export const secondaryStorage = getStorage(secondaryApp);

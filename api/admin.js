@@ -1,4 +1,4 @@
-import {auth, db} from "./firebase";
+import {auth, db, secondaryAuth} from "./firebase";
 import {equalTo, get, onValue, orderByChild, push, query, ref, set, update} from "firebase/database";
 import {storage} from "./firebase.js";
 import {getDownloadURL, ref as sRef, uploadBytes} from "firebase/storage";
@@ -459,7 +459,7 @@ export const restoreFurniture = async (id) => {
 export const delete_user = async (data) => {
 	const {email, password, clinic, role} = data;
 
-	return await signInWithEmailAndPassword(auth, email, password)
+	return await signInWithEmailAndPassword(secondaryAuth, email, password)
 		.then((userCredential) => {
 			return deleteUser(userCredential.user)
 				.then(() => {

@@ -6,6 +6,7 @@ import {Box, Grid} from "@chakra-ui/react";
 import AdminNavbar from "../navbars/AdminNavbar.jsx";
 import CustomerNavbar from "../navbars/CustomerNavbar.jsx";
 import LogisticsNavbar from "../navbars/LogisticsNavbar.jsx";
+import DeliveryDriverNavbar from "../navbars/DeliveryDriverNavbar.jsx";
 
 const RootLayout = () => {
 	const {user, loading} = useAuth();
@@ -44,7 +45,9 @@ const RootLayout = () => {
 												<LogisticsNavbar/> :
 												user.role === "Admin" ?
 													<AdminNavbar/> :
-														<></>
+														user.role === "Delivery" ?
+															<DeliveryDriverNavbar/> :
+															null
 									}
 									<Box w="100%" h="100%" bg="#f4f4f4" overflow="auto">
 										<Outlet/>

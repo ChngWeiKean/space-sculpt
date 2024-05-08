@@ -4,7 +4,7 @@ import {
 	signInWithEmailAndPassword,
 	signOut
 } from "firebase/auth";
-import {auth, db, storage} from "./firebase.js";
+import {auth, db, secondaryAuth, storage} from "./firebase.js";
 import {ref, set} from "firebase/database";
 import {getDownloadURL, ref as sRef, uploadBytes} from "firebase/storage";
 
@@ -40,33 +40,27 @@ export const register = async (data, asAdmin=false) => {
 	});
 }
 
-export const register_admin = async (data) => {
-	const {email, password, name, contact, role="Admin"} = data;
-    const authObj = auth;
-	
-	return await createUserWithEmailAndPassword(authObj, email, password).then(async (newUser) => {
-		if (newUser) {
-			return await set(ref(db, `users/${newUser.user.uid}`), {
-				uid: newUser.user.uid,
-				created_on: new Date().toISOString(),
-				created_by: newUser.user.uid,
-				email: newUser.user.email,
-				password: password,
-				contact: contact,
-				role: role,
-				name: name
-			}).then(() => {
-				return newUser.user;
-			}).catch((error) => {
-				return {error: error};
-			});
-		} else {
-			return {error: "Error creating user"};
-		}
-	})
-	.catch((error) => {
-		return {error: error};
-	});
+export const registerNewUser = async (data) => {
+    const {email, password, name, contact, role} = data;
+    const authObj = secondaryAuth;
+
+    try {
+        const newUserCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+
+        await set(ref(db, `users/${newUserCredential.user.uid}`), {
+            uid: newUserCredential.user.uid,
+            created_on: new Date().toISOString(),
+            created_by: newUserCredential.user.uid,
+            email: newUserCredential.user.email,
+            password: password,
+            contact: contact,
+            role: role,
+            name: name
+        });
+    } catch (error) {
+        console.error("Error registering new user:", error);
+        return {error: error};
+    }
 }
 
 export const login = async (cred) => {
