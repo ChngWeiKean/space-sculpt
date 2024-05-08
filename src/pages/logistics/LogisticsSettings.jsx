@@ -57,7 +57,7 @@ function LogisticsSettings() {
     const [ address, setAddress ] = useState(null);
     const [ settings, setSettings ] = useState(null);
     const mapStyle = {
-		height: '510px',
+		height: '575px',
 		width: '100%',
 	};
 	const libs = ["places"];
@@ -157,6 +157,8 @@ function LogisticsSettings() {
             setValue("special_handling_charges", settings?.special_handling_charges || 0);
             setValue("maximum_weight_load", settings?.maximum_weight_load || 0);
             setValue("extra_weight_fee_per_kilogram", settings?.extra_weight_fee_per_kilogram || 0);
+            setValue("cash_on_delivery_threshold", settings?.cash_on_delivery_threshold || 0);
+            setValue("e_wallet_threshold", settings?.e_wallet_threshold || 0);
         }
     }, [settings]);
 
@@ -204,15 +206,30 @@ function LogisticsSettings() {
                 special_handling_charges: data.special_handling_charges,
                 maximum_weight_load: data.maximum_weight_load,
                 extra_weight_fee_per_kilogram: data.extra_weight_fee_per_kilogram,
+                cash_on_delivery_threshold: data.cash_on_delivery_threshold,
+                e_wallet_threshold: data.e_wallet_threshold,
             }
 
             if (shippingSettings.shipping_fee < 0 || shippingSettings.delivery_offset < 0 || 
                 shippingSettings.shipping_fee_threshold < 0 || shippingSettings.distance_threshold_for_standard_delivery_fee < 0 || 
                 shippingSettings.extra_delivery_charges_per_kilometer < 0 || shippingSettings.special_handling_charges < 0 || 
-                shippingSettings.maximum_weight_load < 0 || shippingSettings.extra_weight_fee < 0) {
+                shippingSettings.maximum_weight_load < 0 || shippingSettings.extra_weight_fee < 0 ||
+                shippingSettings.cash_on_delivery_threshold < 0 || shippingSettings.e_wallet_threshold < 0) {
                 toast({
                     title: "Error",
                     description: "Please enter positive values for all fields",
+                    position: "top",
+                    status: "error",
+                    duration: 5000,
+                    isClosable: true,
+                });
+                return;
+            }
+
+            if (shippingSettings.e_wallet_threshold < shippingSettings.cash_on_delivery_threshold) {
+                toast({
+                    title: "Error",
+                    description: "Touch 'n Go E-Wallet threshold must be greater than Cash On Delivery threshold",
                     position: "top",
                     status: "error",
                     duration: 5000,
@@ -258,18 +275,12 @@ function LogisticsSettings() {
     }
 
     return (
-        <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center">
-            <Flex w="full" direction="row" justifyContent="space-between" p={4}>
-                <Flex w="full" direction="row" alignContent="center" gap={4}>
-                    <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
-                    <Text fontSize="2xl" fontWeight="700" color="#d69511">Settings</Text>
-                </Flex>
-            </Flex>
+        <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" pt={3}>
             <Flex w="full">
                 <Tabs w="full" size="md" variant="unstyled">
                     <TabList>
                         <Tab style={{ outline: "none" }}>Shop Address</Tab>
-                        <Tab style={{ outline: "none" }}>Shipping Fee & Delivery Dates</Tab>
+                        <Tab style={{ outline: "none" }}>Shipping & Order Settings</Tab>
                     </TabList>
                     <TabIndicator mt='-1.5px' height='2px' bg='blue.500' borderRadius='1px' />
                     <TabPanels>
@@ -345,7 +356,7 @@ function LogisticsSettings() {
                             </Flex>
                         </TabPanel>
                         <TabPanel>
-                            <Flex w="full" direction="column" gap={5} p={4}>
+                            <Flex w="full" direction="column" gap={4} p={4}>
                                 <Flex w="full" direction="row" gap={5}>
                                     <FormControl id="standard_shipping_fee">
                                         <FormLabel>
@@ -369,7 +380,9 @@ function LogisticsSettings() {
                                                 focusBorderColor='blue.500'
                                             />
                                         </InputGroup>
-                                        <FormHelperText>Standard shipping fee for all orders</FormHelperText>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Standard shipping fee for all orders</Text>
+                                        </FormHelperText>
                                     </FormControl>       
                                     <FormControl id="delivery_offset">
                                         <FormLabel>
@@ -393,7 +406,9 @@ function LogisticsSettings() {
                                             />
                                             <InputRightElement children="days" />
                                         </InputGroup>
-                                        <FormHelperText>Estimated delivery offset for all orders</FormHelperText>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Estimated delivery offset for all orders</Text>
+                                        </FormHelperText>
                                     </FormControl>  
                                     <FormControl id="shipping_threshold">
                                         <FormLabel>
@@ -417,7 +432,9 @@ function LogisticsSettings() {
                                                 focusBorderColor='blue.500'
                                             />
                                         </InputGroup>
-                                        <FormHelperText>Order amount threshold for free shipping</FormHelperText>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Order amount above this threshold will have free shipping</Text>
+                                        </FormHelperText>
                                     </FormControl>                                
                                 </Flex>
                                 <Flex w="full" direction="row" gap={5}>
@@ -443,7 +460,9 @@ function LogisticsSettings() {
                                             />
                                             <InputRightElement children="km" />
                                         </InputGroup>
-                                        <FormHelperText>Distance threshold for standard delivery fee</FormHelperText>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Distance threshold for standard delivery fee</Text>
+                                        </FormHelperText>
                                     </FormControl>  
                                     <FormControl id="extra_delivery_charges_per_kilometer">
                                         <FormLabel>
@@ -468,7 +487,9 @@ function LogisticsSettings() {
                                             />
                                             <InputRightElement children="/km" />
                                         </InputGroup>
-                                        <FormHelperText>Extra charges per kilometer for delivery</FormHelperText>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Extra charges per kilometer for distance above threshold</Text>
+                                        </FormHelperText>
                                     </FormControl>   
                                     <Flex w="full" gap={5}>
                                         <FormControl id="initial_delivery_time">
@@ -562,7 +583,9 @@ function LogisticsSettings() {
                                                 focusBorderColor='blue.500'
                                             />
                                         </InputGroup>
-                                        <FormHelperText>Special handling charges for fragile products</FormHelperText>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Special handling charges for all orders</Text>
+                                        </FormHelperText>
                                     </FormControl>  
                                     <FormControl id="maximum_weight_load">
                                         <FormLabel>
@@ -586,7 +609,9 @@ function LogisticsSettings() {
                                             />
                                             <InputRightElement children="kg" />
                                         </InputGroup>
-                                        <FormHelperText>Maximum weight load for delivery</FormHelperText>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Maximum weight load for all orders</Text>
+                                        </FormHelperText>
                                     </FormControl>  
                                     <FormControl id="extra_weight_fee_per_kilogram">
                                         <FormLabel>
@@ -611,12 +636,68 @@ function LogisticsSettings() {
                                             />
                                             <InputRightElement children="/kg" />
                                         </InputGroup>
-                                        <FormHelperText>Extra shipping fee per kilogram for delivery past maximum weight load</FormHelperText>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Extra charges per kilogram for weight above maximum weight load</Text>
+                                        </FormHelperText>
                                     </FormControl>  
                                 </Flex>                  
+                                <Flex w="full" direction="row" gap={5}>
+                                    <FormControl id="cash_on_delivery_threshold">
+                                        <FormLabel>
+                                            <Flex w="full" gap={2} alignItems="center">
+                                                <CiWarning color="gray.500" />
+                                                <Text fontWeight="600" color="gray.600">Cash On Delivery Threshold</Text>
+                                            </Flex>      
+                                        </FormLabel>
+                                        <InputGroup size="md">
+                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                            <Input
+                                                variant="filled"
+                                                id="cash_on_delivery_threshold"
+                                                bg="white"
+                                                defaultValue={settings?.cash_on_delivery_threshold || 0}
+                                                {
+                                                    ...register("cash_on_delivery_threshold")
+                                                }
+                                                type='number'
+                                                placeholder="Cash On Delivery Threshold"
+                                                focusBorderColor='blue.500'
+                                            />
+                                        </InputGroup>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Orders above this threshold will not be able to use cash on delivery.</Text>
+                                        </FormHelperText>
+                                    </FormControl>  
+                                    <FormControl id="e_wallet_threshold">
+                                        <FormLabel>
+                                            <Flex w="full" gap={2} alignItems="center">
+                                                <CiWarning color="gray.500" />
+                                                <Text fontWeight="600" color="gray.600">Touch 'n Go E-Wallet Threshold</Text>
+                                            </Flex>      
+                                        </FormLabel>
+                                        <InputGroup size="md">
+                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                            <Input
+                                                variant="filled"
+                                                id="e_wallet_threshold"
+                                                bg="white"
+                                                defaultValue={settings?.e_wallet_threshold || 0}
+                                                {
+                                                    ...register("e_wallet_threshold")
+                                                }
+                                                type='number'
+                                                placeholder="Touch 'n Go E-Wallet Threshold"
+                                                focusBorderColor='blue.500'
+                                            />
+                                        </InputGroup>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Orders above this threshold will not be able to use Touch 'n Go E-Wallet.</Text>
+                                        </FormHelperText>
+                                    </FormControl>  
+                                </Flex>   
                                 <Flex w="full" justifyContent="end" mt={2}>
                                     <Button colorScheme="blue" size="md" variant="solid" onClick={handleSubmit(onSubmit("shipping_settings"))}>Confirm & Submit</Button>
-                                </Flex>              
+                                </Flex>           
                             </Flex>
                         </TabPanel>
                     </TabPanels>

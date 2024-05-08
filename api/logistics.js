@@ -40,6 +40,8 @@ export const updateSettings = async (settings) => {
         special_handling_charges,
         maximum_weight_load,
         extra_weight_fee_per_kilogram,
+        cash_on_delivery_threshold,
+        e_wallet_threshold,
     } = settings;
 
     try {
@@ -55,6 +57,8 @@ export const updateSettings = async (settings) => {
             special_handling_charges,
             maximum_weight_load,
             extra_weight_fee_per_kilogram,
+            cash_on_delivery_threshold,
+            e_wallet_threshold,
             updated_at: new Date().toISOString(),
             updated_by: auth.currentUser.uid
         });
