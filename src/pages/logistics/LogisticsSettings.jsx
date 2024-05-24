@@ -20,6 +20,7 @@ import {
     FormHelperText,
     Select,
     useToast,
+    Divider,
 } from "@chakra-ui/react";
 import { useEffect, useState, useRef } from "react";
 import { BiSearchAlt2, BiLinkExternal } from "react-icons/bi";
@@ -358,141 +359,285 @@ function LogisticsSettings() {
                             </Flex>
                         </TabPanel>
                         <TabPanel>
-                            <Flex w="full" direction="column" gap={4} p={4}>
-                                <Flex w="full" direction="row" gap={5}>
-                                    <FormControl id="standard_shipping_fee">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <FaShippingFast color="#d69511" />
-                                                <Text fontWeight="600" color="gray.600">Standard Shipping Fee</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
-                                            <Input
-                                                variant="filled"
-                                                id="standard_shipping_fee"
-                                                bg="white"
-                                                defaultValue={settings?.standard_shipping_fee || 0}
-                                                {
-                                                    ...register("standard_shipping_fee")
-                                                }
-                                                type='number'
-                                                placeholder="Standard Shipping Fee"
-                                                focusBorderColor='blue.500'
-                                            />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Standard shipping fee for all orders</Text>
-                                        </FormHelperText>
-                                    </FormControl>       
-                                    <FormControl id="delivery_offset">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <MdDateRange color="#d69511" />
-                                                <Text fontWeight="600" color="gray.600">Estimated Delivery Offset</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <Input
-                                                variant="filled"
-                                                id="delivery_offset"
-                                                bg="white"
-                                                defaultValue={settings?.delivery_offset || 0}
-                                                {
-                                                    ...register("delivery_offset")
-                                                }
-                                                type='number'
-                                                placeholder="Delivery Offset"
-                                                focusBorderColor='blue.500'
-                                            />
-                                            <InputRightElement children="days" />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Estimated delivery offset for all orders</Text>
-                                        </FormHelperText>
-                                    </FormControl>  
-                                    <FormControl id="shipping_threshold">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <AiOutlineDeliveredProcedure color="#d69511" />
-                                                <Text fontWeight="600" color="gray.600">Order Amount For Free Shipping</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
-                                            <Input
-                                                variant="filled"
-                                                id="shipping_threshold"
-                                                bg="white"
-                                                defaultValue={settings?.shipping_fee_threshold || 0}
-                                                {
-                                                    ...register("shipping_fee_threshold")
-                                                }
-                                                type='number'
-                                                placeholder="Shipping Fee Threshold"
-                                                focusBorderColor='blue.500'
-                                            />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Order amount above this threshold will have free shipping</Text>
-                                        </FormHelperText>
-                                    </FormControl>                                
+                            <Flex w="full" direction="row" gap={4} p={4}>
+                                <Flex w="70%" direction="column" gap={5}>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Shipping Settings</Text>
+                                    <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
+                                    <Flex w="full" direction="row" gap={5}>
+                                        <FormControl id="standard_shipping_fee">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <FaShippingFast color="#d69511" />
+                                                    <Text fontWeight="600" color="gray.600">Standard Shipping Fee</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                                <Input
+                                                    variant="filled"
+                                                    id="standard_shipping_fee"
+                                                    bg="white"
+                                                    defaultValue={settings?.standard_shipping_fee || 0}
+                                                    {
+                                                        ...register("standard_shipping_fee")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Standard Shipping Fee"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Standard shipping fee for all orders</Text>
+                                            </FormHelperText>
+                                        </FormControl>       
+                                        <FormControl id="delivery_offset">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <MdDateRange color="#d69511" />
+                                                    <Text fontWeight="600" color="gray.600">Estimated Delivery Offset</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <Input
+                                                    variant="filled"
+                                                    id="delivery_offset"
+                                                    bg="white"
+                                                    defaultValue={settings?.delivery_offset || 0}
+                                                    {
+                                                        ...register("delivery_offset")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Delivery Offset"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                                <InputRightElement children="days" />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Estimated delivery offset for all orders</Text>
+                                            </FormHelperText>
+                                        </FormControl>  
+                                        <FormControl id="shipping_threshold">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <AiOutlineDeliveredProcedure color="#d69511" />
+                                                    <Text fontWeight="600" color="gray.600">Order Amount For Free Shipping</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                                <Input
+                                                    variant="filled"
+                                                    id="shipping_threshold"
+                                                    bg="white"
+                                                    defaultValue={settings?.shipping_fee_threshold || 0}
+                                                    {
+                                                        ...register("shipping_fee_threshold")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Shipping Fee Threshold"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Order amount above this threshold will have free shipping</Text>
+                                            </FormHelperText>
+                                        </FormControl>                                
+                                    </Flex>
+                                    <Flex w="full" direction="row" gap={5}>
+                                        <FormControl id="distance_threshold_for_standard_delivery_fee">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <GiPathDistance color="#d69511" />
+                                                    <Text fontWeight="600" color="gray.600">Distance Threshold For Standard Delivery Fee</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <Input
+                                                    variant="filled"
+                                                    id="distance_threshold_for_standard_delivery_fee"
+                                                    bg="white"
+                                                    defaultValue={settings?.distance_threshold_for_standard_delivery_fee || 0}
+                                                    {
+                                                        ...register("distance_threshold_for_standard_delivery_fee")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Distance Threshold"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                                <InputRightElement children="km" />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Distance threshold for standard delivery fee</Text>
+                                            </FormHelperText>
+                                        </FormControl>  
+                                        <FormControl id="extra_delivery_charges_per_kilometer">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <FaPlus color="#d69511" />
+                                                    <Text fontWeight="600" color="gray.600">Extra Delivery Charges</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                                <Input
+                                                    variant="filled"
+                                                    id="extra_delivery_charges_per_kilometer"
+                                                    bg="white"
+                                                    defaultValue={settings?.extra_delivery_charges_per_kilometer || 0}
+                                                    {
+                                                        ...register("extra_delivery_charges_per_kilometer")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Extra Delivery Charges Per Kilometer"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                                <InputRightElement children="/km" />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Extra charges per kilometer for distance above threshold</Text>
+                                            </FormHelperText>
+                                        </FormControl>   
+                                    </Flex>
+                                    <Flex w="full" direction="row" gap={5}>
+                                        <FormControl id="special_handling_charges">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <CiWarning color="#d69511" />
+                                                    <Text fontWeight="600" color="gray.600">Special Handling Charges</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                                <Input
+                                                    variant="filled"
+                                                    id="special_handling_charges"
+                                                    bg="white"
+                                                    defaultValue={settings?.special_handling_charges || 0}
+                                                    {
+                                                        ...register("special_handling_charges")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Special Handling Charges"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Special handling charges for all orders</Text>
+                                            </FormHelperText>
+                                        </FormControl>  
+                                        <FormControl id="maximum_weight_load">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <TbWeight color="#d69511" />
+                                                    <Text fontWeight="600" color="gray.600">Maximum Weight Load</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <Input
+                                                    variant="filled"
+                                                    id="maximum_weight_load"
+                                                    bg="white"
+                                                    defaultValue={settings?.maximum_weight_load || 0}
+                                                    {
+                                                        ...register("maximum_weight_load")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Maximum Weight Load"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                                <InputRightElement children="kg" />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Maximum weight load for all orders</Text>
+                                            </FormHelperText>
+                                        </FormControl>  
+                                        <FormControl id="extra_weight_fee_per_kilogram">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <BsCash color="#d69511" />
+                                                    <Text fontWeight="600" color="gray.600">Extra Weight Fee Per Kilogram</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                                <Input
+                                                    variant="filled"
+                                                    id="extra_weight_fee_per_kilogram"
+                                                    bg="white"
+                                                    defaultValue={settings?.extra_weight_fee_per_kilogram || 0}
+                                                    {
+                                                        ...register("extra_weight_fee_per_kilogram")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Extra Weight Fee Per Kilogram"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                                <InputRightElement children="/kg" />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Extra charges per kilogram for weight above maximum weight load</Text>
+                                            </FormHelperText>
+                                        </FormControl>  
+                                    </Flex>      
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Payment Method Settings</Text>
+                                    <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
+                                    <Flex w="full" direction="row" gap={5}>
+                                        <FormControl id="cash_on_delivery_threshold">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <Text fontWeight="600" color="gray.600">Cash On Delivery Threshold</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                                <Input
+                                                    variant="filled"
+                                                    id="cash_on_delivery_threshold"
+                                                    bg="white"
+                                                    defaultValue={settings?.cash_on_delivery_threshold || 0}
+                                                    {
+                                                        ...register("cash_on_delivery_threshold")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Cash On Delivery Threshold"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Orders above this threshold will not be able to use cash on delivery.</Text>
+                                            </FormHelperText>
+                                        </FormControl>  
+                                        <FormControl id="e_wallet_threshold">
+                                            <FormLabel>
+                                                <Flex w="full" gap={2} alignItems="center">
+                                                    <Text fontWeight="600" color="gray.600">Touch 'n Go E-Wallet Threshold</Text>
+                                                </Flex>      
+                                            </FormLabel>
+                                            <InputGroup size="md">
+                                                <InputLeftElement pointerEvents="none">RM</InputLeftElement>
+                                                <Input
+                                                    variant="filled"
+                                                    id="e_wallet_threshold"
+                                                    bg="white"
+                                                    defaultValue={settings?.e_wallet_threshold || 0}
+                                                    {
+                                                        ...register("e_wallet_threshold")
+                                                    }
+                                                    type='number'
+                                                    placeholder="Touch 'n Go E-Wallet Threshold"
+                                                    focusBorderColor='blue.500'
+                                                />
+                                            </InputGroup>
+                                            <FormHelperText>
+                                                <Text color="blue.500">Orders above this threshold will not be able to use Touch 'n Go E-Wallet.</Text>
+                                            </FormHelperText>
+                                        </FormControl>  
+                                    </Flex>   
                                 </Flex>
-                                <Flex w="full" direction="row" gap={5}>
-                                    <FormControl id="distance_threshold_for_standard_delivery_fee">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <GiPathDistance color="#d69511" />
-                                                <Text fontWeight="600" color="gray.600">Distance Threshold For Standard Delivery Fee</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <Input
-                                                variant="filled"
-                                                id="distance_threshold_for_standard_delivery_fee"
-                                                bg="white"
-                                                defaultValue={settings?.distance_threshold_for_standard_delivery_fee || 0}
-                                                {
-                                                    ...register("distance_threshold_for_standard_delivery_fee")
-                                                }
-                                                type='number'
-                                                placeholder="Distance Threshold"
-                                                focusBorderColor='blue.500'
-                                            />
-                                            <InputRightElement children="km" />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Distance threshold for standard delivery fee</Text>
-                                        </FormHelperText>
-                                    </FormControl>  
-                                    <FormControl id="extra_delivery_charges_per_kilometer">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <FaPlus color="#d69511" />
-                                                <Text fontWeight="600" color="gray.600">Extra Delivery Charges</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
-                                            <Input
-                                                variant="filled"
-                                                id="extra_delivery_charges_per_kilometer"
-                                                bg="white"
-                                                defaultValue={settings?.extra_delivery_charges_per_kilometer || 0}
-                                                {
-                                                    ...register("extra_delivery_charges_per_kilometer")
-                                                }
-                                                type='number'
-                                                placeholder="Extra Delivery Charges Per Kilometer"
-                                                focusBorderColor='blue.500'
-                                            />
-                                            <InputRightElement children="/km" />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Extra charges per kilometer for distance above threshold</Text>
-                                        </FormHelperText>
-                                    </FormControl>   
+                                <Divider h={"42rem"} orientation="vertical" borderWidth="1px" borderColor="gray.300"/> 
+                                <Flex w="30%" direction="column" gap={5}>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Delivery Settings</Text>
+                                    <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
                                     <Flex w="full" gap={5}>
                                         <FormControl id="initial_delivery_time">
                                             <FormLabel>
@@ -561,143 +706,10 @@ function LogisticsSettings() {
                                             </Select>
                                         </FormControl>                                     
                                     </Flex>
-                                </Flex>
-                                <Flex w="full" direction="row" gap={5}>
-                                    <FormControl id="special_handling_charges">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <CiWarning color="#d69511" />
-                                                <Text fontWeight="600" color="gray.600">Special Handling Charges</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
-                                            <Input
-                                                variant="filled"
-                                                id="special_handling_charges"
-                                                bg="white"
-                                                defaultValue={settings?.special_handling_charges || 0}
-                                                {
-                                                    ...register("special_handling_charges")
-                                                }
-                                                type='number'
-                                                placeholder="Special Handling Charges"
-                                                focusBorderColor='blue.500'
-                                            />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Special handling charges for all orders</Text>
-                                        </FormHelperText>
-                                    </FormControl>  
-                                    <FormControl id="maximum_weight_load">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <TbWeight color="#d69511" />
-                                                <Text fontWeight="600" color="gray.600">Maximum Weight Load</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <Input
-                                                variant="filled"
-                                                id="maximum_weight_load"
-                                                bg="white"
-                                                defaultValue={settings?.maximum_weight_load || 0}
-                                                {
-                                                    ...register("maximum_weight_load")
-                                                }
-                                                type='number'
-                                                placeholder="Maximum Weight Load"
-                                                focusBorderColor='blue.500'
-                                            />
-                                            <InputRightElement children="kg" />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Maximum weight load for all orders</Text>
-                                        </FormHelperText>
-                                    </FormControl>  
-                                    <FormControl id="extra_weight_fee_per_kilogram">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <BsCash color="#d69511" />
-                                                <Text fontWeight="600" color="gray.600">Extra Weight Fee Per Kilogram</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
-                                            <Input
-                                                variant="filled"
-                                                id="extra_weight_fee_per_kilogram"
-                                                bg="white"
-                                                defaultValue={settings?.extra_weight_fee_per_kilogram || 0}
-                                                {
-                                                    ...register("extra_weight_fee_per_kilogram")
-                                                }
-                                                type='number'
-                                                placeholder="Extra Weight Fee Per Kilogram"
-                                                focusBorderColor='blue.500'
-                                            />
-                                            <InputRightElement children="/kg" />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Extra charges per kilogram for weight above maximum weight load</Text>
-                                        </FormHelperText>
-                                    </FormControl>  
-                                </Flex>                  
-                                <Flex w="full" direction="row" gap={5}>
-                                    <FormControl id="cash_on_delivery_threshold">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <Text fontWeight="600" color="gray.600">Cash On Delivery Threshold</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
-                                            <Input
-                                                variant="filled"
-                                                id="cash_on_delivery_threshold"
-                                                bg="white"
-                                                defaultValue={settings?.cash_on_delivery_threshold || 0}
-                                                {
-                                                    ...register("cash_on_delivery_threshold")
-                                                }
-                                                type='number'
-                                                placeholder="Cash On Delivery Threshold"
-                                                focusBorderColor='blue.500'
-                                            />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Orders above this threshold will not be able to use cash on delivery.</Text>
-                                        </FormHelperText>
-                                    </FormControl>  
-                                    <FormControl id="e_wallet_threshold">
-                                        <FormLabel>
-                                            <Flex w="full" gap={2} alignItems="center">
-                                                <Text fontWeight="600" color="gray.600">Touch 'n Go E-Wallet Threshold</Text>
-                                            </Flex>      
-                                        </FormLabel>
-                                        <InputGroup size="md">
-                                            <InputLeftElement pointerEvents="none">RM</InputLeftElement>
-                                            <Input
-                                                variant="filled"
-                                                id="e_wallet_threshold"
-                                                bg="white"
-                                                defaultValue={settings?.e_wallet_threshold || 0}
-                                                {
-                                                    ...register("e_wallet_threshold")
-                                                }
-                                                type='number'
-                                                placeholder="Touch 'n Go E-Wallet Threshold"
-                                                focusBorderColor='blue.500'
-                                            />
-                                        </InputGroup>
-                                        <FormHelperText>
-                                            <Text color="blue.500">Orders above this threshold will not be able to use Touch 'n Go E-Wallet.</Text>
-                                        </FormHelperText>
-                                    </FormControl>  
-                                </Flex>   
-                                <Flex w="full" justifyContent="end" mt={2}>
-                                    <Button colorScheme="blue" size="md" variant="solid" onClick={handleSubmit(onSubmit("shipping_settings"))}>Confirm & Submit</Button>
-                                </Flex>           
+                                    <Flex w="full" justifyContent="end" mt={2}>
+                                        <Button colorScheme="blue" size="md" variant="solid" onClick={handleSubmit(onSubmit("shipping_settings"))}>Confirm & Submit</Button>
+                                    </Flex>      
+                                </Flex>         
                             </Flex>
                         </TabPanel>
                     </TabPanels>
