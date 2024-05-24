@@ -8,7 +8,8 @@ import {
     MenuItem, 
     MenuList, 
     Text, 
-    Button 
+    Button,
+	Badge,
 } from "@chakra-ui/react";
 import { NavLink, useLocation } from "react-router-dom";
 import { BiChevronDown } from "react-icons/bi";
@@ -33,7 +34,6 @@ const CustomerNavbar = () => {
 			bgColor={"white"}
 			zIndex="999"
 			width="100%"
-			// shadow="md"
 			justify="space-between" 
 		>
 			<Flex align="center">
@@ -52,10 +52,21 @@ const CustomerNavbar = () => {
 						<IoHomeOutline/> Home
 					</Flex>
 				</Link>
-				<Link as={NavLink} color="gray.500" to="/cart" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					<Flex alignItems="center" gap={2}>
-						<IoCartOutline/> Cart
-					</Flex>
+				<Link as={NavLink} color="gray.500" to="/cart" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{ textDecoration: "none" }}>
+				<Flex alignItems="center" gap={2} position="relative">
+					<Badge
+						colorScheme="red"
+						borderRadius="full"
+						fontSize="0.8em"
+						position="absolute"
+						top="-8px"
+						right="-20px"
+					>
+						{Object.keys(user?.cart || {}).length}
+					</Badge>
+					<IoCartOutline />
+					Cart
+				</Flex>
 				</Link>
 				<Menu marginRight={6}>
 					<MenuButton as={Link} color="teal.500" display="flex" alignItems="center">

@@ -24,7 +24,9 @@ import {
 import { useEffect, useState, useRef } from "react";
 import { BiSearchAlt2, BiLinkExternal } from "react-icons/bi";
 import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
+import { MdDateRange } from "react-icons/md";
 import { FaShippingFast, FaCalendar } from "react-icons/fa";
+import { TbWeight } from "react-icons/tb";
 import { FaPlus } from "react-icons/fa6";
 import { CiWarning } from "react-icons/ci";
 import { FcElectricalThreshold } from "react-icons/fc";
@@ -361,7 +363,7 @@ function LogisticsSettings() {
                                     <FormControl id="standard_shipping_fee">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <FaShippingFast color="gray.500" />
+                                                <FaShippingFast color="#d69511" />
                                                 <Text fontWeight="600" color="gray.600">Standard Shipping Fee</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -387,7 +389,7 @@ function LogisticsSettings() {
                                     <FormControl id="delivery_offset">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <FaCalendar color="gray.500" />
+                                                <MdDateRange color="#d69511" />
                                                 <Text fontWeight="600" color="gray.600">Estimated Delivery Offset</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -413,7 +415,7 @@ function LogisticsSettings() {
                                     <FormControl id="shipping_threshold">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <AiOutlineDeliveredProcedure color="gray.500" />
+                                                <AiOutlineDeliveredProcedure color="#d69511" />
                                                 <Text fontWeight="600" color="gray.600">Order Amount For Free Shipping</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -441,7 +443,7 @@ function LogisticsSettings() {
                                     <FormControl id="distance_threshold_for_standard_delivery_fee">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <GiPathDistance color="gray.500" />
+                                                <GiPathDistance color="#d69511" />
                                                 <Text fontWeight="600" color="gray.600">Distance Threshold For Standard Delivery Fee</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -467,7 +469,7 @@ function LogisticsSettings() {
                                     <FormControl id="extra_delivery_charges_per_kilometer">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <FaPlus color="gray.500" />
+                                                <FaPlus color="#d69511" />
                                                 <Text fontWeight="600" color="gray.600">Extra Delivery Charges</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -495,7 +497,7 @@ function LogisticsSettings() {
                                         <FormControl id="initial_delivery_time">
                                             <FormLabel>
                                                 <Flex w="full" gap={2} alignItems="center">
-                                                    <FaCalendar color="gray.500" />
+                                                    <MdDateRange color="#d69511" />
                                                     <Text fontWeight="600" color="gray.600">Initial Delivery Time</Text>
                                                 </Flex>      
                                             </FormLabel>
@@ -528,7 +530,7 @@ function LogisticsSettings() {
                                         <FormControl id="end_delivery_time">
                                             <FormLabel>
                                                 <Flex w="full" gap={2} alignItems="center">
-                                                    <FaCalendar color="gray.500" />
+                                                    <MdDateRange color="#d69511" />
                                                     <Text fontWeight="600" color="gray.600">End Delivery Time</Text>
                                                 </Flex>      
                                             </FormLabel>
@@ -564,7 +566,7 @@ function LogisticsSettings() {
                                     <FormControl id="special_handling_charges">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <CiWarning color="gray.500" />
+                                                <CiWarning color="#d69511" />
                                                 <Text fontWeight="600" color="gray.600">Special Handling Charges</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -590,7 +592,7 @@ function LogisticsSettings() {
                                     <FormControl id="maximum_weight_load">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <GiWeight color="gray.500" />
+                                                <TbWeight color="#d69511" />
                                                 <Text fontWeight="600" color="gray.600">Maximum Weight Load</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -616,7 +618,7 @@ function LogisticsSettings() {
                                     <FormControl id="extra_weight_fee_per_kilogram">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <BsCash color="gray.500" />
+                                                <BsCash color="#d69511" />
                                                 <Text fontWeight="600" color="gray.600">Extra Weight Fee Per Kilogram</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -645,7 +647,6 @@ function LogisticsSettings() {
                                     <FormControl id="cash_on_delivery_threshold">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <CiWarning color="gray.500" />
                                                 <Text fontWeight="600" color="gray.600">Cash On Delivery Threshold</Text>
                                             </Flex>      
                                         </FormLabel>
@@ -671,7 +672,6 @@ function LogisticsSettings() {
                                     <FormControl id="e_wallet_threshold">
                                         <FormLabel>
                                             <Flex w="full" gap={2} alignItems="center">
-                                                <CiWarning color="gray.500" />
                                                 <Text fontWeight="600" color="gray.600">Touch 'n Go E-Wallet Threshold</Text>
                                             </Flex>      
                                         </FormLabel>
