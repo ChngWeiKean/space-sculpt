@@ -33,6 +33,7 @@ import CustomerEditCard from './pages/customer/CustomerEditCard.jsx'
 import AddUser from './pages/admin/AddUser.jsx'
 import ViewUser from './pages/admin/ViewUser.jsx'
 import LogisticsSettings from './pages/logistics/LogisticsSettings.jsx'
+import Vouchers from './pages/admin/Vouchers.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -77,6 +78,7 @@ const router = createBrowserRouter(
 				<Route path="furniture/:id/edit" element={<EditFurniture/>}/>
 				<Route path="users/add" element={<AddUser/>}/>
 				<Route path="users/:id/view" element={<ViewUser/>}/>
+				<Route path="vouchers" element={<Vouchers/>}/>
 			</Route>
 		</Route>
 	)

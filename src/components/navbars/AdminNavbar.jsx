@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { NavLink, useLocation } from "react-router-dom";
 import { BiChevronDown } from "react-icons/bi";
+import { RiCoupon2Line } from "react-icons/ri";
 import { IoHomeOutline } from "react-icons/io5";
 import { AiOutlineUser } from "react-icons/ai";
 import { logout } from "../../../api/auth.js";
@@ -55,6 +56,11 @@ const AdminNavbar = () => {
 				<Link as={NavLink} color="gray.500" to="/admin/users" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
 					<Flex alignItems="center" gap={2}>
 						<AiOutlineUser/> Users
+					</Flex>
+				</Link>
+				<Link as={NavLink} color="gray.500" to="/admin/vouchers" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={2}>
+						<RiCoupon2Line/> Vouchers
 					</Flex>
 				</Link>
 				<Menu marginRight={6}>
