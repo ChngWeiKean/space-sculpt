@@ -34,6 +34,8 @@ import AddUser from './pages/admin/AddUser.jsx'
 import ViewUser from './pages/admin/ViewUser.jsx'
 import LogisticsSettings from './pages/logistics/LogisticsSettings.jsx'
 import Vouchers from './pages/admin/Vouchers.jsx'
+import AddVoucher from './pages/admin/AddVoucher.jsx'
+import EditVoucher from './pages/admin/EditVoucher.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -79,6 +81,8 @@ const router = createBrowserRouter(
 				<Route path="users/add" element={<AddUser/>}/>
 				<Route path="users/:id/view" element={<ViewUser/>}/>
 				<Route path="vouchers" element={<Vouchers/>}/>
+				<Route path="vouchers/add" element={<AddVoucher/>}/>
+				<Route path="vouchers/:id/edit" element={<EditVoucher/>}/>
 			</Route>
 		</Route>
 	)
