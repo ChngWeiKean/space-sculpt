@@ -492,3 +492,157 @@ export const delete_user = async (data) => {
 				return {error: error};
 			});
 }
+
+export const addVoucher = async (data) => {
+    const {
+        discount_type,
+        discount_value,
+        start_date,
+        expiry_date,
+        discount_application,
+        minimum_spend,
+        customer_eligibility,
+        voucher_code,
+        auto_redemption_amount,
+        redemption_limit,
+        redemption_status = "available",
+        created_on = new Date(),
+        created_by = auth.currentUser.uid,
+    } = data;
+
+    try {
+        const voucherRef = ref(db, 'vouchers');
+        const newVoucherRef = push(voucherRef);
+        await set(ref(db, `vouchers/${newVoucherRef.key}`), {
+            id: newVoucherRef.key,
+            discount_type,
+            discount_value,
+            start_date,
+            expiry_date,
+            discount_application,
+            minimum_spend,
+            customer_eligibility,
+            voucher_code,
+            auto_redemption_amount,
+            redemption_limit,
+            redemption_status,
+            created_on,
+            created_by,
+        });
+
+        // if customer_eligibility is new, give the voucher to all users with role customers with no orders
+        if (customer_eligibility === "new") {
+            const usersRef = ref(db, 'users');
+            const usersSnapshot = await get(usersRef);
+            const users = usersSnapshot.val();
+            // filter users with role customer 
+            Object.keys(users).forEach((userId) => {
+                if (users[userId].role !== "Customer") {
+                    delete users[userId];
+                }
+            });
+            console.log("Users", users);
+
+            const userPromises = Object.keys(users).map((userId) => {
+                const userOrdersRef = ref(db, `users/${userId}/orders`);
+                return get(userOrdersRef)
+                    .then((ordersSnapshot) => {
+                        if (ordersSnapshot.exists()) {
+                            return;
+                        }
+                        console.log("User has no orders", userId);
+                        const userVouchersRef = ref(db, `users/${userId}/vouchers`);
+                        return set(userVouchersRef, {
+                            [newVoucherRef.key]: true
+                        });
+                    });
+            });
+
+            await Promise.all(userPromises);
+
+            // store userId with true or false in voucher
+            const voucherUsersRef = ref(db, `vouchers/${newVoucherRef.key}/users`);
+            const userStatus = {};
+            Object.keys(users).forEach((userId) => {
+                userStatus[userId] = true;
+            });
+            await set(voucherUsersRef, userStatus);
+            // update voucher redemption count
+            await update(ref(db, `vouchers/${newVoucherRef.key}`), {
+                redemption_count: Object.keys(users).length
+            });
+        }
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const updateVoucher = async (data) => {
+    const {
+        id,
+        discount_type,
+        discount_value,
+        start_date,
+        expiry_date,
+        discount_application,
+        minimum_spend,
+        customer_eligibility,
+        voucher_code,
+        auto_redemption_amount,
+        redemption_limit,
+    } = data;
+
+    try {
+        const voucherRef = ref(db, `vouchers/${id}`);
+        await update(voucherRef, {
+            discount_type,
+            discount_value,
+            start_date,
+            expiry_date,
+            discount_application,
+            minimum_spend,
+            customer_eligibility,
+            voucher_code,
+            auto_redemption_amount,
+            redemption_limit,
+            updated_on: new Date(),
+            updated_by: auth.currentUser.uid,
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const deleteVoucher = async (id) => {
+    try {
+        const voucherRef = ref(db, `vouchers/${id}`);
+        await update(voucherRef, {
+            deleted_on: new Date(),
+            deleted: true,
+            deleted_by: auth.currentUser.uid,
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const restoreVoucher = async (id) => {
+    try {
+        const voucherRef = ref(db, `vouchers/${id}`);
+        await update(voucherRef, {
+            deleted_on: null,
+            deleted: false,
+            deleted_by: null,
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
