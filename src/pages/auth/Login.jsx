@@ -147,11 +147,7 @@ function Login() {
                                 </FormErrorMessage>
                             </FormControl>
                         </Box>
-                        <Flex alignItems="center" justifyContent="space-between" mt={6}>
-                            <Flex alignItems="center">
-                                <Checkbox name="remember" id="remember" mr={2} />
-                                <Text htmlFor="remember">Remember me</Text>
-                            </Flex>
+                        <Flex alignItems="center" justifyContent="end" mt={6}>
                             <Text as="a" href="/forgot" textColor="blue.500" fontSize="sm" fontWeight="medium" _hover={{ textDecoration: "underline" }}>
                                 Forgot password?
                             </Text>

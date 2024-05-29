@@ -350,7 +350,7 @@ function CustomerCart() {
                                             }
                                         </Text>
                                     </Flex>
-                                    <Button w="full" colorScheme="blue" size="lg" onClick={handleCheckout}>Checkout</Button>
+                                    <Button w="full" colorScheme="blue" size="lg" onClick={handleCheckout} style={{ outline:'none' }}>Checkout</Button>
                                 </Flex>                                
                             </Flex>
                         )

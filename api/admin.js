@@ -505,7 +505,7 @@ export const addVoucher = async (data) => {
         voucher_code,
         auto_redemption_amount,
         redemption_limit,
-        redemption_status = "available",
+        terms_and_conditions,
         created_on = new Date(),
         created_by = auth.currentUser.uid,
     } = data;
@@ -525,7 +525,7 @@ export const addVoucher = async (data) => {
             voucher_code,
             auto_redemption_amount,
             redemption_limit,
-            redemption_status,
+            terms_and_conditions,
             created_on,
             created_by,
         });
@@ -591,6 +591,7 @@ export const updateVoucher = async (data) => {
         customer_eligibility,
         voucher_code,
         auto_redemption_amount,
+        terms_and_conditions,
         redemption_limit,
     } = data;
 
@@ -606,6 +607,7 @@ export const updateVoucher = async (data) => {
             customer_eligibility,
             voucher_code,
             auto_redemption_amount,
+            terms_and_conditions,
             redemption_limit,
             updated_on: new Date(),
             updated_by: auth.currentUser.uid,
@@ -639,6 +641,39 @@ export const restoreVoucher = async (id) => {
             deleted_on: null,
             deleted: false,
             deleted_by: null,
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const redeemVoucher = async (data) => {
+    const { voucher_id, user_id } = data;
+
+    try {
+        const voucherRef = ref(db, `vouchers/${voucher_id}`);
+        const voucherSnapshot = await get(voucherRef);
+        const voucherData = voucherSnapshot.val();
+        const { redemption_limit, redemption_count, customer_eligibility } = voucherData;
+
+        if (redemption_limit && redemption_count >= redemption_limit) {
+            return { error: "Redemption limit reached" };
+        }
+
+        const userVouchersRef = ref(db, `users/${user_id}/vouchers`);
+        await update(userVouchersRef, {
+            [voucher_id]: true
+        });
+
+        await update(voucherRef, {
+            redemption_count: redemption_count + 1
+        });
+
+        const voucherUsersRef = ref(db, `vouchers/${voucher_id}/users`);
+        await update(voucherUsersRef, {
+            [user_id]: true
         });
 
         return { success: true };

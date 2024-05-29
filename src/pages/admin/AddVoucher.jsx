@@ -15,6 +15,7 @@ import {
     InputRightElement,
     InputLeftAddon,
     InputRightAddon,
+    Textarea,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill, BsCart3 } from "react-icons/bs";
@@ -69,6 +70,7 @@ function AddVoucher() {
             voucher_code: data.voucher_code,
             auto_redemption_amount: data.auto_redemption_amount,
             redemption_limit: data.redemption_limit,
+            terms_and_conditions: data.terms_and_conditions,
         }
         console.log(voucherData);
 
@@ -287,7 +289,7 @@ function AddVoucher() {
                                 </Flex>
                                 
                                 <Flex w="full" direction="column" gap={3}>
-                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Voucher Dates</Text>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Voucher Active Period</Text>
                                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
                                     <Flex w="full" direction="row" gap={5}>
                                         <FormControl isInvalid={errors.start_date}>
@@ -346,7 +348,95 @@ function AddVoucher() {
                                 </Flex>
 
                                 <Flex w="full" direction="column" gap={3}>
-                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Other</Text>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Redemption</Text>
+                                    <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>
+                                    <Flex w="full" direction="row" gap={5}> 
+                                        <FormControl isInvalid={errors.voucher_code}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Voucher Code
+                                            </FormLabel>
+                                            <Input
+                                                variant="filled"
+                                                type="text"
+                                                id="voucher_code"
+                                                {
+                                                    ...register("voucher_code", {
+                                                        required: "Voucher code cannot be empty",
+                                                    })
+                                                }
+                                                rounded="md"
+                                                borderWidth="1px"
+                                                borderColor="gray.300"
+                                                color="gray.900"
+                                                size="md"
+                                                focusBorderColor="blue.500"
+                                                w="full"
+                                                p={2.5}
+                                            />
+                                            <FormErrorMessage>
+                                                {errors.voucher_code && errors.voucher_code.message}
+                                            </FormErrorMessage>
+                                        </FormControl>  
+                                        <FormControl isInvalid={errors.auto_redemption_amount}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Auto Redemption Amount
+                                            </FormLabel>
+                                            <InputGroup>
+                                                <InputLeftAddon children="RM" />
+                                                <Input
+                                                    variant="filled"
+                                                    type="number"
+                                                    id="auto_redemption_amount"
+                                                    {
+                                                        ...register("auto_redemption_amount", {
+                                                            required: "Auto redemption amount cannot be empty",
+                                                        })
+                                                    }
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    p={2.5}
+                                                />
+                                            </InputGroup>
+                                            <FormErrorMessage>
+                                                {errors.auto_redemption_amount && errors.auto_redemption_amount.message}
+                                            </FormErrorMessage>
+                                        </FormControl>  
+                                        <FormControl isInvalid={errors.redemption_limit}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Redemption Limit
+                                            </FormLabel>
+                                            <Input
+                                                variant="filled"
+                                                type="number"
+                                                id="redemption_limit"
+                                                {
+                                                    ...register("redemption_limit", {
+                                                        required: "Redemption limit cannot be empty",
+                                                    })
+                                                }
+                                                rounded="md"
+                                                borderWidth="1px"
+                                                borderColor="gray.300"
+                                                color="gray.900"
+                                                size="md"
+                                                focusBorderColor="blue.500"
+                                                w="full"
+                                                p={2.5}
+                                            />
+                                            <FormErrorMessage>
+                                                {errors.redemption_limit && errors.redemption_limit.message}
+                                            </FormErrorMessage>
+                                        </FormControl>  
+                                    </Flex>       
+                                </Flex>
+
+                                <Flex w="full" direction="column" gap={3}>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Voucher Application</Text>
                                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>
                                     <Flex w="full" direction="row" gap={5}>
                                         <FormControl isInvalid={errors.discount_application}>
@@ -433,90 +523,42 @@ function AddVoucher() {
                                                 {errors.customer_eligibility && errors.customer_eligibility.message}
                                             </FormErrorMessage>
                                         </FormControl> 
-                                    </Flex>   
-                                    <Flex w="full" direction="row" gap={5}> 
-                                        <FormControl isInvalid={errors.voucher_code}>
-                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                                Voucher Code
-                                            </FormLabel>
-                                            <Input
-                                                variant="filled"
-                                                type="text"
-                                                id="voucher_code"
-                                                {
-                                                    ...register("voucher_code", {
-                                                        required: "Voucher code cannot be empty",
-                                                    })
-                                                }
-                                                rounded="md"
-                                                borderWidth="1px"
-                                                borderColor="gray.300"
-                                                color="gray.900"
-                                                size="md"
-                                                focusBorderColor="blue.500"
-                                                w="full"
-                                                p={2.5}
-                                            />
-                                            <FormErrorMessage>
-                                                {errors.voucher_code && errors.voucher_code.message}
-                                            </FormErrorMessage>
-                                        </FormControl>  
-                                        <FormControl isInvalid={errors.auto_redemption_amount}>
-                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                                Auto Redemption Amount
-                                            </FormLabel>
-                                            <InputGroup>
-                                                <InputLeftAddon children="RM" />
-                                                <Input
-                                                    variant="filled"
-                                                    type="number"
-                                                    id="auto_redemption_amount"
-                                                    {
-                                                        ...register("auto_redemption_amount", {
-                                                            required: "Auto redemption amount cannot be empty",
-                                                        })
-                                                    }
-                                                    rounded="md"
-                                                    borderWidth="1px"
-                                                    borderColor="gray.300"
-                                                    color="gray.900"
-                                                    size="md"
-                                                    focusBorderColor="blue.500"
-                                                    w="full"
-                                                    p={2.5}
-                                                />
-                                            </InputGroup>
-                                            <FormErrorMessage>
-                                                {errors.auto_redemption_amount && errors.auto_redemption_amount.message}
-                                            </FormErrorMessage>
-                                        </FormControl>  
-                                        <FormControl isInvalid={errors.redemption_limit}>
-                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                                Redemption Limit
-                                            </FormLabel>
-                                            <Input
-                                                variant="filled"
-                                                type="number"
-                                                id="redemption_limit"
-                                                {
-                                                    ...register("redemption_limit", {
-                                                        required: "Redemption limit cannot be empty",
-                                                    })
-                                                }
-                                                rounded="md"
-                                                borderWidth="1px"
-                                                borderColor="gray.300"
-                                                color="gray.900"
-                                                size="md"
-                                                focusBorderColor="blue.500"
-                                                w="full"
-                                                p={2.5}
-                                            />
-                                            <FormErrorMessage>
-                                                {errors.redemption_limit && errors.redemption_limit.message}
-                                            </FormErrorMessage>
-                                        </FormControl>  
-                                    </Flex>                                 
+                                    </Flex>                             
+                                </Flex>
+
+                                <Flex w="full" direction="column" gap={3}>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Terms & Conditions</Text>
+                                    <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>
+                                    <Flex w="full" direction="row" gap={5}>
+                                    <FormControl isInvalid={errors.terms_and_conditions}>
+                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                            Terms & Conditions
+                                        </FormLabel>        
+                                        <Textarea
+                                            variant="filled"
+                                            type="text"
+                                            id="terms_and_conditions"
+                                            {
+                                                ...register("terms_and_conditions", {
+                                                    required: "Voucher terms and conditions cannot be empty",
+                                                })
+                                            }
+                                            placeholder="Enter voucher terms and conditions here..."
+                                            rounded="md"
+                                            h={"150px"}
+                                            borderWidth="1px"
+                                            borderColor="gray.300"
+                                            color="gray.900"
+                                            size="md"
+                                            focusBorderColor="blue.500"
+                                            w="full"
+                                            p={2.5}
+                                        />
+                                        <FormErrorMessage>
+                                            {errors.terms_and_conditions && errors.terms_and_conditions.message}
+                                        </FormErrorMessage>
+                                    </FormControl>    
+                                    </Flex>
                                 </Flex>
 
                             </Flex>

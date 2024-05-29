@@ -19,7 +19,7 @@ import { GiMoneyStack } from "react-icons/gi";
 import { GrTransaction } from "react-icons/gr";
 import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
 import { db } from "../../../api/firebase";
-import {onValue, query, ref} from "firebase/database";
+import { onValue, query, ref } from "firebase/database";
 import { FaStar, FaStarHalf } from "react-icons/fa";
 import { BiSearchAlt2 } from "react-icons/bi";
 import { AiOutlineUser } from "react-icons/ai";
@@ -126,8 +126,10 @@ const MonthlyRevenueBarChart = memo(() => {
 });
 
 function AdminDashboard() {
-    const [categories, setCategories] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [ categories, setCategories ] = useState([]);
+    const [ userCount, setUserCount ] = useState(0);
+    const [ furnitureCount, setFurnitureCount ] = useState(0);
+    const [ searchQuery, setSearchQuery ] = useState('');
 
     useEffect(() => {
         const categoryRef = ref(db, 'categories');
@@ -141,6 +143,26 @@ function AdminDashboard() {
                 categories.push(data);
             });
             setCategories(categories);
+        });
+
+        const userRef = ref(db, 'users');
+        onValue(userRef, (snapshot) => {
+            let count = 0;
+            snapshot.forEach((childSnapshot) => {
+                if (childSnapshot.val().role === 'Customer') {
+                    count++;
+                }
+            });
+            setUserCount(count);
+        });
+
+        const furnitureRef = ref(db, 'furnitures');
+        onValue(furnitureRef, (snapshot) => {
+            let count = 0;
+            snapshot.forEach((childSnapshot) => {
+                count++;
+            });
+            setFurnitureCount(count);
         });
     }, []);
 
@@ -317,7 +339,7 @@ function AdminDashboard() {
                                         <Text fontWeight='medium' fontSize='sm' color='gray.600'>
                                             No. of Customers
                                         </Text>            
-                                        <Text fontWeight='semibold'>100</Text>                                
+                                        <Text fontWeight='semibold'>{userCount || 0}</Text>                                
                                     </Box>
                                 </Flex>
                             </Box>
@@ -328,7 +350,7 @@ function AdminDashboard() {
                                         <Text fontWeight='medium' fontSize='sm' color='gray.600'>
                                             No. of Furnitures
                                         </Text>            
-                                        <Text fontWeight='semibold'>50</Text>                                
+                                        <Text fontWeight='semibold'>{furnitureCount || 0}</Text>                                
                                     </Box>
                                 </Flex>
                             </Box>

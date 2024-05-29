@@ -25,16 +25,18 @@ import { db } from "../../../api/firebase.js";
 import { equalTo, onValue, orderByChild, query, ref } from "firebase/database";
 import { BiSearchAlt2 } from 'react-icons/bi';
 import { FaEye, FaHospitalUser, FaStethoscope, FaTrash, FaUser, FaUserShield, FaCar } from 'react-icons/fa';
+import { RiCoupon3Line, RiCoupon2Fill, RiCoupon2Line } from "react-icons/ri";
 import { BsFillCloudArrowDownFill, BsCart3 } from "react-icons/bs";
 import { RiArrowGoBackFill } from "react-icons/ri";
+import { CiDiscount1 } from "react-icons/ci";
 import { LiaShippingFastSolid } from "react-icons/lia";
 import { FaTruck } from "react-icons/fa6";
-import {DataTable} from 'primereact/datatable';
-import {Column} from 'primereact/column';
-import {InputText} from 'primereact/inputtext';
-import {FilterMatchMode} from 'primereact/api';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { InputText } from 'primereact/inputtext';
+import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
-import {NavLink} from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { deleteVoucher, restoreVoucher } from '../../../api/admin.js';
 
 function Vouchers() {
@@ -372,16 +374,16 @@ function Vouchers() {
                     <Flex gap={7}>
                         <Box bg="white" boxShadow="md" p={4}>
                             <Flex justifyContent='center' alignItems='center'>
-                                <FaUserShield color='#d69511' size='30'/>
+                                <RiCoupon2Line color='#d69511' size='30'/>
                                 <Box ml={4}>
-                                    <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>No. of Redemptions</Text>
+                                    <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>No. of Vouchers Redeemed</Text>
                                     <Text fontSize='lg'> </Text>                                
                                 </Box>
                             </Flex>
                         </Box>
                         <Box bg="white" boxShadow="md" p={4}>
                             <Flex justifyContent='center' alignItems='center'>
-                                <FaCar color='#d69511' size='30'/>
+                                <CiDiscount1 color='#d69511' size='30'/>
                                 <Box ml={4}>
                                     <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>No. of Vouchers Claimed</Text>
                                     <Text fontSize='lg'> </Text>                                
@@ -420,7 +422,7 @@ function Vouchers() {
                         <Column field="voucher_code" header="Voucher Code" sortable filter></Column>
                         <Column field="discount" header="Discount" body={discountBodyTemplate} sortable filter></Column>
                         <Column field="discount_application" header="Application" body={applicationBodyTemplate} sortable filter></Column>
-                        <Column field="date" header="Active Date" body={activeDateBodyTemplate} sortable filter></Column>
+                        <Column field="date" header="Active Period" body={activeDateBodyTemplate} sortable filter></Column>
                         <Column field="minimum_spend" header="Minimum Spend" body={minimumSpendBodyTemplate} sortable filter></Column>
                         <Column field="auto_redemption_amount" header="Redemption Amount" body={autoRedemptionAmountBodyTemplate} sortable filter></Column>
                         <Column field="redemption_limit" header="Redemption" body={redemptionBodyTemplate} sortable filter></Column>
