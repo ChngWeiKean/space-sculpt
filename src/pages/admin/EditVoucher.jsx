@@ -74,7 +74,7 @@ function EditVoucher() {
         onValue(usersQuery, (snapshot) => {
             const users = [];
             snapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val().role === "Customer") {
+                if (childSnapshot.val().role === "Customer" && childSnapshot.val().vouchers && childSnapshot.val().vouchers[id]) {
                     users.push({
                         id: childSnapshot.key,
                         ...childSnapshot.val(),
@@ -143,6 +143,25 @@ function EditVoucher() {
         );
     };
 
+    const claimStatusBodyTemplate = (rowData) => {
+        let notClaimed = false;
+        if (rowData.vouchers) {
+            notClaimed = rowData.vouchers[id];
+        }
+
+        return (
+            <Box display='flex' alignItems='center' gap={1}>
+                {
+                    notClaimed ? (
+                        <Text>Not Claimed</Text>
+                    ) : (
+                        <Text>Claimed</Text>
+                    )
+                }
+            </Box>
+        );
+    };
+
     const nameRowFilterTemplate = (options) => {
         return (
             <InputText
@@ -175,7 +194,7 @@ function EditVoucher() {
             <Box>
                 <Flex justifyContent='space-between' alignItems='center'>
                     <Box>
-                        <Text fontSize='2xl' fontWeight='semibold'>List of Customers</Text>
+                        <Text fontSize='2xl' fontWeight='semibold'>Voucher Redemption List</Text>
                     </Box>
                     <Box>
                         <InputGroup>
@@ -691,7 +710,7 @@ function EditVoucher() {
                                     </Flex>
                                 </Flex>
 
-                                {/* <Flex w="full">
+                                <Flex w="full">
                                     <DataTable
                                         value={users}
                                         header={header}
@@ -705,13 +724,14 @@ function EditVoucher() {
                                         globalFilterFields={['name', 'email', 'contact']}
                                         dataKey="id"
                                     >
-                                        <Column field="name" header="Name" sortable filter filterElement={nameRowFilterTemplate}></Column>
-                                        <Column field="email" header="Email" sortable filter filterElement={emailRowFilterTemplate}></Column>
-                                        <Column field="contact" header="Contact" sortable filter filterElement={contactRowFilterTemplate}></Column>
-                                        <Column field="orders" header="Orders" sortable body={orderBodyTemplate}></Column>
-                                        <Column field="action" header="Action" body={actionBodyTemplate}></Column>
+                                        <Column field="name" header="Name" sortable filter filterElement={nameRowFilterTemplate} style={{ width: "15%" }}></Column>
+                                        <Column field="email" header="Email" sortable filter filterElement={emailRowFilterTemplate} style={{ width: "30%" }}></Column>
+                                        {/* <Column field="contact" header="Contact" sortable filter filterElement={contactRowFilterTemplate}></Column> */}
+                                        <Column field="orders" header="Orders" sortable body={orderBodyTemplate} style={{ width: "25%" }}></Column>
+                                        <Column field="vouchers" header="Claim Status" body={claimStatusBodyTemplate} style={{ width: "20%" }}></Column>
+                                        <Column field="action" header="Action" body={actionBodyTemplate} style={{ width: "10%" }}></Column>
                                     </DataTable>
-                                </Flex> */}
+                                </Flex>
                             </Flex>
                         </form>
                     </Flex>
@@ -836,7 +856,7 @@ function EditVoucher() {
                                 )
                             }
                             {
-                                voucher.redemption_count === voucher.redemption_limit && (
+                                voucher && voucher.redemption_count !== undefined && voucher.redemption_count === voucher.redemption_limit && (
                                     <Button colorScheme="orange" variant="solid" pointerEvents="none">Fully Redeemed</Button>
                                 )
                             }

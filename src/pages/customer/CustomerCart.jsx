@@ -86,6 +86,7 @@ function CustomerCart() {
                                         image: variantData.image,
                                         color: variantData.color,
                                         inventory: variantData.inventory,
+                                        variantId: item.variantId,
                                         cartId: item.id,
                                         ...furnitureData 
                                     };

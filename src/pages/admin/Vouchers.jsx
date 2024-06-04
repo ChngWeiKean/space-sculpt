@@ -422,7 +422,7 @@ function Vouchers() {
                         <Column field="voucher_code" header="Voucher Code" sortable filter></Column>
                         <Column field="discount" header="Discount" body={discountBodyTemplate} sortable filter></Column>
                         <Column field="discount_application" header="Application" body={applicationBodyTemplate} sortable filter></Column>
-                        <Column field="date" header="Active Period" body={activeDateBodyTemplate} sortable filter></Column>
+                        <Column field="date" header="Usage Period" body={activeDateBodyTemplate} sortable filter></Column>
                         <Column field="minimum_spend" header="Minimum Spend" body={minimumSpendBodyTemplate} sortable filter></Column>
                         <Column field="auto_redemption_amount" header="Redemption Amount" body={autoRedemptionAmountBodyTemplate} sortable filter></Column>
                         <Column field="redemption_limit" header="Redemption" body={redemptionBodyTemplate} sortable filter></Column>

@@ -34,6 +34,11 @@ import {
     ModalHeader,
     ModalOverlay,
     Tooltip,
+    Accordion,
+    AccordionItem,
+    AccordionButton,
+    AccordionPanel,
+    AccordionIcon,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill, BsPinMap, BsCart3 } from "react-icons/bs";
@@ -54,7 +59,7 @@ import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
 import { FaRegUser } from "react-icons/fa";
 import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail } from "react-icons/md";
 import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation } from 'react-router-dom';
+import { NavLink, useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
 import { DataTable } from 'primereact/datatable';
@@ -69,6 +74,7 @@ import { encrypt, decrypt } from 'n-krypta'
 import { fetchAndActivate, getValue } from "firebase/remote-config";
 import { remoteConfig } from "../../../api/firebase.js";
 import { DirectionsRenderer, GoogleMap, InfoWindow, Marker } from '@react-google-maps/api';
+import { redeemVoucher } from "../../../api/customer.js";
 
 function CustomerCheckout() {
     const {
@@ -94,6 +100,7 @@ function CustomerCheckout() {
     const [ subtotal, setSubtotal ] = useState(0);
     const [ shippingFee, setShippingFee ] = useState(0);
     const [ weightFee, setWeightFee ] = useState(0);
+    const [ discount, setDiscount ] = useState(0);
     const [ total, setTotal ] = useState(0);
     const [ selectedEWallet, setSelectedEWallet ] = useState(false);
     const [ cards, setCards ] = useState(null);
@@ -135,6 +142,7 @@ function CustomerCheckout() {
 
     const sortedAddresses = [...defaultAddress, ...nonDefaultAddresses];
     const furniture = useLocation();
+    console.log(furniture.state)
 
     useEffect(() => {
         setValue("name", user.name);
@@ -271,27 +279,81 @@ function CustomerCheckout() {
                     return acc + Number(item.weight);
                 }, 0);
             
+                let weightCharges = 0;
                 if (weight > settings?.maximum_weight_load) {
-                    const weightCharges = ((weight - Number(settings?.maximum_weight_load)) * Number(settings?.extra_weight_fee_per_kilogram)).toFixed(2);
+                    weightCharges = ((weight - Number(settings?.maximum_weight_load)) * Number(settings?.extra_weight_fee_per_kilogram)).toFixed(2);
+                    console.log("WEIGHT CHARGES",weightCharges);
                     setWeightFee(weightCharges);
                 } else {
+                    weightCharges = 0;
                     setWeightFee(0); 
                 }
-                resolve(weight);
+                resolve(weightCharges);
+            });
+        };
+
+        const calculateVoucherDiscount = () => {
+            return new Promise((resolve) => {
+                let discount = 0;
+                if (selectedVoucher) {
+                    if (selectedVoucher.discount_application === "products") {
+                        if (selectedVoucher.discount_type === "percentage") {
+                            discount = subtotal * (selectedVoucher.discount_value / 100);
+                        } else if (selectedVoucher.discount_type === "fixed") {
+                            discount = selectedVoucher.discount_value;
+                        }
+                        setDiscount(discount.toFixed(2));
+                    } else if (selectedVoucher.discount_application === "shipping") {
+                        if (selectedVoucher.discount_type === "percentage") {
+                            discount = shippingFee * (selectedVoucher.discount_value / 100);
+                        } else if (selectedVoucher.discount_type === "fixed") {
+                            discount = selectedVoucher.discount_value;
+                        }
+                        setDiscount(discount);
+                    }
+                }
+                resolve(discount);
             });
         };
 
         Promise.all([
             calculateSubtotal(),
-            calculateWeightFee()
-        ]).then(([subtotal, weight]) => {
-            calculateShippingFee(subtotal).then((shipping) => {
-                const total = (Number(subtotal) + Number(shipping) + Number(weight)).toFixed(2);
+            calculateWeightFee(),
+            calculateVoucherDiscount()
+        ]).then(([calculatedSubtotal, weight, vchrDiscount]) => {
+            calculateShippingFee(calculatedSubtotal).then((shipping) => {
+                const total = (Number(calculatedSubtotal) + Number(shipping) + Number(weight) - Number(vchrDiscount)).toFixed(2);
                 setTotal(total);
                 setLoading(false);
             });
         });
-    }, [furniture.state, distanceFromShop]);
+    }, [furniture.state, distanceFromShop, selectedVoucher]);
+
+    const handleVoucherUsageValidation = (voucher) => {
+        if (voucher) {
+            if (Number(voucher.minimum_spend) > subtotal) {
+                console.log("INVALID MINIMUM SPEND");
+                return { valid: false, message: `Minimum spend of RM${voucher.minimum_spend} is required to use this voucher.` };
+            }
+            if (voucher.expiry_date < new Date().toISOString().split('T')[0]) {
+                console.log("INVALID EXPIRY DATE");
+                return { valid: false, message: `This voucher has expired.` };
+            }
+            if (voucher.customer_eligibility === "new") {
+                if (user.orders && Object.keys(user.orders).length > 0) {
+                    console.log("INVALID CUSTOMER ELIGIBILITY");
+                    return { valid: false, message: `This voucher is only valid for new customers.` };
+                }
+            }
+            if (voucher.deleted) {
+                return { valid: false, message: `This voucher has been deleted.` };
+            }
+            return { valid: true, message: null };
+        } else {
+            console.log("INVALID VOUCHER");
+            return { valid: false, message: `Please select a valid voucher.` };
+        }
+    }
 
     const handleAddressSelection = (address) => {
         setSelectedAddress(address);
@@ -319,8 +381,96 @@ function CustomerCheckout() {
         setSelectedCashPayment(false);
     }
 
-    const handleRedeemVoucher = (voucherCode) => {
-        console.log(voucherCode);
+    const handleRedeemVoucher = async (voucherCode) => {
+        try {
+            const response = await redeemVoucher(voucherCode, user.uid);
+            if (response.error) {
+                toast({
+                    title: "Error",
+                    description: response.error,
+                    status: "error",
+                    position: "top",
+                    duration: 5000,
+                    isClosable: true,
+                });
+            } else {
+                toast({
+                    title: "Success",
+                    description: "Voucher has been successfully redeemed.",
+                    status: "success",
+                    position: "top",
+                    duration: 5000,
+                    isClosable: true,
+                });
+            
+            }
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error.message,
+                status: "error",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
+    };
+
+    const navigate = useNavigate();
+
+    const handlePayment = () => {
+        if (!selectedCard && !selectedCashPayment && !selectedEWallet) {
+            toast({
+                title: "Error",
+                description: "Please select a payment method.",
+                status: "error",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        if (!selectedAddress) {
+            toast({
+                title: "Error",
+                description: "Please select a shipping address.",
+                status: "error",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        if (furniture.state.length === 0) {
+            toast({
+                title: "Error",
+                description: "Please add items to your cart.",
+                status: "error",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        let data = {
+            user: user.uid,
+            address: user.addresses[selectedAddress],
+            items: furniture.state,
+            subtotal: subtotal,
+            shipping: shippingFee,
+            weight: weightFee,
+            discount: discount,
+            total: total,
+            payment: selectedCard ? "card" : selectedCashPayment ? "cash" : selectedEWallet ? "ewallet" : null,
+            payment_method: selectedCard ? selectedCard : selectedCashPayment ? "Cash On Delivery" : selectedEWallet ? "E-Wallet" : null,
+            voucher: selectedVoucher ? selectedVoucher : null,
+        };
+
+        console.log(data);
+        navigate("/cart/checkout/payment", { state: data });
     };
 
     const maskCardNumber = (number) => {
@@ -394,40 +544,16 @@ function CustomerCheckout() {
             }
             <Flex w="full" minH="full" direction="column">
                 <Flex w="full" minH="full" direction="row" p={4}>
-                    <Flex w="70%" direction="column" gap={6} px={8}>
+                    <Flex w="70%" direction="column" gap={4} px={8}>
                         <Flex w="full" direction="column">
                             <Flex w="full" direction="row" alignItems="center" gap={4} mb={2}>
                                 <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
                                 <Text fontSize="2xl" fontWeight="700" color="#d69511">Checkout</Text>  
                             </Flex> 
-                            {
-                                shippingFee == 0 && (
-                                    <Flex w="full" direction="row">
-                                        <Alert status="success" size={"lg"}>
-                                            <AlertIcon />
-                                            <Text fontSize="sm" fontWeight="semibold">
-                                                Free Shipping for orders above RM {settings?.shipping_fee_threshold}
-                                            </Text>
-                                        </Alert>
-                                    </Flex>
-                                )
-                            }
-                            {
-                                weightFee > 0 && (
-                                    <Flex w="full" direction="row">
-                                        <Alert status="warning" size={"lg"}>
-                                            <AlertIcon />
-                                            <Text fontSize="sm" fontWeight="semibold">
-                                                Additional weight charges of RM {weightFee} apply for orders exceeding {settings?.maximum_weight_load}kg
-                                            </Text>
-                                        </Alert>
-                                    </Flex>
-                                )
-                            }
                         </Flex>
                         <form action="/api/checkout" method="post" encType="multipart/form-data">
                             <Flex w="full" direction="column" gap={4}>
-                                <Flex w="full" direction="column" gap={6}>
+                                <Flex w="full" direction="column" gap={4}>
                                     <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">1. Contact Information</Text>
                                     <Flex w="full" direction="row" gap={4}>
                                         <FormControl id="name">
@@ -495,7 +621,8 @@ function CustomerCheckout() {
                                         </FormControl>
                                     </Flex>
                                 </Flex>
-                                <Flex w="full" direction="column" gap={6}>
+                                <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300" my={4}/> 
+                                <Flex w="full" direction="column" gap={2}>
                                     <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">2. Shipping Address</Text>
                                     <Flex w="full" h="13rem" direction="row" gap={5}>
                                         <Flex 
@@ -597,7 +724,8 @@ function CustomerCheckout() {
                                         </Flex>
                                     </Flex>
                                 </Flex>
-                                <Flex w="full" direction="column" gap={4}>
+                                <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300" my={4}/> 
+                                <Flex w="full" direction="column" gap={2}>
                                     <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">3. Vouchers</Text>
                                     <Flex w="full" h={selectedVoucher ? "13rem" : "3rem"} direction="row" gap={5}>
                                         <Flex 
@@ -621,8 +749,6 @@ function CustomerCheckout() {
                                                             py={2}
                                                             roundedRight="md" 
                                                             cursor={"pointer"}
-                                                            transition="transform 0.2s" 
-                                                            _hover={{ transform: 'scale(1.02)' }} 
                                                             style={{
                                                                 background: "linear-gradient(135deg, #7ed3d6, #7ed687)",
                                                                 position: 'relative', 
@@ -759,7 +885,7 @@ function CustomerCheckout() {
                                                                 outline: 'none',
                                                             }} />
                                                             <ModalBody p={5}>
-                                                                <FormControl>
+                                                                <FormControl py={2}>
                                                                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Enter Voucher Code</FormLabel>
                                                                     <InputGroup>
                                                                         <Input
@@ -787,126 +913,142 @@ function CustomerCheckout() {
                                                                     </InputGroup>
                                                                 </FormControl>
                                                                 {
-                                                                    vouchers && Object.values(vouchers).map((voucher, index) => (
-                                                                        <Flex 
-                                                                            key={index}
-                                                                            minW="460px" 
-                                                                            minH="10rem" 
-                                                                            maxW="460px" 
-                                                                            maxH="10rem" 
-                                                                            direction="column" 
-                                                                            gap={2} 
-                                                                            px={6}
-                                                                            py={2}
-                                                                            my={4}
-                                                                            roundedRight="md" 
-                                                                            cursor={"pointer"}
-                                                                            transition="transform 0.2s" 
-                                                                            _hover={{ transform: 'scale(1.02)' }} 
-                                                                            onClick={() => {handleVoucherSelection(voucher); handleCloseVouchersModal()}}
-                                                                            style={{
-                                                                                background: "linear-gradient(135deg, #7ed3d6, #7ed687)",
-                                                                                position: 'relative', 
-                                                                                padding: '1rem'
-                                                                            }}
-                                                                        >
-                                                                            {[...Array(9)].map((_, index) => (
-                                                                                <Box
-                                                                                    my={2}
-                                                                                    key={index}
-                                                                                    position="absolute"
-                                                                                    top={`${(index * 20) + 2}px`} 
-                                                                                    left="0%" 
-                                                                                    transform="translate(-50%, -50%)"
-                                                                                    width="12px"
-                                                                                    height="12px"
-                                                                                    borderLeftRadius="50%"
-                                                                                    borderRightRadius="50%"
-                                                                                    bg="white"
-                                                                                    zIndex="2"
-                                                                                />
-                                                                            ))}                               
-                                                                            <Box
-                                                                                position="absolute"
-                                                                                top="0"
-                                                                                left="35%"
-                                                                                transform="translateX(-50%)"
-                                                                                width="4px"
-                                                                                height="100%"
-                                                                                backgroundImage="linear-gradient(white 50%, transparent 50%)" 
-                                                                                backgroundSize="4px 20px"
-                                                                                backgroundRepeat="repeat-y" 
-                                                                                zIndex="1" 
-                                                                            />
-                                                                            <Box
-                                                                                position="absolute"
-                                                                                top="0"
-                                                                                left="35%"
-                                                                                transform="translate(-50%, -50%)"
-                                                                                width="15px"
-                                                                                height="15px"
-                                                                                borderBottomLeftRadius="50%"
-                                                                                borderBottomRightRadius="50%"
-                                                                                bg="white"
-                                                                                zIndex="2"
-                                                                            />
-                                                
-                                                                            <Box
-                                                                                position="absolute"
-                                                                                bottom="0"
-                                                                                left="35%"
-                                                                                transform="translate(-50%, 50%)"
-                                                                                width="15px"
-                                                                                height="15px"
-                                                                                borderTopLeftRadius="50%"
-                                                                                borderTopRightRadius="50%"
-                                                                                bg="white"
-                                                                                zIndex="2"
-                                                                            />
-                                                                            <Flex w="full" h="8rem">
-                                                                                <Flex w="35%" h="8rem" alignItems="center" justifyContent="center">
-                                                                                    {
-                                                                                        voucher?.discount_application === "products" && (
-                                                                                            <BsCart3 size="70px" color="#f4f4f4"/>
-                                                                                        ) 
-                                                                                    }
-                                                                                    {
-                                                                                        voucher?.discount_application === "shipping" && (
-                                                                                            <LiaShippingFastSolid size="70px" color="#f4f4f4"/>
-                                                                                        )
-                                                                                    }
-                                                                                </Flex>
-                                                                                <Flex w="65%" h="8rem" direction="column" justifyContent="center" gap={2} ml={10}>
-                                                                                    <Flex w="full" gap={3} direction="row">
-                                                                                        {
-                                                                                            voucher?.discount_type === "fixed" && (
-                                                                                                <Text fontSize="5xl" fontWeight="600" color="#f4f4f4">RM</Text>
-                                                                                            )
-                                                                                        }                                             
-                                                                                        {
-                                                                                            voucher?.discount_value && (
-                                                                                                <Text fontSize="5xl" fontWeight="600" color="#f4f4f4">{voucher?.discount_value}</Text>
-                                                                                            )
-                                                                                        }            
-                                                                                        {
-                                                                                            voucher?.discount_type === "percentage" && (
-                                                                                                <Text fontSize="5xl" fontWeight="600" color="#f4f4f4">%</Text>
-                                                                                            )
-                                                                                        }
-                                                                                        {
-                                                                                            !voucher?.discount_value && !voucher?.discount_type && (
-                                                                                                <Text fontSize="5xl" fontWeight="600" color="#f4f4f4">0</Text>
-                                                                                            )
-                                                                                        }             
+                                                                    vouchers && Object.values(vouchers).map((voucher, index) => {
+                                                                        const { valid, message } = handleVoucherUsageValidation(voucher);
+
+                                                                        return (
+                                                                            <Box key={index} py={2}>
+                                                                                <Tooltip
+                                                                                    label={message}
+                                                                                    placement="top"
+                                                                                >
+                                                                                    <Flex
+                                                                                        minW="460px"
+                                                                                        minH="10rem"
+                                                                                        maxW="460px"
+                                                                                        maxH="10rem"
+                                                                                        direction="column"
+                                                                                        gap={2}
+                                                                                        px={6}
+                                                                                        roundedRight="md"
+                                                                                        cursor={valid ? "pointer" : "not-allowed"}
+                                                                                        transition="transform 0.2s"
+                                                                                        _hover={{ transform: valid ? 'scale(1.02)' : 'none' }}
+                                                                                        onClick={() => {
+                                                                                            if (valid) {
+                                                                                                handleVoucherSelection(voucher);
+                                                                                                handleCloseVouchersModal();
+                                                                                            }
+                                                                                        }}
+                                                                                        style={{
+                                                                                            background: "linear-gradient(135deg, #7ed3d6, #7ed687)",
+                                                                                            position: 'relative',
+                                                                                            padding: '1rem',
+                                                                                            opacity: !valid ? 0.6 : 1,
+                                                                                        }}
+                                                                                    >
+                                                                                        {[...Array(9)].map((_, index) => (
+                                                                                            <Box
+                                                                                                my={2}
+                                                                                                key={index}
+                                                                                                position="absolute"
+                                                                                                top={`${(index * 20) + 2}px`}
+                                                                                                left="0%"
+                                                                                                transform="translate(-50%, -50%)"
+                                                                                                width="12px"
+                                                                                                height="12px"
+                                                                                                borderLeftRadius="50%"
+                                                                                                borderRightRadius="50%"
+                                                                                                bg="white"
+                                                                                                zIndex="2"
+                                                                                            />
+                                                                                        ))}
+                                                                                        <Box
+                                                                                            position="absolute"
+                                                                                            top="0"
+                                                                                            left="35%"
+                                                                                            transform="translateX(-50%)"
+                                                                                            width="4px"
+                                                                                            height="100%"
+                                                                                            backgroundImage="linear-gradient(white 50%, transparent 50%)"
+                                                                                            backgroundSize="4px 20px"
+                                                                                            backgroundRepeat="repeat-y"
+                                                                                            zIndex="1"
+                                                                                        />
+                                                                                        <Box
+                                                                                            position="absolute"
+                                                                                            top="0"
+                                                                                            left="35%"
+                                                                                            transform="translate(-50%, -50%)"
+                                                                                            width="15px"
+                                                                                            height="15px"
+                                                                                            borderBottomLeftRadius="50%"
+                                                                                            borderBottomRightRadius="50%"
+                                                                                            bg="white"
+                                                                                            zIndex="2"
+                                                                                        />
+                                                                                        <Box
+                                                                                            position="absolute"
+                                                                                            bottom="0"
+                                                                                            left="35%"
+                                                                                            transform="translate(-50%, 50%)"
+                                                                                            width="15px"
+                                                                                            height="15px"
+                                                                                            borderTopLeftRadius="50%"
+                                                                                            borderTopRightRadius="50%"
+                                                                                            bg="white"
+                                                                                            zIndex="2"
+                                                                                        />
+                                                                                        <Flex w="full" h="8rem">
+                                                                                            <Flex w="35%" h="8rem" alignItems="center" justifyContent="center">
+                                                                                                {voucher?.discount_application === "products" && (
+                                                                                                    <BsCart3 size="70px" color="#f4f4f4" />
+                                                                                                )}
+                                                                                                {voucher?.discount_application === "shipping" && (
+                                                                                                    <LiaShippingFastSolid size="70px" color="#f4f4f4" />
+                                                                                                )}
+                                                                                            </Flex>
+                                                                                            <Flex w="65%" h="8rem" direction="column" justifyContent="center" gap={2} ml={10}>
+                                                                                                <Flex w="full" gap={3} direction="row">
+                                                                                                    {voucher?.discount_type === "fixed" && (
+                                                                                                        <Text fontSize="5xl" fontWeight="600" color="#f4f4f4">RM</Text>
+                                                                                                    )}
+                                                                                                    {voucher?.discount_value && (
+                                                                                                        <Text fontSize="5xl" fontWeight="600" color="#f4f4f4">{voucher?.discount_value}</Text>
+                                                                                                    )}
+                                                                                                    {voucher?.discount_type === "percentage" && (
+                                                                                                        <Text fontSize="5xl" fontWeight="600" color="#f4f4f4">%</Text>
+                                                                                                    )}
+                                                                                                    {!voucher?.discount_value && !voucher?.discount_type && (
+                                                                                                        <Text fontSize="5xl" fontWeight="600" color="#f4f4f4">0</Text>
+                                                                                                    )}
+                                                                                                </Flex>
+                                                                                                <Flex direction="column">
+                                                                                                    <Text fontSize="md" fontWeight="600" color="#f4f4f4">Minimum Spend RM{voucher.minimum_spend}</Text>
+                                                                                                    <Text fontSize="sm" fontWeight="500" color="#f4f4f4">Expiries In {voucher.expiry_date}</Text>
+                                                                                                </Flex>
+                                                                                            </Flex>
+                                                                                        </Flex>
                                                                                     </Flex>
-                                                                                    <Flex direction="column">
-                                                                                        <Text fontSize="md" fontWeight="600" color="#f4f4f4">Minimum Spend RM{voucher.minimum_spend}</Text>
-                                                                                        <Text fontSize="sm" fontWeight="500" color="#f4f4f4">Expiries In {voucher.expiry_date}</Text>
-                                                                                    </Flex>
-                                                                                </Flex>
-                                                                            </Flex>
-                                                                        </Flex> 
-                                                                    ))
+                                                                                </Tooltip>    
+                                                                                <Accordion allowToggle>
+                                                                                    <AccordionItem>
+                                                                                        <AccordionButton style={{ outline:'none' }}>
+                                                                                            <Box flex="1" textAlign="left">
+                                                                                                <Text fontSize="sm" fontWeight="600">Terms & Conditions</Text>
+                                                                                            </Box>
+                                                                                            <AccordionIcon />
+                                                                                        </AccordionButton>
+                                                                                        <AccordionPanel pb={4}>
+                                                                                            <Flex direction="column" gap={2}>
+                                                                                                <Text fontSize="sm" fontWeight="600">{voucher.terms_and_conditions}</Text>
+                                                                                            </Flex>
+                                                                                        </AccordionPanel>
+                                                                                    </AccordionItem>
+                                                                                </Accordion>                                                                                
+                                                                            </Box>
+                                                                        )
+                                                                    })
                                                                 }
                                                             </ModalBody>
                                                         </ModalContent>
@@ -916,6 +1058,7 @@ function CustomerCheckout() {
                                         </Flex>
                                     </Flex>
                                 </Flex>
+                                <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300" my={4}/> 
                                 <Flex w="full" direction="column" gap={4}>
                                     <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">4. Payment Method</Text>
                                     <Flex w="full" h="13rem" direction="row" gap={5}>
@@ -960,7 +1103,6 @@ function CustomerCheckout() {
                                                         opacity: total > Number(settings?.cash_on_delivery_threshold) ? 0.6 : 1,
                                                     }}
                                                     outline={ selectedCashPayment ? "2px solid blue" : "none"}
-                                                    onClick={total <= Number(settings?.cash_on_delivery_threshold) ? () => handleCashOnDeliverySelection() : null}
                                                 >
                                                     <Tooltip label={`Total exceeds threshold of RM${Number(settings?.cash_on_delivery_threshold)}`} placement="top">
                                                         <Flex direction="column" h="full" gap={1}>
@@ -999,6 +1141,7 @@ function CustomerCheckout() {
                                                         opacity: total > Number(settings?.cash_on_delivery_threshold) ? 0.6 : 1,
                                                     }}
                                                     outline={ selectedCashPayment ? "2px solid blue" : "none"}
+                                                    onClick={() => handleCashOnDeliverySelection()}
                                                 >
                                                     <Flex direction="column" h="full" gap={1}>
                                                         <Flex w="full" justifyContent="space-between" alignItems="center">
@@ -1037,7 +1180,6 @@ function CustomerCheckout() {
                                                     }}
                                                     bg={"#295EA2"}
                                                     outline={ selectedEWallet ? "2px solid blue" : "none"}
-                                                    onClick={total <= Number(settings?.e_wallet_threshold) ? () => handleEWalletSelection() : null}
                                                 >
                                                     <Tooltip label={`Total exceeds threshold of RM${settings?.e_wallet_threshold}`} placement="top">
                                                         <Flex w="full" h="full" justifyContent="center">
@@ -1066,6 +1208,7 @@ function CustomerCheckout() {
                                                     }}
                                                     bg={"#295EA2"}
                                                     outline={ selectedEWallet ? "2px solid blue" : "none"}
+                                                    onClick={() => handleEWalletSelection()}
                                                 >
                                                     <Flex w="full" h="full" justifyContent="center">
                                                         <img src="/src/assets/images/touch_n_go.png" style={{ width: "180px" }}/>
@@ -1155,7 +1298,31 @@ function CustomerCheckout() {
                         </form>
                     </Flex>
                     <Flex w="30%" direction="column">
-                        <Flex w="full" bg="white" shadow="md" p={1}>
+                        <Flex w="full" bg="white" shadow="md" p={1} direction="column">
+                            {
+                                shippingFee == 0 && (
+                                    <Flex w="full" direction="row">
+                                        <Alert status="success" size={"sm"}>
+                                            <AlertIcon />
+                                            <Text fontSize="xs" fontWeight="semibold">
+                                                Free Shipping for orders above RM {settings?.shipping_fee_threshold}
+                                            </Text>
+                                        </Alert>
+                                    </Flex>
+                                )
+                            }
+                            {
+                                weightFee > 0 && (
+                                    <Flex w="full" direction="row">
+                                        <Alert status="warning" size={"sm"}>
+                                            <AlertIcon />
+                                            <Text fontSize="xs" fontWeight="semibold">
+                                                Additional weight charges apply for orders exceeding {settings?.maximum_weight_load}kg
+                                            </Text>
+                                        </Alert>
+                                    </Flex>
+                                )
+                            }
                             <Tabs w="full" size="md" variant="unstyled">
                                 <TabList>
                                     <Tab style={{ outline: "none" }}>Order List</Tab>
@@ -1204,14 +1371,24 @@ function CustomerCheckout() {
                                                     </Flex>                                                
                                                 )
                                             }
+                                            {
+                                                selectedVoucher && (
+                                                    <Flex w="full" direction="row" justifyContent="space-between" mb={2}>
+                                                        <Text fontSize="sm" fontWeight="600" color="gray.500" letterSpacing="wide">Voucher Discount</Text>
+                                                        <Text fontSize="sm" fontWeight="600" color="gray.600" letterSpacing="wide">
+                                                            - RM { discount }
+                                                        </Text>
+                                                    </Flex>                                                
+                                                )
+                                            }
                                             <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300" my={4}/>  
                                             <Flex w="full" direction="row" justifyContent="space-between" mb={4}>
                                                 <Text fontSize="md" fontWeight="600" color="gray.600" letterSpacing="wide">Total Payment</Text>
                                                 <Text fontSize="md" fontWeight="600" color="gray.700" letterSpacing="wide">
-                                                    RM { (Number(subtotal) + Number(shippingFee) + Number(weightFee)).toFixed(2) }
+                                                    RM { (Number(subtotal) + Number(shippingFee) + Number(weightFee) - Number(discount)).toFixed(2) }
                                                 </Text>
                                             </Flex>
-                                            <Button w="full" colorScheme="blue" mb={1} style={{ outline:'none' }}>Proceed To Payment</Button>
+                                            <Button w="full" colorScheme="blue" mb={1} style={{ outline:'none' }} onClick={handlePayment}>Proceed To Payment</Button>
                                         </Flex>                                    
                                     </TabPanel>
                                     <TabPanel>

@@ -408,3 +408,89 @@ export const deleteCard = async (userId, cardId) => {
         throw error;
     }
 }
+
+export const redeemVoucher = async (voucher_code, user_id) => {
+    try {
+        const voucherQuery = query(ref(db, "vouchers"), orderByChild("voucher_code"), equalTo(voucher_code));
+        const voucherSnapshot = await get(voucherQuery);
+
+        if (!voucherSnapshot.exists()) {
+            return { error: "Voucher not found" };
+        }
+
+        const voucherData = voucherSnapshot.val();
+        const voucher_id = Object.keys(voucherData)[0];
+
+        let redemption_count = voucherData.redemption_count || 0;
+        redemption_count = Number(redemption_count);
+
+        const { redemption_limit } = voucherData;
+
+        if (redemption_limit && redemption_count >= redemption_limit) {
+            return { error: "Redemption limit reached" };
+        }
+
+        const userVouchersRef = ref(db, `users/${user_id}/vouchers`);
+        const userVouchersSnapshot = await get(userVouchersRef);
+        const userVouchers = userVouchersSnapshot.val();
+
+        if (userVouchers && userVouchers[voucher_id] === true) {
+            return { error: "Voucher already redeemed by user" };
+        }
+
+        const voucherRef = ref(db, `vouchers/${voucher_id}`);
+        await update(voucherRef, {
+            redemption_count: redemption_count + 1
+        });
+
+        const voucherUsersRef = ref(db, `vouchers/${voucher_id}/users`);
+        await update(voucherUsersRef, {
+            [user_id]: true
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const placeOrder = async (data) => {
+    const { 
+        user_id,
+        items,
+        address,
+        payment,
+        payment_method,
+        subtotal,
+        shipping,
+        weight,
+        discount,
+        voucher,
+        total
+    } = data;
+    try {
+        const orderRef = ref(db, `orders`);
+        const newOrderRef = push(orderRef);
+        const order_id = newOrderRef.key;
+
+        await set(newOrderRef, {
+            user_id: user_id,
+            items: items,
+            address: address,
+            payment: payment,
+            payment_method: payment_method,
+            subtotal: subtotal,
+            shipping: shipping,
+            weight: weight,
+            discount: discount,
+            voucher: voucher,
+            total: total,
+            status: "Pending",
+            created_on: new Date().toISOString()
+        });
+
+        return { success: true, order_id: order_id };
+    } catch (error) {
+        throw error;
+    }
+}
