@@ -505,7 +505,7 @@ export const addVoucher = async (data) => {
         voucher_code,
         auto_redemption_amount,
         redemption_limit,
-        redemption_status = "available",
+        terms_and_conditions,
         created_on = new Date(),
         created_by = auth.currentUser.uid,
     } = data;
@@ -525,7 +525,8 @@ export const addVoucher = async (data) => {
             voucher_code,
             auto_redemption_amount,
             redemption_limit,
-            redemption_status,
+            redemption_count: 0,
+            terms_and_conditions,
             created_on,
             created_by,
         });
@@ -591,6 +592,7 @@ export const updateVoucher = async (data) => {
         customer_eligibility,
         voucher_code,
         auto_redemption_amount,
+        terms_and_conditions,
         redemption_limit,
     } = data;
 
@@ -606,6 +608,7 @@ export const updateVoucher = async (data) => {
             customer_eligibility,
             voucher_code,
             auto_redemption_amount,
+            terms_and_conditions,
             redemption_limit,
             updated_on: new Date(),
             updated_by: auth.currentUser.uid,

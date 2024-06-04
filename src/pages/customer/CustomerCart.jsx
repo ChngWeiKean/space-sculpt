@@ -86,6 +86,7 @@ function CustomerCart() {
                                         image: variantData.image,
                                         color: variantData.color,
                                         inventory: variantData.inventory,
+                                        variantId: item.variantId,
                                         cartId: item.id,
                                         ...furnitureData 
                                     };
@@ -350,7 +351,7 @@ function CustomerCart() {
                                             }
                                         </Text>
                                     </Flex>
-                                    <Button w="full" colorScheme="blue" size="lg" onClick={handleCheckout}>Checkout</Button>
+                                    <Button w="full" colorScheme="blue" size="lg" onClick={handleCheckout} style={{ outline:'none' }}>Checkout</Button>
                                 </Flex>                                
                             </Flex>
                         )

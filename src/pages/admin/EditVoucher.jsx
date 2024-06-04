@@ -15,30 +15,45 @@ import {
     InputRightElement,
     InputLeftAddon,
     InputRightAddon,
+    Textarea,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill, BsCart3 } from "react-icons/bs";
+import { BiSearchAlt2 } from 'react-icons/bi';
+import { FaEye, FaHospitalUser, FaStethoscope, FaTrash, FaUser, FaUserShield, FaCar } from 'react-icons/fa';
 import { LiaShippingFastSolid } from "react-icons/lia";
 import { IoMdArrowRoundBack } from "react-icons/io";
-import { FaPlus, FaTrash  } from "react-icons/fa6";
 import { useForm } from "react-hook-form";
 import { db } from "../../../api/firebase";
 import { NavLink, useParams } from 'react-router-dom';
 import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { InputText } from 'primereact/inputtext';
+import { FilterMatchMode } from 'primereact/api';
+import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
 import { updateVoucher } from "../../../api/admin";
 
 function EditVoucher() {
     const { id } = useParams();
     const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm();
     const [ vouchers, setVouchers ] = useState([]);
+    const [ users, setUsers ] = useState([]);
     const [ voucher, setVoucher ] = useState({});
     const [ customers, setCustomers ] = useState([]);
+    const [globalFilterValue, setGlobalFilterValue] = useState('');
     const discountType = watch("discount_type");
     const application = watch("discount_application");
     const discountValue = watch("discount_value");
     const minimumSpend = watch("minimum_spend");
     const expiryDate = watch("expiry_date");
     const toast = useToast();
+    const [filters, setFilters] = useState({
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        email: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        contact: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    });
 
     useEffect(() => {
         const vouchersRef = ref(db, "vouchers");
@@ -52,6 +67,22 @@ function EditVoucher() {
                 });
             });
             setVouchers(vouchers);
+        });
+
+        const usersRef = ref(db, "users");
+        const usersQuery = query(usersRef);
+        onValue(usersQuery, (snapshot) => {
+            const users = [];
+            snapshot.forEach((childSnapshot) => {
+                if (childSnapshot.val().role === "Customer" && childSnapshot.val().vouchers && childSnapshot.val().vouchers[id]) {
+                    users.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val(),
+                    });
+                }
+            });
+            console.log(users);
+            setUsers(users);
         });
     }, []);
 
@@ -69,14 +100,129 @@ function EditVoucher() {
             setValue("voucher_code", voucher.voucher_code);
             setValue("auto_redemption_amount", voucher.auto_redemption_amount);
             setValue("redemption_limit", voucher.redemption_limit);
+            setValue("terms_and_conditions", voucher.terms_and_conditions);
         }
     }, [vouchers]);
 
-    function startOfDay(date) {
-        const newDate = new Date(date);
-        newDate.setHours(0, 0, 0, 0);
-        return newDate;
-    }
+    const onGlobalFilterChange = (e) => {
+        const value = e.target.value;
+        let _filters = { ...filters };
+
+        _filters['global'].value = value;
+
+        setFilters(_filters);
+        setGlobalFilterValue(value);
+    };
+
+    const actionBodyTemplate = (rowData) => {
+        return (
+            <Flex justifyContent='center' alignItems='center' gap={2}>
+                <Button bg='transparent' as={NavLink} to={`/admin/users/${rowData.id}/view`}><FaEye color='#0078ff'/></Button>
+            </Flex>
+        );
+    };
+
+    const orderBodyTemplate = (rowData) => {
+        let orders = rowData.orders;
+        if (orders) {
+            orders = Object.keys(orders).length;
+        } else {
+            orders = 0;
+        }
+
+        return (
+            <Box display='flex' alignItems='center' gap={1}>
+                {
+                    orders === 0 ? (
+                        <Text>New Customer</Text>
+                    ) : (
+                        <Text>{orders} Orders</Text>
+                    )
+                }
+            </Box>
+        );
+    };
+
+    const claimStatusBodyTemplate = (rowData) => {
+        let notClaimed = false;
+        if (rowData.vouchers) {
+            notClaimed = rowData.vouchers[id];
+        }
+
+        return (
+            <Box display='flex' alignItems='center' gap={1}>
+                {
+                    notClaimed ? (
+                        <Text>Not Claimed</Text>
+                    ) : (
+                        <Text>Claimed</Text>
+                    )
+                }
+            </Box>
+        );
+    };
+
+    const nameRowFilterTemplate = (options) => {
+        return (
+            <InputText
+                value={options.value || ""}
+                onChange={(e) => options.filterApplyCallback(e.target.value, filters['name'].matchMode)}
+            />
+        );
+    };
+
+    const contactRowFilterTemplate = (options) => {
+        return (
+            <InputText
+                value={options.value || ""}
+                onChange={(e) => options.filterApplyCallback(e.target.value, filters['contact'].matchMode)}
+            />
+        );
+    };
+
+    const emailRowFilterTemplate = (options) => {
+        return (
+            <InputText
+                value={options.value || ""}
+                onChange={(e) => options.filterApplyCallback(e.target.value, filters['email'].matchMode)}
+            />
+        );
+    };
+
+    const renderHeader = () => {
+        return (
+            <Box>
+                <Flex justifyContent='space-between' alignItems='center'>
+                    <Box>
+                        <Text fontSize='2xl' fontWeight='semibold'>Voucher Redemption List</Text>
+                    </Box>
+                    <Box>
+                        <InputGroup>
+                            <InputLeftElement
+                                pointerEvents="none"
+                                children={<BiSearchAlt2 color="gray.300" />}
+                            />
+                            <Input
+                                w="full"
+                                placeholder="Search"
+                                size="md"
+                                focusBorderColor="blue.500"
+                                borderRadius="lg"
+                                borderColor="gray.300"
+                                backgroundColor="white"
+                                color="gray.800"
+                                value={globalFilterValue}
+                                onChange={onGlobalFilterChange}
+                            />
+                        </InputGroup>
+                    </Box>           
+                </Flex>          
+                <Divider mt={5} borderColor="blackAlpha.300" borderWidth="1px" />  
+            </Box>
+        );
+    };
+
+    const header = renderHeader();
 
     const onSubmit = async (data) => {
         let voucherData = {
@@ -91,6 +237,7 @@ function EditVoucher() {
             voucher_code: data.voucher_code,
             auto_redemption_amount: data.auto_redemption_amount,
             redemption_limit: data.redemption_limit,
+            terms_and_conditions: data.terms_and_conditions,
         }
         console.log(voucherData);
 
@@ -99,25 +246,6 @@ function EditVoucher() {
             toast({
                 title: "Error",
                 description: "Start date must be before expiry date",
-                position: "top",
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        // Get today's date at the start of the day
-        const today = startOfDay(new Date());
-
-        // Get the start date from the form data and set it to the start of the day
-        const startDate = startOfDay(new Date(data.start_date));
-
-        // start date must be today onwards
-        if (startDate < today) {
-            toast({
-                title: "Error",
-                description: "Start date must be today onwards",
                 position: "top",
                 status: "error",
                 duration: 5000,
@@ -164,7 +292,7 @@ function EditVoucher() {
         }
 
         // check if minimum spend is greater than 0
-        if (data.minimum_spend <= 0) {
+        if (data.minimum_spend < 0) {
             toast({
                 title: "Error",
                 description: "Minimum spend must be greater than 0",
@@ -177,7 +305,7 @@ function EditVoucher() {
         }
 
         // check if auto redemption amount is greater than 0
-        if (data.auto_redemption_amount <= 0) {
+        if (data.auto_redemption_amount < 0) {
             toast({
                 title: "Error",
                 description: "Auto redemption amount must be greater than 0",
@@ -369,7 +497,95 @@ function EditVoucher() {
                                 </Flex>
 
                                 <Flex w="full" direction="column" gap={3}>
-                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Other</Text>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Redemption</Text>
+                                    <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>
+                                    <Flex w="full" direction="row" gap={5}> 
+                                        <FormControl isInvalid={errors.voucher_code}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Voucher Code
+                                            </FormLabel>
+                                            <Input
+                                                variant="filled"
+                                                type="text"
+                                                id="voucher_code"
+                                                {
+                                                    ...register("voucher_code", {
+                                                        required: "Voucher code cannot be empty",
+                                                    })
+                                                }
+                                                rounded="md"
+                                                borderWidth="1px"
+                                                borderColor="gray.300"
+                                                color="gray.900"
+                                                size="md"
+                                                focusBorderColor="blue.500"
+                                                w="full"
+                                                p={2.5}
+                                            />
+                                            <FormErrorMessage>
+                                                {errors.voucher_code && errors.voucher_code.message}
+                                            </FormErrorMessage>
+                                        </FormControl>  
+                                        <FormControl isInvalid={errors.auto_redemption_amount}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Auto Redemption Amount
+                                            </FormLabel>
+                                            <InputGroup>
+                                                <InputLeftAddon children="RM" />
+                                                <Input
+                                                    variant="filled"
+                                                    type="number"
+                                                    id="auto_redemption_amount"
+                                                    {
+                                                        ...register("auto_redemption_amount", {
+                                                            required: "Auto redemption amount cannot be empty",
+                                                        })
+                                                    }
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    p={2.5}
+                                                />
+                                            </InputGroup>
+                                            <FormErrorMessage>
+                                                {errors.auto_redemption_amount && errors.auto_redemption_amount.message}
+                                            </FormErrorMessage>
+                                        </FormControl>  
+                                        <FormControl isInvalid={errors.redemption_limit}>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Redemption Limit
+                                            </FormLabel>
+                                            <Input
+                                                variant="filled"
+                                                type="number"
+                                                id="redemption_limit"
+                                                {
+                                                    ...register("redemption_limit", {
+                                                        required: "Redemption limit cannot be empty",
+                                                    })
+                                                }
+                                                rounded="md"
+                                                borderWidth="1px"
+                                                borderColor="gray.300"
+                                                color="gray.900"
+                                                size="md"
+                                                focusBorderColor="blue.500"
+                                                w="full"
+                                                p={2.5}
+                                            />
+                                            <FormErrorMessage>
+                                                {errors.redemption_limit && errors.redemption_limit.message}
+                                            </FormErrorMessage>
+                                        </FormControl>  
+                                    </Flex>       
+                                </Flex>
+
+                                <Flex w="full" direction="column" gap={3}>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Voucher Application</Text>
                                     <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>
                                     <Flex w="full" direction="row" gap={5}>
                                         <FormControl isInvalid={errors.discount_application}>
@@ -456,90 +672,65 @@ function EditVoucher() {
                                                 {errors.customer_eligibility && errors.customer_eligibility.message}
                                             </FormErrorMessage>
                                         </FormControl> 
-                                    </Flex>   
-                                    <Flex w="full" direction="row" gap={5}> 
-                                        <FormControl isInvalid={errors.voucher_code}>
-                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                                Voucher Code
-                                            </FormLabel>
-                                            <Input
-                                                variant="filled"
-                                                type="text"
-                                                id="voucher_code"
-                                                {
-                                                    ...register("voucher_code", {
-                                                        required: "Voucher code cannot be empty",
-                                                    })
-                                                }
-                                                rounded="md"
-                                                borderWidth="1px"
-                                                borderColor="gray.300"
-                                                color="gray.900"
-                                                size="md"
-                                                focusBorderColor="blue.500"
-                                                w="full"
-                                                p={2.5}
-                                            />
-                                            <FormErrorMessage>
-                                                {errors.voucher_code && errors.voucher_code.message}
-                                            </FormErrorMessage>
-                                        </FormControl>  
-                                        <FormControl isInvalid={errors.auto_redemption_amount}>
-                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                                Auto Redemption Amount
-                                            </FormLabel>
-                                            <InputGroup>
-                                                <InputLeftAddon children="RM" />
-                                                <Input
-                                                    variant="filled"
-                                                    type="number"
-                                                    id="auto_redemption_amount"
-                                                    {
-                                                        ...register("auto_redemption_amount", {
-                                                            required: "Auto redemption amount cannot be empty",
-                                                        })
-                                                    }
-                                                    rounded="md"
-                                                    borderWidth="1px"
-                                                    borderColor="gray.300"
-                                                    color="gray.900"
-                                                    size="md"
-                                                    focusBorderColor="blue.500"
-                                                    w="full"
-                                                    p={2.5}
-                                                />
-                                            </InputGroup>
-                                            <FormErrorMessage>
-                                                {errors.auto_redemption_amount && errors.auto_redemption_amount.message}
-                                            </FormErrorMessage>
-                                        </FormControl>  
-                                        <FormControl isInvalid={errors.redemption_limit}>
-                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                                Redemption Limit
-                                            </FormLabel>
-                                            <Input
-                                                variant="filled"
-                                                type="number"
-                                                id="redemption_limit"
-                                                {
-                                                    ...register("redemption_limit", {
-                                                        required: "Redemption limit cannot be empty",
-                                                    })
-                                                }
-                                                rounded="md"
-                                                borderWidth="1px"
-                                                borderColor="gray.300"
-                                                color="gray.900"
-                                                size="md"
-                                                focusBorderColor="blue.500"
-                                                w="full"
-                                                p={2.5}
-                                            />
-                                            <FormErrorMessage>
-                                                {errors.redemption_limit && errors.redemption_limit.message}
-                                            </FormErrorMessage>
-                                        </FormControl>  
-                                    </Flex>                                 
+                                    </Flex>                             
+                                </Flex>
+
+                                <Flex w="full" direction="column" gap={3}>
+                                    <Text fontSize="xl" fontWeight="700" color="#d69511">Terms & Conditions</Text>
+                                    <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>
+                                    <Flex w="full" direction="row" gap={5}>
+                                    <FormControl isInvalid={errors.terms_and_conditions}>
+                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                            Terms & Conditions
+                                        </FormLabel>        
+                                        <Textarea
+                                            variant="filled"
+                                            type="text"
+                                            id="terms_and_conditions"
+                                            {
+                                                ...register("terms_and_conditions", {
+                                                    required: "Voucher terms and conditions cannot be empty",
+                                                })
+                                            }
+                                            placeholder="Enter voucher terms and conditions here..."
+                                            rounded="md"
+                                            h={"150px"}
+                                            borderWidth="1px"
+                                            borderColor="gray.300"
+                                            color="gray.900"
+                                            size="md"
+                                            focusBorderColor="blue.500"
+                                            w="full"
+                                            p={2.5}
+                                        />
+                                        <FormErrorMessage>
+                                            {errors.terms_and_conditions && errors.terms_and_conditions.message}
+                                        </FormErrorMessage>
+                                    </FormControl>    
+                                    </Flex>
+                                </Flex>
+
+                                <Flex w="full">
+                                    <DataTable
+                                        value={users}
+                                        header={header}
+                                        removableSort
+                                        rowsPerPageOptions={[10, 25, 50]}
+                                        paginator
+                                        rows={10}
+                                        stripedRows 
+                                        filters={filters}
+                                        filterDisplay="row"
+                                        globalFilterFields={['name', 'email', 'contact']}
+                                        dataKey="id"
+                                    >
+                                        <Column field="name" header="Name" sortable filter filterElement={nameRowFilterTemplate} style={{ width: "15%" }}></Column>
+                                        <Column field="email" header="Email" sortable filter filterElement={emailRowFilterTemplate} style={{ width: "30%" }}></Column>
+                                        {/* <Column field="contact" header="Contact" sortable filter filterElement={contactRowFilterTemplate}></Column> */}
+                                        <Column field="orders" header="Orders" sortable body={orderBodyTemplate} style={{ width: "25%" }}></Column>
+                                        <Column field="vouchers" header="Claim Status" body={claimStatusBodyTemplate} style={{ width: "20%" }}></Column>
+                                        <Column field="action" header="Action" body={actionBodyTemplate} style={{ width: "10%" }}></Column>
+                                    </DataTable>
                                 </Flex>
                             </Flex>
                         </form>
@@ -555,7 +746,6 @@ function EditVoucher() {
                             px={6}
                             py={2}
                             roundedRight="md" 
-                            cursor={"pointer"}
                             transition="transform 0.2s" 
                             style={{
                                 background: "linear-gradient(135deg, #7ed3d6, #7ed687)",
@@ -666,7 +856,7 @@ function EditVoucher() {
                                 )
                             }
                             {
-                                voucher.redemption_count === voucher.redemption_limit && (
+                                voucher && voucher.redemption_count !== undefined && voucher.redemption_count === voucher.redemption_limit && (
                                     <Button colorScheme="orange" variant="solid" pointerEvents="none">Fully Redeemed</Button>
                                 )
                             }

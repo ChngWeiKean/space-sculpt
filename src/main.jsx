@@ -36,6 +36,7 @@ import LogisticsSettings from './pages/logistics/LogisticsSettings.jsx'
 import Vouchers from './pages/admin/Vouchers.jsx'
 import AddVoucher from './pages/admin/AddVoucher.jsx'
 import EditVoucher from './pages/admin/EditVoucher.jsx'
+import CustomerPaymentAndPlaceOrder from './pages/customer/CustomerPaymentAndPlaceOrder.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -62,6 +63,7 @@ const router = createBrowserRouter(
 				<Route path="furniture/:id/details" element={<CustomerFurnitureDetails/>}/>
 				<Route path="cart" element={<CustomerCart/>}/>
 				<Route path="cart/checkout" element={<CustomerCheckout/>}/>
+				<Route path="cart/checkout/payment" element={<CustomerPaymentAndPlaceOrder/>}/>
 				<Route path="profile" element={<CustomerProfile/>}/>
 				<Route path="add-address" element={<CustomerAddAddress/>}/>
 				<Route path="edit-address/:id" element={<CustomerEditAddress/>}/>
