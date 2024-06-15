@@ -390,32 +390,6 @@ function LogisticsSettings() {
                                                 <Text color="blue.500">Standard shipping fee for all orders</Text>
                                             </FormHelperText>
                                         </FormControl>       
-                                        <FormControl id="delivery_offset">
-                                            <FormLabel>
-                                                <Flex w="full" gap={2} alignItems="center">
-                                                    <MdDateRange color="#d69511" />
-                                                    <Text fontWeight="600" color="gray.600">Estimated Delivery Offset</Text>
-                                                </Flex>      
-                                            </FormLabel>
-                                            <InputGroup size="md">
-                                                <Input
-                                                    variant="filled"
-                                                    id="delivery_offset"
-                                                    bg="white"
-                                                    defaultValue={settings?.delivery_offset || 0}
-                                                    {
-                                                        ...register("delivery_offset")
-                                                    }
-                                                    type='number'
-                                                    placeholder="Delivery Offset"
-                                                    focusBorderColor='blue.500'
-                                                />
-                                                <InputRightElement children="days" />
-                                            </InputGroup>
-                                            <FormHelperText>
-                                                <Text color="blue.500">Estimated delivery offset for all orders</Text>
-                                            </FormHelperText>
-                                        </FormControl>  
                                         <FormControl id="shipping_threshold">
                                             <FormLabel>
                                                 <Flex w="full" gap={2} alignItems="center">
@@ -706,6 +680,32 @@ function LogisticsSettings() {
                                             </Select>
                                         </FormControl>                                     
                                     </Flex>
+                                    <FormControl id="delivery_offset">
+                                        <FormLabel>
+                                            <Flex w="full" gap={2} alignItems="center">
+                                                <MdDateRange color="#d69511" />
+                                                <Text fontWeight="600" color="gray.600">Estimated Delivery Offset</Text>
+                                            </Flex>      
+                                        </FormLabel>
+                                        <InputGroup size="md">
+                                            <Input
+                                                variant="filled"
+                                                id="delivery_offset"
+                                                bg="white"
+                                                defaultValue={settings?.delivery_offset || 0}
+                                                {
+                                                    ...register("delivery_offset")
+                                                }
+                                                type='number'
+                                                placeholder="Delivery Offset"
+                                                focusBorderColor='blue.500'
+                                            />
+                                            <InputRightElement children="days" />
+                                        </InputGroup>
+                                        <FormHelperText>
+                                            <Text color="blue.500">Estimated delivery offset for all orders</Text>
+                                        </FormHelperText>
+                                    </FormControl>  
                                     <Flex w="full" justifyContent="end" mt={2}>
                                         <Button colorScheme="blue" size="md" variant="solid" onClick={handleSubmit(onSubmit("shipping_settings"))}>Confirm & Submit</Button>
                                     </Flex>      
