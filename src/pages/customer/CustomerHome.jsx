@@ -28,8 +28,9 @@ function smoothScrollTo(elementId) {
 }
 
 function CustomerHome() {
-    const [categories, setCategories] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [ categories, setCategories ] = useState([]);
+    const [ furnitureLength, setFurnitureLength ] = useState(0);
+    const [ searchQuery, setSearchQuery ] = useState('');
 
     useEffect(() => {
         const categoryRef = ref(db, 'categories');
@@ -43,6 +44,19 @@ function CustomerHome() {
                 categories.push(data);
             });
             setCategories(categories);
+        });
+
+        const furnitureRef = ref(db, 'furniture');
+        onValue(furnitureRef, (snapshot) => {
+            const furniture = [];
+            snapshot.forEach((childSnapshot) => {
+                const data = {
+                    id: childSnapshot.key,
+                    ...childSnapshot.val(),
+                };
+                furniture.push(data);
+            });
+            setFurnitureLength(furniture.length);
         });
     }, []);
 
@@ -135,7 +149,7 @@ function CustomerHome() {
                                 <IoBedOutline size={"45px"} color="#ffe873"/>
                             </Box>
                             <Flex direction="column" >
-                                <Text fontSize="md" color="gray.600" fontWeight="600">67 Furnitures</Text>
+                                <Text fontSize="md" color="gray.600" fontWeight="600">{furnitureLength} Furnitures</Text>
                                 <Text fontSize="sm" color="gray.500" fontWeight="500">A plethora of items to choose!</Text>
                             </Flex>
                         </Flex>
@@ -198,16 +212,13 @@ function CustomerHome() {
             </Flex>
             <Flex 
                 w="full"
-                // bg="url('src/assets/images/Landing_Page_Bg_2.jpg')" 
-                // bgPosition="center"
-                // bgSize="cover"
                 alignItems="center"
                 justifyContent="center"
                 py={5}
             >
                 <Flex id="trending-products" w="85%" direction="column" mb={4}>
                     <Flex w="full" alignItems="center" justifyContent="center" direction="column">
-                        <Text fontSize="2xl" fontWeight="700" letterSpacing="wide">Trending Products</Text>
+                        <Text fontSize="2xl" fontWeight="700" letterSpacing="wide">Popular Products</Text>
                         <Text fontSize="md" fontWeight="500" mt={3} color="gray.500">Discover the latest trends in furniture with our curated 
                             collection of stylish and functional pieces that effortlessly elevate any living space.</Text>
                     </Flex>

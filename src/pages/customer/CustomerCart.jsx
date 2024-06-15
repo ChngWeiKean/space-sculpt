@@ -293,7 +293,7 @@ function CustomerCart() {
                             <Flex w="full" direction="column" alignItems="center" gap={4}>
                                 <Text fontSize="xl" fontWeight="700">Your cart is empty</Text>
                                 <Text fontSize="lg" fontWeight="400">Looks like you haven't added anything to your cart yet</Text>
-                                <Button colorScheme="blue" size="lg" onClick={() => window.history.back()}>Start Shopping</Button>
+                                <Button colorScheme="blue" size="lg" as={NavLink} to={'/'}>Start Shopping</Button>
                             </Flex>
                         ) : (
                             <Flex w="full" direction="row">

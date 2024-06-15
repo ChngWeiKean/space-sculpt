@@ -15,7 +15,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { BiChevronDown } from "react-icons/bi";
 import { logout } from "../../../api/auth.js";
 import { useAuth } from "../AuthCtx.jsx";
-import { IoHomeOutline, IoCartOutline } from "react-icons/io5";
+import { IoHomeOutline, IoCartOutline, IoDocumentTextOutline } from "react-icons/io5";
 
 const CustomerNavbar = () => {
 	const { user } = useAuth();
@@ -46,14 +46,14 @@ const CustomerNavbar = () => {
 				</Text>
 			</Flex>
 			
-			<Flex alignItems="center">
+			<Flex alignItems="center" gap={1}>
 				<Link as={NavLink} color="gray.500" to="/" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					<Flex alignItems="center" gap={2}>
+					<Flex alignItems="center" gap={1}>
 						<IoHomeOutline/> Home
 					</Flex>
 				</Link>
 				<Link as={NavLink} color="gray.500" to="/cart" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{ textDecoration: "none" }}>
-				<Flex alignItems="center" gap={2} position="relative">
+				<Flex alignItems="center" gap={1} position="relative">
 					<Badge
 						colorScheme="red"
 						borderRadius="full"
@@ -67,6 +67,11 @@ const CustomerNavbar = () => {
 					<IoCartOutline />
 					Cart
 				</Flex>
+				</Link>
+				<Link as={NavLink} color="gray.500" to="/orders" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={1}>
+						<IoDocumentTextOutline/> Orders
+					</Flex>
 				</Link>
 				<Menu marginRight={6}>
 					<MenuButton as={Link} color="teal.500" display="flex" alignItems="center">

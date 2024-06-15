@@ -69,11 +69,14 @@ import { encrypt, decrypt } from 'n-krypta'
 import { fetchAndActivate, getValue } from "firebase/remote-config";
 import { remoteConfig } from "../../../api/firebase.js";
 import { DirectionsRenderer, GoogleMap, InfoWindow, Marker } from '@react-google-maps/api';
+import { placeOrder } from "../../../api/customer.js";
 
 function CustomerPaymentAndPlaceOrder() {
     const { user } = useAuth();
     const toast = useToast();
     const [ card, setCard ] = useState(null);
+    const [ settings, setSettings ] = useState(null);
+    const [ timeOptions, setTimeOptions ] = useState([]);
     const order = useLocation().state;
     console.log(order);
     const {
@@ -105,6 +108,65 @@ function CustomerPaymentAndPlaceOrder() {
                 })
         }
     }, [order, user]); 
+
+    useEffect(() => {
+        // get settings
+        const settingsRef = ref(db, 'settings');
+        onValue(settingsRef, (snapshot) => {
+            const data = snapshot.val();
+            setSettings(data);
+        });
+    }, [order]);
+
+    // Define the helper functions
+    function generateTimeOptions(startTime, endTime, interval = 60) { // Interval set to 60 minutes (1 hour)
+        const times = [];
+        let start = parseTime(startTime);
+        const end = parseTime(endTime);
+        
+        while (start <= end) {
+            times.push(formatTime(start));
+            start.setMinutes(start.getMinutes() + interval);
+        }
+        return times;
+    }
+
+    function parseTime(timeString) {
+        const [time, modifier] = timeString.split(/(am|pm)/i);
+        let [hours, minutes] = time.split(':');
+        hours = parseInt(hours, 10);
+        minutes = minutes ? parseInt(minutes, 10) : 0;
+
+        if (modifier.toLowerCase() === 'pm' && hours < 12) {
+            hours += 12;
+        }
+        if (modifier.toLowerCase() === 'am' && hours === 12) {
+            hours = 0;
+        }
+
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+    }
+
+    function formatTime(date) {
+        let hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+        return `${hours}:${minutesStr} ${ampm}`;
+    }
+
+    useEffect(() => {
+        // Check if settings is defined before generating time options
+        if (settings && settings.initial_delivery_time && settings.end_delivery_time) {
+            // Generate the time options based on settings with 1-hour interval
+            let options = generateTimeOptions(settings.initial_delivery_time, settings.end_delivery_time, 60);
+            setTimeOptions(options);
+        }
+    }, [settings]);
 
     const maskCardNumber = (number) => {
         if (!number) return "";
@@ -150,7 +212,47 @@ function CustomerPaymentAndPlaceOrder() {
         );
     };
 
-    const placeOrder = async () => {
+    const placeNewOrder = async () => {
+        // validate shipping date and time
+        const shipping_date = watch("shipping_date");
+        const shipping_time = watch("shipping_time");
+        if (!shipping_date || !shipping_time) {
+            toast({
+                title: "Please fill in the shipping date and time",
+                status: "error",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        // if shipping date is today, and offset by settings.delivery_offset in days (e.g. 3 days offset from date of order)
+        // offset is number of days (e.g. 3)
+        const offset = settings.delivery_offset;
+        const shippingDate = new Date(shipping_date);
+
+        // Set the time of shippingDate to the start of the day to avoid time comparison issues
+        shippingDate.setHours(0, 0, 0, 0);
+
+        // Get today's date and set the time to the start of the day
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Add offset days to today to get the deliveryDate
+        const deliveryDate = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
+
+        if (shippingDate < deliveryDate) {
+            toast({
+                title: `Please select a shipping date at least ${offset} days from today`,
+                status: "error",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
         let data = {
             user_id: order.user,
             items: order.items,
@@ -163,9 +265,32 @@ function CustomerPaymentAndPlaceOrder() {
             discount: order.discount,
             voucher: order.voucher,
             total: order.total,
+            shipping_date: shipping_date,
+            shipping_time: shipping_time,
         };
         console.log(data);
-
+        
+        try {
+            await placeOrder(data);
+            toast({
+                title: "Order placed successfully",
+                status: "success",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+            window.location.href = "/";
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Failed to place order",
+                status: "error",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+        
     }
 
     return (
@@ -250,30 +375,82 @@ function CustomerPaymentAndPlaceOrder() {
                                     </Flex>
                                 </Flex>
 
-                                <Flex w="full" direction="column" gap={2}>
-                                    <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">2. Shipping Address</Text>
-                                    <Flex w="full" direction="row" gap={4}>
-                                        <FormControl id="address">
-                                            <Textarea 
-                                                variant="outline"
-                                                defaultValue={order.address.address}
-                                                rounded="md"
-                                                borderWidth="1px"
-                                                borderColor="gray.300"
-                                                color="gray.900"
-                                                size="md"
-                                                focusBorderColor="blue.500"
-                                                w="full"
-                                                isReadOnly
-                                                p={2.5}
-                                            />
-                                        </FormControl>
-                                    </Flex>
+                                <Flex w="full" direction="row" gap={4}>
+                                    <Flex w="full" direction="column" gap={2}>
+                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">2. Shipping Address</Text>
+                                        <Flex w="full" direction="row" gap={4}>
+                                            <FormControl id="address">
+                                                <Textarea 
+                                                    variant="outline"
+                                                    defaultValue={order.address.address}
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    isReadOnly
+                                                    p={2.5}
+                                                />
+                                            </FormControl>
+                                        </Flex>
+                                    </Flex>      
+                                    <Flex w="full" direction="column" gap={2}>
+                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">3. Shipping Date & Time</Text>
+                                        <Flex w="full" direction="row" gap={4}>
+                                            <FormControl id="shipping_date">
+                                                <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Shipping Date</FormLabel>
+                                                <Input
+                                                    variant="outline"
+                                                    type="date"
+                                                    id="shipping_date"
+                                                    {
+                                                        ...register("shipping_date", {
+                                                            required: "Shipping date cannot be empty",
+                                                        })
+                                                    }
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    p={2.5}
+                                                />
+                                            </FormControl>
+                                            <FormControl id="shipping_time">
+                                                <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Shipping Time</FormLabel>
+                                                <Select
+                                                    id="shipping_time"
+                                                    {...register("shipping_time", {
+                                                        required: "Shipping time cannot be empty",
+                                                    })}
+                                                    variant="outline"
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                >
+                                                    <option value="">Select a time</option>
+                                                    {timeOptions?.map((time, index) => (
+                                                        <option key={index} value={time}>
+                                                            {time}
+                                                        </option>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </Flex>
+                                    </Flex>                              
                                 </Flex>
 
                                 <Flex w="full" direction="row">
                                     <Flex w="full" direction="column">
-                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">3. Vouchers</Text>
+                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">4. Vouchers</Text>
                                         <Flex w="full" h={order.voucher ? "13rem" : "3rem"} direction="row">
                                             {
                                                 order.voucher ? (
@@ -407,7 +584,7 @@ function CustomerPaymentAndPlaceOrder() {
                                         </Flex>
                                     </Flex>    
                                     <Flex w="full" direction="column">
-                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">4. Payment Method</Text>
+                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">5. Payment Method</Text>
                                         <Flex w="full" h="13rem" direction="row" gap={5}>
                                             <Flex 
                                                 w="full" 
@@ -550,7 +727,7 @@ function CustomerPaymentAndPlaceOrder() {
                                         RM { order.total }
                                     </Text>
                                 </Flex>
-                                <Button w="full" colorScheme="blue" mb={1} style={{ outline:'none' }} onClick={() => placeOrder()}>Place Order</Button>
+                                <Button w="full" colorScheme="blue" mb={1} style={{ outline:'none' }} onClick={() => placeNewOrder()}>Place Order</Button>
                             </Flex>                                    
                         </Flex>
                     </Flex>

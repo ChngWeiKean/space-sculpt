@@ -466,14 +466,110 @@ export const placeOrder = async (data) => {
         weight,
         discount,
         voucher,
-        total
+        total,
+        shipping_date,
+        shipping_time
     } = data;
     try {
         const orderRef = ref(db, `orders`);
         const newOrderRef = push(orderRef);
         const order_id = newOrderRef.key;
 
+        // if voucher is applied, add order_id to the voucher/orders
+        if (voucher) {
+            try {
+                const voucherRef = ref(db, `vouchers/${voucher.id}/orders`);
+                
+                // Get current orders array (if any)
+                const voucherSnapshot = await get(voucherRef);
+                let currentOrders = [];
+                if (voucherSnapshot.exists()) {
+                    currentOrders = voucherSnapshot.val();
+                }
+
+                // Append the new order_id to the current orders array
+                currentOrders.push(order_id);
+
+                // Update the database with the updated orders array
+                await set(voucherRef, currentOrders);
+
+                // update the user's voucher to be redeemed
+                const userVoucherRef = ref(db, `users/${user_id}/vouchers/${voucher.id}`);
+                await set(userVoucherRef, false);
+
+                // update the voucher's user to be redeemed
+                const voucherUserRef = ref(db, `vouchers/${voucher.id}/users/${user_id}`);
+                await set(voucherUserRef, false);                
+            } catch (error) {
+                console.error("Error adding order to voucher:", error);
+            }
+        }
+
+        // store order id in user/orders encase in try catch
+        try {
+            const userOrderRef = ref(db, `users/${user_id}/orders`);
+            const userOrderSnapshot = await get(userOrderRef);
+            let userOrders = [];
+            if (userOrderSnapshot.exists()) {
+                userOrders = userOrderSnapshot.val();
+            }
+
+            userOrders.push(order_id);
+            await set(userOrderRef, userOrders);
+        } catch (error) {
+            console.error("Error adding order to user:", error);
+        }
+
+        // Group items by furniture ID
+        const groupedItems = items.reduce((acc, item) => {
+            if (!acc[item.id]) {
+                acc[item.id] = {
+                    selected_variants: [item.variantId],
+                    quantity: item.quantity,
+                    price: item.price * item.quantity // Calculating total price for the item
+                };
+            } else {
+                acc[item.id].selected_variants.push(item.variantId);
+                acc[item.id].quantity += item.quantity;
+                acc[item.id].price += item.price * item.quantity; // Increment total price
+            }
+            return acc;
+        }, {});
+
+        // Store order details in furniture/orders
+        try {
+            for (const itemId of Object.keys(groupedItems)) {
+                const item = groupedItems[itemId];
+                const furnitureOrderRef = ref(db, `furniture/${itemId}/orders`);
+                const furnitureOrderSnapshot = await get(furnitureOrderRef);
+                let furnitureOrders = [];
+                if (furnitureOrderSnapshot.exists()) {
+                    furnitureOrders = furnitureOrderSnapshot.val();
+                }
+                furnitureOrders.push({
+                    order_id: order_id,
+                    created_on: new Date().toISOString(), // Assuming order creation time
+                    customer_id: user_id,
+                    discount: item.discount,
+                    quantity: item.quantity,
+                    selected_variants: item.selected_variants,
+                    price: item.price
+                });
+                await set(furnitureOrderRef, furnitureOrders);
+            }
+        } catch (error) {
+            console.error("Error adding order to furniture:", error);
+        }
+
+        try {
+            const userCartRef = ref(db, `users/${user_id}/cart`);
+            await set(userCartRef, null);
+        } catch (error) {
+            console.error("Error clearing cart:", error);
+        }
+
         await set(newOrderRef, {
+            order_id: order_id,
             user_id: user_id,
             items: items,
             address: address,
@@ -485,11 +581,14 @@ export const placeOrder = async (data) => {
             discount: discount,
             voucher: voucher,
             total: total,
-            status: "Pending",
+            shipping_date: shipping_date,
+            shipping_time: shipping_time,
+            completion_status: "Pending", 
+            arrival_status: "Pending",
             created_on: new Date().toISOString()
         });
 
-        return { success: true, order_id: order_id };
+        return { success: true };
     } catch (error) {
         throw error;
     }
