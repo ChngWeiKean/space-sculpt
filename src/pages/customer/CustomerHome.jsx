@@ -6,19 +6,24 @@ import {
     Input,
     InputGroup,
     InputLeftElement,
-    
+    Divider,
+    Badge,
+    Tooltip,
+    useToast,
 } from "@chakra-ui/react";
 import {useRef, useState, useEffect, memo, useCallback} from "react";
 import { FaStar, FaStarHalf } from "react-icons/fa";
 import { GoArrowRight } from "react-icons/go";
 import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
 import { RiEmotionHappyLine } from "react-icons/ri";
-import { IoBedOutline } from "react-icons/io5";
+import { IoBedOutline, IoCartOutline } from "react-icons/io5";
 import { AiOutlineUser } from "react-icons/ai";
 import { BiSearchAlt2 } from "react-icons/bi";
 import { NavLink } from 'react-router-dom';
 import { db } from "../../../api/firebase";
 import { onValue, query, ref } from "firebase/database";
+import { useAuth } from "../../components/AuthCtx";
+import { addToFavourites, addToCart } from "../../../api/customer";
 
 function smoothScrollTo(elementId) {
     const element = document.getElementById(elementId);
@@ -28,7 +33,11 @@ function smoothScrollTo(elementId) {
 }
 
 function CustomerHome() {
+    const { user } = useAuth();
     const [ categories, setCategories ] = useState([]);
+    const [ furniture, setFurniture ] = useState([]);
+    const [ topFurniture, setTopFurniture ] = useState([]);
+    const [ cart, setCart ] = useState({});
     const [ furnitureLength, setFurnitureLength ] = useState(0);
     const [ searchQuery, setSearchQuery ] = useState('');
 
@@ -49,46 +58,143 @@ function CustomerHome() {
         const furnitureRef = ref(db, 'furniture');
         onValue(furnitureRef, (snapshot) => {
             const furniture = [];
+            let order_length = 0;
             snapshot.forEach((childSnapshot) => {
                 const data = {
                     id: childSnapshot.key,
                     ...childSnapshot.val(),
                 };
+                console.log(data);
+                const variants = Object.values(data.variants);
+                data.mainImage = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).image : null;
+                data.selectedVariant = variants.length > 0 ? Object.keys(childSnapshot.val().variants).find((variant) => childSnapshot.val().variants[variant].inventory > 0) : null;
+                data.selectedColor = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).color : null;
+                if (data.orders) {
+                    order_length = Object.keys(data.orders).length;
+                } else {
+                    order_length = 0;
+                }
+                data.order_length = order_length;
                 furniture.push(data);
             });
+            setFurniture(furniture);
             setFurnitureLength(furniture.length);
         });
     }, []);
+
+    useEffect(() => {
+        const userRef = ref(db, `users/${user?.uid}`);
+        onValue(userRef, (snapshot) => {
+            const user = snapshot.val();
+            setCart(user?.cart || {});
+        });        
+    }, [user]);
+
+    useEffect(() => {
+        if (furniture) {
+            const topFurniture = furniture
+                .filter((furniture) => furniture.order_length > 0)
+                .sort((a, b) => b.order_length - a.order_length)
+                .slice(0, 10);     
+            console.log(topFurniture);
+            setTopFurniture(topFurniture);
+        }
+    }, [furniture]);
 
     const filteredCategories = categories.filter((category) =>
         category.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const trending = [
-        { name: "LuxeLounge Chair", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Harmony Sofa", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Zenith Coffee Table", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Tranquil Bed", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Executive Desk", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Classic Cabinet", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Elegance Bookshelf", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Serenity Dresser", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Aura Dining Table", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Nova Ottoman", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Blissful Bench", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Serene Side Table", imageUrl: "https://source.unsplash.com/random" },
-        { name: "Radiance Rocking Chair", imageUrl: "https://source.unsplash.com/random" },
-    ]
-
-    const [likedProducts, setLikedProducts] = useState(new Array(trending.length).fill(false));
-
-    const toggleLike = (index) => {
-        setLikedProducts(prev => {
-            const updatedLikedProducts = [...prev];
-            updatedLikedProducts[index] = !updatedLikedProducts[index];
-            return updatedLikedProducts;
+    const handleVariantClick = (selectedFurniture, variant) => {
+        const variantImage = selectedFurniture.variants[variant].image;
+        const variantColor = selectedFurniture.variants[variant].color;
+        const updatedFurnitureData = furniture.map((item) => {
+            if (item.id === selectedFurniture.id) {
+                return {
+                    ...item,
+                    mainImage: variantImage,
+                    selectedVariant: variant,
+                    selectedColor: variantColor
+                };
+            }
+            return item;
         });
+        setFurniture(updatedFurnitureData);
+        console.log(updatedFurnitureData);
     };
+
+    const PriceTemplate = (rowData) => {
+        let discountedPrice = 0.0;
+        const discount = Number(rowData.discount);
+        const price = Number(rowData.price);
+        if (discount > 0) {
+            discountedPrice = price - (price * discount / 100);
+        }
+
+        const hasDecimal = (price % 1 !== 0) || (discountedPrice % 1 !== 0);
+    
+        return (
+            <Flex w="full" direction="row" gap={2}>
+                {
+                    Number(rowData.discount) > 0 ? (
+                        <Flex w="full" direction="column">
+                            <Flex direction="row" gap={3}>
+                                <Flex direction="row" gap={2}>
+                                    <Text fontWeight={600} fontSize="md" color={"green"}>RM</Text>
+                                    <Text fontWeight={600} fontSize="xl">{discountedPrice.toFixed(hasDecimal ? 2 : 0)}</Text>                
+                                </Flex>                            
+                                <Text fontWeight={600} fontSize="xl" color={"red"} textDecoration="line-through">{Number(rowData.price).toFixed(hasDecimal ? 2 : 0)}</Text>                                
+                            </Flex>                       
+                        </Flex>
+    
+                    ) : (
+                        <Flex direction="row" gap={2}>
+                            <Text fontWeight={600} fontSize="md" color={"green"}>RM</Text>
+                            <Text fontWeight={600} fontSize="xl">{Number(rowData.price).toFixed(hasDecimal ? 2 : 0)}</Text>                
+                        </Flex>                        
+                    )
+                }
+            </Flex>
+        );
+    }
+
+    const DimensionTemplate = (rowData) => {
+        return (
+            <Flex>
+                <Text color="gray.500" fontWeight={500} fontSize="sm">{rowData.width} x {rowData.height} x {rowData.length} cm</Text>
+            </Flex>
+        );
+    }
+
+    const toggleLike = async (furnitureId) => {
+        await addToFavourites(furnitureId, user?.uid);
+    }
+
+    const toast = useToast();
+
+    const addFurnitureToCart = async (furnitureId, furnitureName, variantId) => {
+        try {
+            await addToCart(furnitureId, user?.uid, variantId);
+            toast({
+                title: "Added to cart",
+                description: furnitureName + " has been added to your cart.",
+                status: "success",
+                position: "top",
+                duration: 9000,
+                isClosable: true,
+            });            
+        } catch (error) {
+            console.error("Error adding to cart:", error);
+            toast({
+                title: "Error adding to cart",
+                description: "An error occurred while adding " + furnitureName + " to your cart.",
+                status: "error",
+                position: "top",
+                duration: 9000,
+                isClosable: true,
+            });
+        }
+    }
 
     return (
         <Flex h="auto" bg="#f4f4f4" direction="column" alignItems="center">
@@ -202,7 +308,7 @@ function CustomerHome() {
                 >
                     {filteredCategories.map((category, index) => (
                         <NavLink to={`/category/${category.id}`} key={index}>
-                            <Box key={index} direction="column" alignItems="center" minW="200px" minH="200px" maxW="200px" maxH="200px" bgColor="#f8f8f8" borderRadius="md" mt={4} transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', shadow: 'md' }}>
+                            <Box key={index} boxShadow="md" direction="column" alignItems="center" minW="200px" minH="200px" maxW="200px" maxH="200px" bgColor="#f8f8f8" borderRadius="md" mt={4} transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', shadow: 'md' }}>
                                 <img src={category.image} alt={category.name} style={{ width: "100%", height: "80%", objectFit: "contain" }} />
                                 <Text mt={1} textAlign="center" fontSize="md" fontWeight="600">{category.name}</Text>
                             </Box>                            
@@ -241,45 +347,97 @@ function CustomerHome() {
                             },
                         }}
                     >
-                        {trending.map((product, index) => (
-                            <Box key={index} direction="column" alignItems="center" minW="340px" minH="480px" maxW="340px" maxH="480px" bgColor="#f8f8f8" mt={4} >
-                                <img src={product.imageUrl} alt={product.name} style={{ width: "100%", height: "70%", objectFit: "cover" }} />
-                                <Flex w="full" mt={3} justifyContent="space-between" px={3}>
-                                    <Box display='flex' alignItems='center'>
+                        {
+                            topFurniture.map((furniture, index) => (
+                                <Box as={NavLink} to={`/furniture/${furniture.id}/details`} key={index} direction="column" alignItems="center" minW="340px" minH="520px" maxW="340px" maxH="520px" transition="transform 0.2s" _hover={{ color: '#d69511'}} p={5} bg={"white"} boxShadow={"md"}>
+                                    <img src={furniture?.mainImage} alt={furniture?.name} style={{ width: "100%", height: "200px", objectFit: "contain" }} />
+                                    <Flex w="full" mt={3} justifyContent="space-between">
+                                        <Box display='flex' alignItems='center'>
+                                            {
+                                                Array(5)
+                                                    .fill('')
+                                                    .map((_, i) => (
+                                                        i < Math.floor(furniture?.ratings) ? (
+                                                        <FaStar key={i} color='#d69511' />
+                                                        ) : (
+                                                        i === Math.floor(furniture?.ratings) && furniture?.ratings % 1 !== 0 ? (
+                                                            <FaStarHalf key={i} color='#d69511' />
+                                                        ) : (
+                                                            <FaStar key={i} color='gray' />
+                                                        )
+                                                        )
+                                                    ))
+                                            }
+                                            <Box as='span' ml='2' color='gray.600' fontSize='sm'>
+                                                {furniture?.ratings || 0} ratings
+                                            </Box>
+                                        </Box>              
+                                        <Flex gap={2} alignItems="center" color='red' onClick={(e) => {e.preventDefault(); toggleLike(furniture?.id);}} transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }}>
+                                            {user?.favourites?.includes(furniture?.id) ? <IoIosHeart size={"25px"}/> : <IoIosHeartEmpty size={"25px"}/>} <Text fontSize="sm">({furniture?.favourites?.length || 0})</Text>
+                                        </Flex>
+                                    </Flex>
+                                    <Flex w="full" direction="row" alignItems="center" justifyContent="space-between" mt={2}>
+                                        <Flex direction="row" gap={3} alignItems="center">
+                                            <Text fontSize="xl" fontWeight="700">{furniture.name}</Text>
+                                            <Text fontSize="sm" fontWeight="500" color="gray.500">{furniture?.selectedColor}</Text>
+                                        </Flex>
+                                        
                                         {
-                                            Array(5)
-                                                .fill('')
-                                                .map((_, i) => (
-                                                    i < Math.floor(4) ? (
-                                                    <FaStar key={i} color='#d69511' />
-                                                    ) : (
-                                                    i === Math.floor(4) && 4 % 1 !== 0 ? (
-                                                        <FaStarHalf key={i} color='#d69511' />
-                                                    ) : (
-                                                        <FaStar key={i} color='gray' />
-                                                    )
-                                                    )
-                                                ))
+                                            furniture?.discount > 0 ? (
+                                                <Badge colorScheme="red" fontSize="md" color="red">-{furniture?.discount}%</Badge>   
+                                            ) : null
                                         }
-                                        <Box as='span' ml='2' color='gray.600' fontSize='sm'>
-                                            {4} ratings
-                                        </Box>
-                                    </Box>              
-                                    <Box as='span' color='red' fontSize='2xl' onClick={() => toggleLike(index)} transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }}>
-                                        {likedProducts[index] ? <IoIosHeart size={"30px"}/> : <IoIosHeartEmpty size={"30px"}/>}
-                                    </Box>
-                                </Flex>
-                                <Text px={3} mt={2} fontSize="xl" fontWeight="700">{product.name}</Text>
-                                <Flex px={3} direction="row" mt={2}>
-                                    <Flex direction='row'>
-                                        <Text fontSize="sm" fontWeight="700" color="black" mr={1}>RM</Text>
-                                        <Text fontSize="xl" fontWeight="700" color="black">299</Text>
+                                    </Flex>
+                                    <Flex w="full" direction="row" alignItems="center" gap={2}>
+                                        <Text fontSize="sm" fontWeight="500" color="gray.500">{furniture?.subcategoryName}</Text>
+                                        <Divider h="1rem" borderWidth="1px" variant="solid" orientation="vertical" borderColor="gray.500"/>
+                                        <DimensionTemplate {...furniture}/>
                                     </Flex>
                                     
-                                    <Text fontSize="md" fontWeight="600" color="gray.500" ml={2} textDecoration="line-through">RM399</Text>
-                                </Flex>
-                            </Box>
-                        ))}
+                                    <Flex direction="row" my={2}>
+                                        <PriceTemplate {...furniture}/>
+                                    </Flex>
+        
+                                    <Flex w="full" direction="row" gap={5} mb={3}>
+                                        {
+                                            Object.keys(furniture?.variants).map((variant, index) => (
+                                                furniture?.variants[variant].inventory > 0 ? (
+                                                    <Tooltip key={index} label={furniture?.variants[variant].color} aria-label="Variant color" placement="top">
+                                                        <Box
+                                                            transition="transform 0.2s"
+                                                            _hover={{ transform: 'scale(1.1)' }}
+                                                            outline= {furniture?.selectedVariant == variant ? '1px solid blue' : 'none'}
+                                                            p={1}
+                                                            onClick={(e) => { e.preventDefault(); handleVariantClick(furniture, variant); }}
+                                                        >
+                                                            <img src={furniture?.variants[variant].image} alt={furniture?.variants[variant].name} style={{ width: "60px", height: "60px", objectFit: "contain" }} />
+                                                        </Box>                                                
+                                                    </Tooltip>
+                                                ) : (
+                                                    <Tooltip key={index} label={furniture?.variants[variant].color} aria-label="Variant color" placement="top">
+                                                        <Box key={index} onClick={(e) => { e.preventDefault(); }} position="relative">
+                                                            <Badge colorScheme="red" fontSize="3xs" color="red" position="absolute" bottom="-1" right="-1">Out of Stock</Badge>
+                                                            <img src={furniture?.variants[variant].image} alt={furniture?.variants[variant].name} style={{ width: "60px", height: "60px", objectFit: "contain", filter: "grayscale(100%)" }} />
+                                                        </Box>
+                                                    </Tooltip>
+                                                )
+                                            ))
+                                        }
+                                    </Flex>
+                                    {
+                                        Object.values(cart).find((item) => item.variantId === furniture.selectedVariant) ? (
+                                            <Flex w="full" direction="row" justifyContent="center" gap={2}>
+                                                <Button w="full" colorScheme="green" variant="solid" size="md" leftIcon={<IoCartOutline />}>Already In Cart</Button>
+                                            </Flex>
+                                        ) : (
+                                            <Flex w="full" direction="row" justifyContent="center" gap={2}>
+                                                <Button w="full" colorScheme="blue" variant="solid" size="md" leftIcon={<IoCartOutline />} onClick={(e) => {e.preventDefault(); addFurnitureToCart(furniture.id, furniture.name, furniture.selectedVariant);}}>Add to Cart</Button>
+                                            </Flex>
+                                        )
+                                    }
+                                </Box>
+                            ))
+                        }
                     </Flex>
                 </Flex>
             </Flex>

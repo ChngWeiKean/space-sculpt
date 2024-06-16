@@ -39,6 +39,11 @@ import EditVoucher from './pages/admin/EditVoucher.jsx'
 import CustomerPaymentAndPlaceOrder from './pages/customer/CustomerPaymentAndPlaceOrder.jsx'
 import CustomerOrderHistory from './pages/customer/CustomerOrderHistory.jsx'
 import CustomerOrderDetails from './pages/customer/CustomerOrderDetails.jsx'
+import LogisticsOrderHistory from './pages/logistics/LogisticsOrderHistory.jsx'
+import LogisticsOrderDetails from './pages/logistics/LogisticsOrderDetails.jsx'
+import AdminOrderHistory from './pages/admin/AdminOrderHistory.jsx'
+import AdminOrderDetails from './pages/admin/AdminOrderDetails.jsx'
+import CustomerVouchers from './pages/customer/CustomerVouchers.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -73,8 +78,11 @@ const router = createBrowserRouter(
 				<Route path="edit-card/:id" element={<CustomerEditCard/>}/>
 				<Route path="orders" element={<CustomerOrderHistory/>}/>
 				<Route path="orders/:id" element={<CustomerOrderDetails/>}/>
+				<Route path="vouchers" element={<CustomerVouchers/>}/>
 			</Route>
 			<Route element={<LogisticsLayout/>}>
+				<Route path="manage-orders" element={<LogisticsOrderHistory/>}/>
+				<Route path="order-details/:id" element={<LogisticsOrderDetails/>}/>
 				<Route path="settings" element={<LogisticsSettings/>}/>
 			</Route>
 			<Route path='/admin' element={<AdminLayout/>}>
@@ -89,6 +97,8 @@ const router = createBrowserRouter(
 				<Route path="vouchers" element={<Vouchers/>}/>
 				<Route path="vouchers/add" element={<AddVoucher/>}/>
 				<Route path="vouchers/:id/edit" element={<EditVoucher/>}/>
+				<Route path="customer-orders" element={<AdminOrderHistory/>}/>
+				<Route path="customer-order-details/:id" element={<AdminOrderDetails/>}/>
 			</Route>
 		</Route>
 	)

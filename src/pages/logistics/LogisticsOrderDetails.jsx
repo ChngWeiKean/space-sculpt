@@ -38,7 +38,6 @@ import {
     Stepper,
     useSteps,
     Checkbox,
-    IconButton,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill, BsPinMap, BsCart3 } from "react-icons/bs";
@@ -47,9 +46,7 @@ import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/r
 import { BiLinkExternal } from "react-icons/bi";
 import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
 import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning, CiCreditCard1, CiDeliveryTruck, CiEdit } from "react-icons/ci";
-import { IoMdCheckmark } from "react-icons/io";
-import { RxCross2 } from "react-icons/rx";
+import { CiWarning, CiCreditCard1, CiDeliveryTruck } from "react-icons/ci";
 import { GoSmiley } from "react-icons/go";
 import { TbTruckDelivery } from "react-icons/tb";
 import { GoDotFill } from "react-icons/go";
@@ -79,18 +76,15 @@ import { Column } from 'primereact/column';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
-import { updateShipping } from "../../../api/customer.js";
+import { assignOrderToDriver, updateOrderStatus } from "../../../api/logistics.js";
 
-function CustomerOrderDetails() {
+function LogisticsOrderDetails() {
     const { id } = useParams();
     const [ order, setOrder ] = useState(null);
     const [ activeStep, setActiveStep ] = useState(0);
-    const [ isEditing, setIsEditing ] = useState(false);
-    const [ settings, setSettings ] = useState({});
-    const [ timeOptions, setTimeOptions ] = useState([]);
-    const [ shippingDate, setShippingDate ] = useState(order?.shipping_date);
-    const [ shippingTime, setShippingTime ] = useState(order?.shipping_time);
-    const [ hoursDifference, setHoursDifference ] = useState(0);
+    const [ selectedDriver, setSelectedDriver ] = useState('');
+    const [ deliveryDrivers, setDeliveryDrivers ] = useState([]);
+    const [ availableDrivers, setAvailableDrivers ] = useState([]);
 
     const updateDeliveryStatus = (status) => {
         switch (status) {
@@ -115,10 +109,6 @@ function CustomerOrderDetails() {
         const orderRef = ref(db, `orders/${id}`);
         onValue(orderRef, (snapshot) => {
             const data = snapshot.val();
-            const createdOnDate = new Date(data.created_on);
-            const now = new Date();
-            const timeDifference = now - createdOnDate;
-            setHoursDifference(timeDifference / (1000 * 60 * 60));            
             data.created_on = new Date(data.created_on).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'long',
@@ -127,138 +117,96 @@ function CustomerOrderDetails() {
                 minute: '2-digit',
                 hour12: true
             }).replace(',', ''); 
-            console.log("ORDER DATA:", data);
+            data.shipping_date = new Date(data.shipping_date).toLocaleString('en-GB', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+            });
             setOrder(data);
             updateDeliveryStatus(data.arrival_status);
         });
     }, [id]);
 
     useEffect(() => {
-        const settingsRef = ref(db, 'settings');
-        onValue(settingsRef, (snapshot) => {
-            const settings = snapshot.val();
-            let options = generateTimeOptions(settings.initial_delivery_time, settings.end_delivery_time, 60);
-            setTimeOptions(options);
-            setSettings(settings);
+        const driversRef = ref(db, 'users');
+        onValue(driversRef, (snapshot) => {
+            const data = snapshot.val();
+            const drivers = Object.values(data).filter((user) => user.role === 'Delivery');
+        
+            const driverPromises = drivers.map((driver) => {
+                return new Promise((resolve) => {
+                    const driverRef = ref(db, `users/${driver.uid}/pending_orders`);
+                    onValue(driverRef, (pendingOrdersSnapshot) => {
+                        const pendingOrders = pendingOrdersSnapshot.val();
+                        if (pendingOrders) {
+                            const orderPromises = pendingOrders.map((orderId) => {
+                                return new Promise((resolve) => {
+                                    const orderRef = ref(db, `orders/${orderId}`);
+                                    onValue(orderRef, (orderSnapshot) => {
+                                        const orderData = orderSnapshot.val();
+                                        resolve(orderData);
+                                    });
+                                });
+                            });
+            
+                            Promise.all(orderPromises).then((orders) => {
+                                driver.pending_orders_details = orders;
+                                resolve(driver);
+                            });
+                        } else {
+                            resolve(driver);
+                        }
+                    });
+                });
+            });
+        
+            Promise.all(driverPromises).then((driversWithOrders) => {
+                console.log("Delivery WITH ORDERS", driversWithOrders);
+                setDeliveryDrivers(driversWithOrders);
+            });
         });
     }, []);
 
-    function generateTimeOptions(startTime, endTime, interval = 60) { 
-        const times = [];
-        let start = parseTime(startTime);
-        const end = parseTime(endTime);
-        
-        while (start <= end) {
-            times.push(formatTime(start));
-            start.setMinutes(start.getMinutes() + interval);
-        }
-        return times;
-    }
+    useEffect(() => {
+        setAvailableDrivers(filterAvailableDrivers(deliveryDrivers, order));
+    }, [deliveryDrivers, order]);
 
-    function parseTime(timeString) {
-        const [time, modifier] = timeString.split(/(am|pm)/i);
-        let [hours, minutes] = time.split(':');
-        hours = parseInt(hours, 10);
-        minutes = minutes ? parseInt(minutes, 10) : 0;
-
-        if (modifier.toLowerCase() === 'pm' && hours < 12) {
+    const filterAvailableDrivers = (drivers, orderToAssign) => {
+        return drivers?.filter((driver) => {
+            if (!driver.pending_orders_details || driver.pending_orders_details.length === 0) {
+                return true; // Include drivers with no pending orders
+            }
+    
+            return driver.pending_orders_details.every((order) => {
+                const orderDate = new Date(order?.shipping_date);
+                const orderToAssignDate = new Date(orderToAssign?.shipping_date);
+    
+                // Check if orders are on the same day
+                if (orderDate.toDateString() === orderToAssignDate.toDateString()) {
+                    const orderTime = convertTo24Hour(order?.shipping_time);
+                    const orderToAssignTime = convertTo24Hour(orderToAssign?.shipping_time);
+    
+                    // Check if there is at least 3 hours between the orders
+                    const timeDifference = Math.abs(orderTime - orderToAssignTime) / (1000 * 60 * 60);
+                    return timeDifference >= 3;
+                }
+    
+                return true;
+            });
+        });
+    };
+    
+    const convertTo24Hour = (time) => {
+        const [timePart, modifier] = time.split(' ');
+        let [hours, minutes] = timePart.split(':').map(Number);
+    
+        if (modifier === 'PM' && hours < 12) {
             hours += 12;
-        }
-        if (modifier.toLowerCase() === 'am' && hours === 12) {
+        } else if (modifier === 'AM' && hours === 12) {
             hours = 0;
         }
-
-        const date = new Date();
-        date.setHours(hours, minutes, 0, 0);
-        return date;
-    }
-
-    function formatTime(date) {
-        let hours = date.getHours();
-        const minutes = date.getMinutes();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
-        const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-        return `${hours}:${minutesStr} ${ampm}`;
-    }
-
-    const handleEditClick = () => {
-        setIsEditing(true);
-    };
-
-    const toast = useToast();
-
-    const handleSaveClick = async () => {
-        // Add logic to save the updated shipping date and time
-        if (!shippingDate || !shippingTime) {
-            toast({
-                title: "Please fill in the shipping date and time",
-                status: "error",
-                position: "top",
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        // if shipping date is today, and offset by settings.delivery_offset in days (e.g. 3 days offset from date of order)
-        // offset is number of days (e.g. 3)
-        const offset = settings.delivery_offset;
-        const newShippingDate = new Date(shippingDate);
-
-        // Set the time of shippingDate to the start of the day to avoid time comparison issues
-        newShippingDate.setHours(0, 0, 0, 0);
-
-        // Get today's date and set the time to the start of the day
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Add offset days to today to get the deliveryDate
-        const deliveryDate = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
-
-        if (newShippingDate < deliveryDate) {
-            toast({
-                title: `Please select a shipping date at least ${offset} days from today`,
-                status: "error",
-                position: "top",
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        let data = {
-            shipping_date: shippingDate,
-            shipping_time: shippingTime,
-        };
-
-        try {
-            await updateShipping(id, data);
-            toast({
-                title: "Shipping date and time updated successfully",
-                status: "success",
-                position: "top",
-                duration: 3000,
-                isClosable: true,
-            });
-        } catch (error) {
-            toast({
-                title: "Failed to update shipping date and time",
-                status: "error",
-                position: "top",
-                duration: 3000,
-                isClosable: true,
-            });
-        }
-
-        setIsEditing(false);
-    };
-
-    const handleCancelClick = () => {
-        setShippingDate(order?.shipping_date);
-        setShippingTime(order?.shipping_time);
-        setIsEditing(false);
+    
+        return new Date().setHours(hours, minutes, 0, 0); // Returns the time in milliseconds
     };
 
     const nameBodyTemplate = (rowData) => {
@@ -340,19 +288,6 @@ function CustomerOrderDetails() {
         );
     }
 
-    const checkListBodyTemplate = (rowData) => {
-        return (
-            <Flex w="full" direction="row" gap={2} alignItems="center">
-                <Checkbox 
-                    size="lg" 
-                    checked={rowData.checked} 
-                    onChange={(e) => onCheckChange(e, rowData)} 
-                    isDisabled={ rowData?.arrival_status === "Arrived" ? false : true }
-                />
-            </Flex>
-        );   
-    }
-
     const renderHeader = () => {
         return (
             <Flex w="full" gap={3} alignItems="center">
@@ -371,6 +306,85 @@ function CustomerOrderDetails() {
         { title: 'Delivered', description: 'Your order has been delivered' },
     ];
 
+    const { isOpen: isOpenConfirmReadyForDeliveryModal, onOpen: onOpenConfirmReadyForDeliveryModal, onClose: onCloseConfirmReadyForDeliveryModal } = useDisclosure();
+    const { isOpen: isOpenConfirmAssignDriverModal, onOpen: onOpenConfirmAssignDriverModal, onClose: onCloseConfirmAssignDriverModal } = useDisclosure();
+    
+    const handleOpenConfirmReadyForDeliveryModal = () => {
+        onOpenConfirmReadyForDeliveryModal();
+    };
+    
+    const handleOpenConfirmAssignDriverModal = () => {
+        onOpenConfirmAssignDriverModal();
+    };
+    
+    const handleCloseConfirmReadyForDeliveryModal = () => {
+        onCloseConfirmReadyForDeliveryModal();
+    };
+    
+    const handleCloseConfirmAssignDriverModal = () => {
+        onCloseConfirmAssignDriverModal();
+    };
+
+    const toast = useToast();
+
+    const handleSetReadyForDelivery = async () => {
+        try {
+            await updateOrderStatus(id, 'Ready For Shipping');
+            toast({
+                title: "Order status updated",
+                description: "Order status has been updated to Ready For Shipping",
+                position: "top",
+                status: "success",
+                duration: 5000,
+                isClosable: true,
+            });
+        } catch (error) {
+            toast({
+                title: "Error updating order status",
+                description: "An error occurred while updating order status",
+                position: "top",
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
+    }
+
+    const handleAssignDriver = async (driverId) => {
+        try {
+            if (!driverId) {
+                toast({
+                    title: "Error assigning driver",
+                    description: "Please select a driver to assign",
+                    position: "top",
+                    status: "error",
+                    duration: 5000,
+                    isClosable: true,
+                });
+                return;
+            }
+
+            await assignOrderToDriver(id, driverId);
+            toast({
+                title: "Driver assigned",
+                description: "Driver has been assigned to this order",
+                position: "top",
+                status: "success",
+                duration: 5000,
+                isClosable: true,
+            });
+        } catch (error) {
+            toast({
+                title: "Error assigning driver",
+                description: "An error occurred while assigning driver to this order",
+                position: "top",
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
+    }
+
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={4}>
             <Flex w="full" direction="row" gap={5}>
@@ -387,7 +401,6 @@ function CustomerOrderDetails() {
                                         <Column field="color" header="Variant"></Column>
                                         <Column field="price" header="Price" body={priceBodyTemplate}></Column>
                                         <Column field="total" header="Total" body={totalBodyTemplate}></Column>
-                                        <Column field="check" header="Checklist" body={checkListBodyTemplate}></Column>
                                     </DataTable>                            
                                 )
                             }
@@ -419,7 +432,7 @@ function CustomerOrderDetails() {
                                             <Text fontSize="lg" fontWeight="700" color="gray.700">{order?.weight}</Text>
                                         </Flex>
                                         <Flex w="full" gap={1}>
-                                            <Text fontSize="md" fontWeight="700" color="gray.600">- RM</Text>
+                                            <Text fontSize="md" fontWeight="700" color="gray.600">RM</Text>
                                             <Text fontSize="lg" fontWeight="700" color="gray.700">{order?.discount}</Text>
                                         </Flex>
                                     </Flex>
@@ -441,35 +454,7 @@ function CustomerOrderDetails() {
                     </Flex>
 
                     <Flex w="full" direction="column" bg="white" boxShadow="md" gap={3}>
-                        <Flex justifyContent="space-between" alignItems="center" px={5} pt={3}>
-                            <Text fontSize="lg" fontWeight="700">Order Details</Text>
-                            {hoursDifference <= 24 && (
-                                isEditing ? (
-                                    <Box>
-                                        <IconButton
-                                            icon={<IoMdCheckmark />}
-                                            onClick={handleSaveClick}
-                                            mr={2}
-                                            colorScheme="green"
-                                            style={{ outline: "none" }}
-                                        />
-                                        <IconButton
-                                            icon={<RxCross2 />}
-                                            onClick={handleCancelClick}
-                                            colorScheme="red"
-                                            style={{ outline: "none" }}
-                                        />
-                                    </Box>
-                                ) : (
-                                    <IconButton
-                                        icon={<CiEdit />}
-                                        onClick={handleEditClick}
-                                        colorScheme="blue"
-                                        style={{ outline: "none" }}
-                                    />
-                                )
-                            )}
-                        </Flex>
+                        <Text px={5} pt={3} fontSize="lg" fontWeight="700">Order Details</Text>
                         <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
                         <Flex w="full" direction="row" gap={3} px={5} pb={3}>
                             <Flex w="full" direction="column" gap={3}>
@@ -514,51 +499,28 @@ function CustomerOrderDetails() {
                                 <Flex w="full" direction="row" gap={3}>
                                     <FormControl>
                                         <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Shipping Date</FormLabel>
-                                        <Input
-                                            type="date"
+                                        <Input 
                                             variant="outline"
                                             defaultValue={order?.shipping_date}
                                             size="md"
                                             focusBorderColor="blue.500"
                                             w="full"
+                                            isReadOnly
                                             p={2.5}
-                                            isReadOnly={!isEditing}
-                                            onChange={(e) => setShippingDate(e.target.value)}
                                         />
-                                    </FormControl>
+                                    </FormControl>        
                                     <FormControl>
                                         <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Shipping Time</FormLabel>
-                                        {
-                                            isEditing ? (
-                                                <Select
-                                                    variant="outline"
-                                                    value={shippingTime}
-                                                    size="md"
-                                                    focusBorderColor="blue.500"
-                                                    w="full"
-                                                    isReadOnly={!isEditing}
-                                                    onChange={(e) => setShippingTime(e.target.value)}
-                                                >
-                                                    <option value="">Select a time</option>
-                                                    {timeOptions?.map((time, index) => (
-                                                        <option key={index} value={time}>
-                                                            {time}
-                                                        </option>
-                                                    ))}
-                                                </Select>
-                                            ) : (
-                                                <Input 
-                                                    variant="outline"
-                                                    defaultValue={order?.shipping_time}
-                                                    size="md"
-                                                    focusBorderColor="blue.500"
-                                                    w="full"
-                                                    isReadOnly
-                                                    p={2.5}
-                                                />
-                                            )
-                                        }
-                                    </FormControl>
+                                        <Input 
+                                            variant="outline"
+                                            defaultValue={order?.shipping_time}
+                                            size="md"
+                                            focusBorderColor="blue.500"
+                                            w="full"
+                                            isReadOnly
+                                            p={2.5}
+                                        />
+                                    </FormControl>                                   
                                 </Flex>
                                 <FormControl>
                                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Payment Method</FormLabel>
@@ -588,7 +550,135 @@ function CustomerOrderDetails() {
                         </Flex>
                     </Flex>
                 </Flex>
-                <Flex w="20%" direction="column">
+                <Flex w="20%" direction="column" gap={5}>
+                    <Flex w="full" direction="column" bg="white" boxShadow="md">
+                        <Text px={5} py={3} fontSize="lg" fontWeight="700">Manage Delivery</Text>
+                        <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
+                        <Flex w="full" p={6}>
+                            {
+                                order && order.arrival_status === "Pending" ? (
+                                    <Button
+                                        w="full"
+                                        colorScheme="blue"
+                                        size="lg"
+                                        style={{ outline:"none" }}
+                                        onClick={handleOpenConfirmReadyForDeliveryModal}
+                                    >
+                                        Mark as Ready For Delivery
+                                    </Button>
+                                ) : (
+                                    <Flex w="full" direction="column" gap={3}>
+                                        <FormControl>
+                                            <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Assign Delivery Driver</FormLabel>
+                                            <Select
+                                                variant="filled"
+                                                size="md"
+                                                focusBorderColor="blue.500"
+                                                w="full"
+                                                onChange={(e) => setSelectedDriver(e.target.value)}
+                                            >
+                                                <option value="">Select a driver</option>
+                                                {
+                                                    availableDrivers.map((driver) => (
+                                                        <option key={driver.uid} value={driver.uid}>{driver.name}</option>
+                                                    ))
+                                                }
+                                            </Select>
+                                        </FormControl>
+                                        <Button
+                                            w="full"
+                                            colorScheme="blue"
+                                            size="lg"
+                                            style={{ outline:"none" }}
+                                            onClick={handleOpenConfirmAssignDriverModal}
+                                        >
+                                            Assign Driver
+                                        </Button>
+                                    </Flex>
+                                )
+                            }
+                            {
+                                isOpenConfirmReadyForDeliveryModal && (
+                                    <Modal size={"xl"} isOpen={isOpenConfirmReadyForDeliveryModal} onClose={onCloseConfirmReadyForDeliveryModal} isCentered>
+                                        <ModalOverlay
+                                            bg='blackAlpha.300'
+                                        />
+                                        <ModalContent>
+                                            <ModalHeader>Confirm Set Status</ModalHeader>
+                                            <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                                            <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                                            <ModalBody>
+                                                <Text fontSize='md' letterSpacing='wide' fontWeight='bold' mb={2}>
+                                                    Are you sure you want to set status as Ready For Delivery?
+                                                </Text>
+                                                <Text fontSize='sm' fontWeight='light' letterSpacing='wide'>
+                                                    This action cannot be undone.
+                                                </Text>
+                                            </ModalBody>
+                                            <ModalFooter>
+                                                <Box display='flex'>
+                                                    <Button 
+                                                        mr={3} 
+                                                        colorScheme="blue"
+                                                        style={{ outline:"none" }}
+                                                        onClick={() => {
+                                                            handleSetReadyForDelivery();
+                                                            handleCloseConfirmReadyForDeliveryModal();
+                                                        }}
+                                                    >
+                                                        Confirm
+                                                    </Button>
+                                                    <Button colorScheme="red" style={{ outline:"none" }} onClick={handleCloseConfirmReadyForDeliveryModal}>
+                                                        Close
+                                                    </Button>
+                                                </Box>
+                                            </ModalFooter>
+                                        </ModalContent>
+                                    </Modal>
+                                )
+                            }
+                            {
+                                isOpenConfirmAssignDriverModal && (
+                                    <Modal size={"xl"} isOpen={isOpenConfirmAssignDriverModal} onClose={onCloseConfirmAssignDriverModal} isCentered>
+                                        <ModalOverlay
+                                            bg='blackAlpha.300'
+                                        />
+                                        <ModalContent>
+                                            <ModalHeader>Assign Driver</ModalHeader>
+                                            <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                                            <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                                            <ModalBody>
+                                                <Text fontSize='md' letterSpacing='wide' fontWeight='bold' mb={2}>
+                                                    Are you sure you want to assign this driver to this order?
+                                                </Text>
+                                                <Text fontSize='sm' fontWeight='light' letterSpacing='wide'>
+                                                    This action cannot be undone.
+                                                </Text>
+                                            </ModalBody>
+                                            <ModalFooter>
+                                                <Box display='flex'>
+                                                    <Button 
+                                                        mr={3} 
+                                                        colorScheme="blue"
+                                                        style={{ outline:"none" }}
+                                                        onClick={() => {
+                                                            handleAssignDriver(selectedDriver);
+                                                            handleCloseConfirmAssignDriverModal();
+                                                        }}
+                                                    >
+                                                        Confirm
+                                                    </Button>
+                                                    <Button colorScheme="red" style={{ outline:"none" }} onClick={handleCloseConfirmAssignDriverModal}>
+                                                        Close
+                                                    </Button>
+                                                </Box>
+                                            </ModalFooter>
+                                        </ModalContent>
+                                    </Modal>
+                                )
+                            }
+                        </Flex>
+                    </Flex>
                     <Flex w="full" direction="column" bg="white" boxShadow="md">
                         <Text px={5} py={3} fontSize="lg" fontWeight="700">Order Status</Text>
                         <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
@@ -621,4 +711,4 @@ function CustomerOrderDetails() {
     );
 }
 
-export default CustomerOrderDetails;
+export default LogisticsOrderDetails;

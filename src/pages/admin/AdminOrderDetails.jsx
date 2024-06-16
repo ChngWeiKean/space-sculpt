@@ -38,7 +38,6 @@ import {
     Stepper,
     useSteps,
     Checkbox,
-    IconButton,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill, BsPinMap, BsCart3 } from "react-icons/bs";
@@ -47,9 +46,7 @@ import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/r
 import { BiLinkExternal } from "react-icons/bi";
 import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
 import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning, CiCreditCard1, CiDeliveryTruck, CiEdit } from "react-icons/ci";
-import { IoMdCheckmark } from "react-icons/io";
-import { RxCross2 } from "react-icons/rx";
+import { CiWarning, CiCreditCard1, CiDeliveryTruck } from "react-icons/ci";
 import { GoSmiley } from "react-icons/go";
 import { TbTruckDelivery } from "react-icons/tb";
 import { GoDotFill } from "react-icons/go";
@@ -79,18 +76,12 @@ import { Column } from 'primereact/column';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
-import { updateShipping } from "../../../api/customer.js";
 
-function CustomerOrderDetails() {
+function AdminOrderDetails() {
     const { id } = useParams();
     const [ order, setOrder ] = useState(null);
     const [ activeStep, setActiveStep ] = useState(0);
-    const [ isEditing, setIsEditing ] = useState(false);
-    const [ settings, setSettings ] = useState({});
-    const [ timeOptions, setTimeOptions ] = useState([]);
-    const [ shippingDate, setShippingDate ] = useState(order?.shipping_date);
-    const [ shippingTime, setShippingTime ] = useState(order?.shipping_time);
-    const [ hoursDifference, setHoursDifference ] = useState(0);
+    const [ deliveryDriver, setDeliveryDriver ] = useState(null);
 
     const updateDeliveryStatus = (status) => {
         switch (status) {
@@ -115,10 +106,6 @@ function CustomerOrderDetails() {
         const orderRef = ref(db, `orders/${id}`);
         onValue(orderRef, (snapshot) => {
             const data = snapshot.val();
-            const createdOnDate = new Date(data.created_on);
-            const now = new Date();
-            const timeDifference = now - createdOnDate;
-            setHoursDifference(timeDifference / (1000 * 60 * 60));            
             data.created_on = new Date(data.created_on).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'long',
@@ -127,139 +114,25 @@ function CustomerOrderDetails() {
                 minute: '2-digit',
                 hour12: true
             }).replace(',', ''); 
-            console.log("ORDER DATA:", data);
+            data.shipping_date = new Date(data.shipping_date).toLocaleString('en-GB', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+            });
             setOrder(data);
             updateDeliveryStatus(data.arrival_status);
         });
     }, [id]);
 
     useEffect(() => {
-        const settingsRef = ref(db, 'settings');
-        onValue(settingsRef, (snapshot) => {
-            const settings = snapshot.val();
-            let options = generateTimeOptions(settings.initial_delivery_time, settings.end_delivery_time, 60);
-            setTimeOptions(options);
-            setSettings(settings);
-        });
-    }, []);
-
-    function generateTimeOptions(startTime, endTime, interval = 60) { 
-        const times = [];
-        let start = parseTime(startTime);
-        const end = parseTime(endTime);
-        
-        while (start <= end) {
-            times.push(formatTime(start));
-            start.setMinutes(start.getMinutes() + interval);
-        }
-        return times;
-    }
-
-    function parseTime(timeString) {
-        const [time, modifier] = timeString.split(/(am|pm)/i);
-        let [hours, minutes] = time.split(':');
-        hours = parseInt(hours, 10);
-        minutes = minutes ? parseInt(minutes, 10) : 0;
-
-        if (modifier.toLowerCase() === 'pm' && hours < 12) {
-            hours += 12;
-        }
-        if (modifier.toLowerCase() === 'am' && hours === 12) {
-            hours = 0;
-        }
-
-        const date = new Date();
-        date.setHours(hours, minutes, 0, 0);
-        return date;
-    }
-
-    function formatTime(date) {
-        let hours = date.getHours();
-        const minutes = date.getMinutes();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
-        const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-        return `${hours}:${minutesStr} ${ampm}`;
-    }
-
-    const handleEditClick = () => {
-        setIsEditing(true);
-    };
-
-    const toast = useToast();
-
-    const handleSaveClick = async () => {
-        // Add logic to save the updated shipping date and time
-        if (!shippingDate || !shippingTime) {
-            toast({
-                title: "Please fill in the shipping date and time",
-                status: "error",
-                position: "top",
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        // if shipping date is today, and offset by settings.delivery_offset in days (e.g. 3 days offset from date of order)
-        // offset is number of days (e.g. 3)
-        const offset = settings.delivery_offset;
-        const newShippingDate = new Date(shippingDate);
-
-        // Set the time of shippingDate to the start of the day to avoid time comparison issues
-        newShippingDate.setHours(0, 0, 0, 0);
-
-        // Get today's date and set the time to the start of the day
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Add offset days to today to get the deliveryDate
-        const deliveryDate = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
-
-        if (newShippingDate < deliveryDate) {
-            toast({
-                title: `Please select a shipping date at least ${offset} days from today`,
-                status: "error",
-                position: "top",
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        let data = {
-            shipping_date: shippingDate,
-            shipping_time: shippingTime,
-        };
-
-        try {
-            await updateShipping(id, data);
-            toast({
-                title: "Shipping date and time updated successfully",
-                status: "success",
-                position: "top",
-                duration: 3000,
-                isClosable: true,
-            });
-        } catch (error) {
-            toast({
-                title: "Failed to update shipping date and time",
-                status: "error",
-                position: "top",
-                duration: 3000,
-                isClosable: true,
+        if (order?.driver_id) {
+            const driversRef = ref(db, `users/${order.driver_id}`);
+            onValue(driversRef, (snapshot) => {
+                const data = snapshot.val();
+                setDeliveryDriver(data);
             });
         }
-
-        setIsEditing(false);
-    };
-
-    const handleCancelClick = () => {
-        setShippingDate(order?.shipping_date);
-        setShippingTime(order?.shipping_time);
-        setIsEditing(false);
-    };
+    }, [order]);
 
     const nameBodyTemplate = (rowData) => {
         return (
@@ -340,19 +213,6 @@ function CustomerOrderDetails() {
         );
     }
 
-    const checkListBodyTemplate = (rowData) => {
-        return (
-            <Flex w="full" direction="row" gap={2} alignItems="center">
-                <Checkbox 
-                    size="lg" 
-                    checked={rowData.checked} 
-                    onChange={(e) => onCheckChange(e, rowData)} 
-                    isDisabled={ rowData?.arrival_status === "Arrived" ? false : true }
-                />
-            </Flex>
-        );   
-    }
-
     const renderHeader = () => {
         return (
             <Flex w="full" gap={3} alignItems="center">
@@ -387,7 +247,6 @@ function CustomerOrderDetails() {
                                         <Column field="color" header="Variant"></Column>
                                         <Column field="price" header="Price" body={priceBodyTemplate}></Column>
                                         <Column field="total" header="Total" body={totalBodyTemplate}></Column>
-                                        <Column field="check" header="Checklist" body={checkListBodyTemplate}></Column>
                                     </DataTable>                            
                                 )
                             }
@@ -419,7 +278,7 @@ function CustomerOrderDetails() {
                                             <Text fontSize="lg" fontWeight="700" color="gray.700">{order?.weight}</Text>
                                         </Flex>
                                         <Flex w="full" gap={1}>
-                                            <Text fontSize="md" fontWeight="700" color="gray.600">- RM</Text>
+                                            <Text fontSize="md" fontWeight="700" color="gray.600">RM</Text>
                                             <Text fontSize="lg" fontWeight="700" color="gray.700">{order?.discount}</Text>
                                         </Flex>
                                     </Flex>
@@ -441,35 +300,7 @@ function CustomerOrderDetails() {
                     </Flex>
 
                     <Flex w="full" direction="column" bg="white" boxShadow="md" gap={3}>
-                        <Flex justifyContent="space-between" alignItems="center" px={5} pt={3}>
-                            <Text fontSize="lg" fontWeight="700">Order Details</Text>
-                            {hoursDifference <= 24 && (
-                                isEditing ? (
-                                    <Box>
-                                        <IconButton
-                                            icon={<IoMdCheckmark />}
-                                            onClick={handleSaveClick}
-                                            mr={2}
-                                            colorScheme="green"
-                                            style={{ outline: "none" }}
-                                        />
-                                        <IconButton
-                                            icon={<RxCross2 />}
-                                            onClick={handleCancelClick}
-                                            colorScheme="red"
-                                            style={{ outline: "none" }}
-                                        />
-                                    </Box>
-                                ) : (
-                                    <IconButton
-                                        icon={<CiEdit />}
-                                        onClick={handleEditClick}
-                                        colorScheme="blue"
-                                        style={{ outline: "none" }}
-                                    />
-                                )
-                            )}
-                        </Flex>
+                        <Text px={5} pt={3} fontSize="lg" fontWeight="700">Order Details</Text>
                         <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
                         <Flex w="full" direction="row" gap={3} px={5} pb={3}>
                             <Flex w="full" direction="column" gap={3}>
@@ -514,51 +345,28 @@ function CustomerOrderDetails() {
                                 <Flex w="full" direction="row" gap={3}>
                                     <FormControl>
                                         <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Shipping Date</FormLabel>
-                                        <Input
-                                            type="date"
+                                        <Input 
                                             variant="outline"
                                             defaultValue={order?.shipping_date}
                                             size="md"
                                             focusBorderColor="blue.500"
                                             w="full"
+                                            isReadOnly
                                             p={2.5}
-                                            isReadOnly={!isEditing}
-                                            onChange={(e) => setShippingDate(e.target.value)}
                                         />
-                                    </FormControl>
+                                    </FormControl>        
                                     <FormControl>
                                         <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Shipping Time</FormLabel>
-                                        {
-                                            isEditing ? (
-                                                <Select
-                                                    variant="outline"
-                                                    value={shippingTime}
-                                                    size="md"
-                                                    focusBorderColor="blue.500"
-                                                    w="full"
-                                                    isReadOnly={!isEditing}
-                                                    onChange={(e) => setShippingTime(e.target.value)}
-                                                >
-                                                    <option value="">Select a time</option>
-                                                    {timeOptions?.map((time, index) => (
-                                                        <option key={index} value={time}>
-                                                            {time}
-                                                        </option>
-                                                    ))}
-                                                </Select>
-                                            ) : (
-                                                <Input 
-                                                    variant="outline"
-                                                    defaultValue={order?.shipping_time}
-                                                    size="md"
-                                                    focusBorderColor="blue.500"
-                                                    w="full"
-                                                    isReadOnly
-                                                    p={2.5}
-                                                />
-                                            )
-                                        }
-                                    </FormControl>
+                                        <Input 
+                                            variant="outline"
+                                            defaultValue={order?.shipping_time}
+                                            size="md"
+                                            focusBorderColor="blue.500"
+                                            w="full"
+                                            isReadOnly
+                                            p={2.5}
+                                        />
+                                    </FormControl>                                   
                                 </Flex>
                                 <FormControl>
                                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Payment Method</FormLabel>
@@ -588,7 +396,27 @@ function CustomerOrderDetails() {
                         </Flex>
                     </Flex>
                 </Flex>
-                <Flex w="20%" direction="column">
+                <Flex w="20%" direction="column" gap={5}>
+                    <Flex w="full" direction="column" bg="white" boxShadow="md">
+                        <Text px={5} py={3} fontSize="lg" fontWeight="700">Delivery Driver</Text>
+                        <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
+                        <Flex w="full" p={6}>
+                            <Flex w="full" direction="column" gap={3}>
+                                <FormControl>
+                                    <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Assign Delivery Driver</FormLabel>
+                                    <Input
+                                        variant="outline"
+                                        value={deliveryDriver ? deliveryDriver.name : 'No driver assigned'}
+                                        size="md"
+                                        focusBorderColor="blue.500"
+                                        w="full"
+                                        isReadOnly
+                                        p={2.5}
+                                    />
+                                </FormControl>
+                            </Flex>
+                        </Flex>
+                    </Flex>
                     <Flex w="full" direction="column" bg="white" boxShadow="md">
                         <Text px={5} py={3} fontSize="lg" fontWeight="700">Order Status</Text>
                         <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
@@ -621,4 +449,4 @@ function CustomerOrderDetails() {
     );
 }
 
-export default CustomerOrderDetails;
+export default AdminOrderDetails;

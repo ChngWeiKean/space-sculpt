@@ -47,13 +47,15 @@ import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/r
 import { BiLinkExternal } from "react-icons/bi";
 import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
 import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning, CiCreditCard1, CiDeliveryTruck } from "react-icons/ci";
+import { CiWarning, CiCreditCard1, CiDeliveryTruck, CiUser, CiPhone } from "react-icons/ci";
 import { GoSmiley } from "react-icons/go";
 import { TbTruckDelivery } from "react-icons/tb";
 import { GoDotFill } from "react-icons/go";
+import { RiContactsLine } from "react-icons/ri";
 import { BsCash, BsCalendar2Date } from "react-icons/bs";
 import { TbMoneybag } from "react-icons/tb";
 import { CiDiscount1 } from "react-icons/ci";
+import { FaCar } from "react-icons/fa";
 import { CiCreditCard2 } from "react-icons/ci";
 import { IoTimeOutline } from "react-icons/io5";
 import { SiCashapp } from "react-icons/si";
@@ -72,10 +74,10 @@ import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-function CustomerOrderHistory() {
-    const { user } = useAuth();
-    const [pendingOrders, setPendingOrders] = useState([]);
-    const [orderHistory, setOrderHistory] = useState([]);
+function AdminOrderHistory() {
+    const [ pendingOrders, setPendingOrders ] = useState([]);
+    const [ orderHistory, setOrderHistory ] = useState([]);
+    const [ deliveryDrivers, setDeliveryDrivers ] = useState([]);
 
     const settings = {
         dots: true,
@@ -87,33 +89,71 @@ function CustomerOrderHistory() {
     };
 
     useEffect(() => {
-        if (user) {
-            let orderIds = user.orders;
+        const orderRef = ref(db, 'orders');
+        const userRef = ref(db, 'users');
+
+        onValue(orderRef, async (snapshot) => {
             let newPendingOrders = [];
             let newOrderHistory = [];
-            orderIds.forEach(orderId => {
-                let orderRef = ref(db, `orders/${orderId}`);
-                onValue(orderRef, (snapshot) => {
-                    let order = snapshot.val();
-                    let date = new Date(order.created_on);
-                    let formattedDate = date.getDate() + " " + date.toLocaleString('default', { month: 'long' }) + " " + date.getFullYear();
-                    let shippingDate = new Date(order.shipping_date);
-                    let formattedShippingDate = shippingDate.getDate() + " " + shippingDate.toLocaleString('default', { month: 'long' }) + " " + shippingDate.getFullYear();
-                    order.created_on = formattedDate;
-                    order.shipping_date = formattedShippingDate;
 
-                    if (order.completion_status === "Pending") {
-                        newPendingOrders.push(order);
-                        console.log(newPendingOrders);
-                        setPendingOrders([...newPendingOrders]);
-                    } else {
-                        newOrderHistory.push(order);
-                        setOrderHistory([...newOrderHistory]);
-                    }
+            const orderPromises = [];
+
+            snapshot.forEach((orderSnapshot) => {
+                const order = orderSnapshot.val();
+
+                const date = new Date(order.created_on);
+                const formattedDate = date.getDate() + " " + date.toLocaleString('default', { month: 'long' }) + " " + date.getFullYear();
+                const shippingDate = new Date(order.shipping_date);
+                const formattedShippingDate = shippingDate.getDate() + " " + shippingDate.toLocaleString('default', { month: 'long' }) + " " + shippingDate.getFullYear();
+
+                order.created_on = formattedDate;
+                order.shipping_date = formattedShippingDate;
+
+                const userPromise = new Promise((resolve) => {
+                    const userQuery = query(userRef, orderByChild('uid'), equalTo(order.user_id));
+                    onValue(userQuery, (userSnapshot) => {
+                        userSnapshot.forEach((userChildSnapshot) => {
+                            const user = userChildSnapshot.val();
+                            order.user = user;
+                        });
+                        resolve(order);
+                    });
                 });
+
+                orderPromises.push(userPromise);
             });
-        }
-    }, [user]);
+
+            const orders = await Promise.all(orderPromises);
+
+            orders.forEach((order) => {
+                if (order.completion_status === "Pending") {
+                    console.log(order);
+                    newPendingOrders.push(order);
+                } else {
+                    newOrderHistory.push(order);
+                }
+            });
+
+            setPendingOrders(newPendingOrders);
+            setOrderHistory(newOrderHistory);
+        });
+    }, []);
+
+    useEffect(() => {
+        const userRef = ref(db, 'users');
+        const userQuery = query(userRef, orderByChild('role'), equalTo('Delivery'));
+        
+        onValue(userQuery, (snapshot) => {
+            let newDeliveryDrivers = [];
+
+            snapshot.forEach((userSnapshot) => {
+                const user = userSnapshot.val();
+                newDeliveryDrivers.push(user);
+            });
+
+            setDeliveryDrivers(newDeliveryDrivers);
+        });
+    }, []);
 
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={3}>
@@ -128,14 +168,12 @@ function CustomerOrderHistory() {
                         <TabPanel>
                             <Flex w="full" direction="column">
                                 {pendingOrders.length === 0 ? (
-                                    <Flex w="full" direction="column" alignItems="center">
+                                    <Flex w="full" direction="column" alignItems="center" mt={5}>
                                         <Text fontSize="xl" fontWeight="700">No pending orders</Text>
-                                        <Text fontSize="lg" fontWeight="400">Looks like you haven't ordered anything yet</Text>
-                                        <Button colorScheme="blue" size="lg" as={NavLink} to={'/'}>Start Shopping</Button>
                                     </Flex>
                                 ) : (
                                     pendingOrders.map((order, index) => (
-                                        <NavLink key={index} to={`/orders/${order.order_id}`} style={{ textDecoration: "none" }}>
+                                        <NavLink key={index} to={`/admin/customer-order-details/${order.order_id}`} style={{ textDecoration: "none" }}>
                                             <Flex w="full" h="20rem" direction="column" p={3} bg="white" boxShadow="lg" my={2} transition="transform 0.2s" _hover={{ transform: 'scale(1.01)' }}>
                                                 <Flex w="full" direction="row" justifyContent="space-between">
                                                     <Flex w="full" direction="column" gap={3} ml={2}>
@@ -153,15 +191,15 @@ function CustomerOrderHistory() {
                                                                         <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.created_on}</Text>                                                                
                                                                     </Flex>                                                                    
                                                                 </Flex>
-                                                                <Flex alignItems="center" gap={3}>
-                                                                    <TbMoneybag size={30} color='#d69511'/>
+                                                                <Flex alignItems="center" gap={3} color='#d69511'>
+                                                                    <TbMoneybag size={30}/>
                                                                     <Flex direction="column">
                                                                         <Text fontSize="md" fontWeight="semibold" color="gray.500">Total</Text>
                                                                         <Text fontSize="md" fontWeight="semibold" color="blue.500">RM {order.total}</Text>                                                                
                                                                     </Flex>
                                                                 </Flex>
-                                                                <Flex alignItems="center" gap={3}>
-                                                                    <TbTruckDelivery size={30} color='#d69511'/>
+                                                                <Flex alignItems="center" gap={3} color='#d69511'>
+                                                                    <TbTruckDelivery size={30}/>
                                                                     <Flex direction="column">
                                                                         <Text fontSize="md" fontWeight="semibold" color="gray.500">Arrival Status</Text>
                                                                         <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.arrival_status}</Text>                                                                
@@ -177,26 +215,6 @@ function CustomerOrderHistory() {
                                                                     </Flex>
                                                                 </Flex>
                                                                 <Flex alignItems="center" gap={3}>
-                                                                    <CiDiscount1 size={30} color='#d69511'/>
-                                                                    <Flex direction="column">
-                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Discount</Text>
-                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">
-                                                                            { 
-                                                                                order?.voucher ? (
-                                                                                    order?.voucher?.discount_type === "Percentage" ? (
-                                                                                        order?.voucher?.discount_value + "%"
-                                                                                    ) : (
-                                                                                        "RM " + order?.voucher?.discount_value
-                                                                                    )                                                                                
-                                                                                ) :
-                                                                                "No Discount Applied"
-                                                                            }
-                                                                        </Text>                                                                
-                                                                    </Flex>
-                                                                </Flex>
-                                                            </Flex>
-                                                            <Flex w="full" direction="column" gap={7}>
-                                                                <Flex alignItems="center" gap={3}>
                                                                     <IoTimeOutline size={30} color='#d69511'/>
                                                                     <Flex direction="column">
                                                                         <Text fontSize="md" fontWeight="semibold" color="gray.500">Shipping Time</Text>
@@ -208,6 +226,31 @@ function CustomerOrderHistory() {
                                                                     <Flex direction="column">
                                                                         <Text fontSize="md" fontWeight="semibold" color="gray.500">Payment Method</Text>
                                                                         <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.payment_method}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                            </Flex>
+                                                            <Flex w="full" direction="column" gap={7}>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <CiUser size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Customer Name</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.user.name}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <CiPhone size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Customer Contact</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.user.contact}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <FaCar size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Assigned Driver</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{
+                                                                            deliveryDrivers.find((driver) => driver.uid === order.driver_id)?.name || "Not assigned"
+                                                                        }</Text>                                                                
                                                                     </Flex>
                                                                 </Flex>
                                                             </Flex>
@@ -232,7 +275,7 @@ function CustomerOrderHistory() {
                             </Flex>
                         </TabPanel>
                         <TabPanel>
-                            <Text>WOW</Text>
+                            <Text>MEOW</Text>
                         </TabPanel>
                     </TabPanels>
                 </Tabs>
@@ -241,4 +284,4 @@ function CustomerOrderHistory() {
     )
 }
 
-export default CustomerOrderHistory;
+export default AdminOrderHistory;

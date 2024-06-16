@@ -69,3 +69,67 @@ export const updateSettings = async (settings) => {
         throw error;
     }
 }
+
+export const updateOrderStatus = async (orderID, status) => {
+    try {
+        const orderRef = ref(db, `orders/${orderID}`);
+        await update(orderRef, {
+            arrival_status: status,
+            updated_at: new Date().toISOString(),
+            updated_by: auth.currentUser.uid
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating order status:", error);
+        throw error;
+    }
+}
+
+export const assignOrderToDriver = async (orderID, newDriverID) => {
+    try {
+        const orderRef = ref(db, `orders/${orderID}`);
+        const orderSnapshot = await get(orderRef);
+        const orderData = orderSnapshot.val();
+
+        // Check if the order has already been assigned to a driver
+        if (orderData.driver_id) {
+            const currentDriverID = orderData.driver_id;
+
+            // Remove the order from the current driver's pending orders list
+            const currentDriverRef = ref(db, `users/${currentDriverID}`);
+            const currentDriverSnapshot = await get(currentDriverRef);
+            const currentDriverData = currentDriverSnapshot.val();
+            if (currentDriverData) {
+                const updatedPendingOrders = currentDriverData.pending_orders.filter(id => id !== orderID);
+                await update(currentDriverRef, {
+                    pending_orders: updatedPendingOrders
+                });
+            }
+        }
+
+        // Assign the order to the new driver
+        await update(orderRef, {
+            driver_id: newDriverID,
+            updated_at: new Date().toISOString(),
+            updated_by: auth.currentUser.uid
+        });
+
+        // Add the order id to the new driver's pending orders list
+        const newDriverRef = ref(db, `users/${newDriverID}`);
+        const newDriverSnapshot = await get(newDriverRef);
+        const newDriverData = newDriverSnapshot.val();
+        if (newDriverData) {
+            const newPendingOrders = newDriverData.pending_orders || [];
+            newPendingOrders.push(orderID);
+            await update(newDriverRef, {
+                pending_orders: newPendingOrders
+            });
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error assigning order to driver:", error);
+        throw error;
+    }
+};
