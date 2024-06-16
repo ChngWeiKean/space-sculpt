@@ -15,6 +15,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { BiChevronDown } from "react-icons/bi";
 import { logout } from "../../../api/auth.js";
 import { useAuth } from "../AuthCtx.jsx";
+import { RiCoupon2Line } from "react-icons/ri";
 import { IoHomeOutline, IoCartOutline, IoDocumentTextOutline } from "react-icons/io5";
 
 const CustomerNavbar = () => {
@@ -71,6 +72,11 @@ const CustomerNavbar = () => {
 				<Link as={NavLink} color="gray.500" to="/orders" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
 					<Flex alignItems="center" gap={1}>
 						<IoDocumentTextOutline/> Orders
+					</Flex>
+				</Link>
+				<Link as={NavLink} color="gray.500" to="/vouchers" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={1}>
+						<RiCoupon2Line/> Vouchers
 					</Flex>
 				</Link>
 				<Menu marginRight={6}>

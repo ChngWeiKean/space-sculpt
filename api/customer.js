@@ -593,3 +593,18 @@ export const placeOrder = async (data) => {
         throw error;
     }
 }
+
+export const updateShipping = async (order_id, data) => {
+    const { shipping_date, shipping_time } = data;
+    try {
+        const orderRef = ref(db, `orders/${order_id}`);
+        await update(orderRef, {
+            shipping_date: shipping_date,
+            shipping_time: shipping_time
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}

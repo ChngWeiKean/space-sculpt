@@ -56,6 +56,8 @@ function CategoryDetails() {
     const [subcategoryNames, setSubcategoryNames] = useState([]);
     const [numOfFurniture, setNumOfFurniture] = useState(0);
     const [inventory, setInventory] = useState(0);
+    const [furnitureSales, setFurnitureSales] = useState(0);
+    const [furnitureRevenue, setFurnitureRevenue] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
@@ -98,6 +100,8 @@ function CategoryDetails() {
         onValue(furnitureRef, (snapshot) => {
             const furniture = [];
             let totalInventory = 0;
+            let totalSales = 0;
+            let totalRevenue = 0;
             snapshot.forEach((furnitureSnapshot) => {
                 const furnitureData = furnitureSnapshot.val();
                 if (furnitureData.subcategory && subcategories.some(subcategory => subcategory.id === furnitureData.subcategory)) {
@@ -117,10 +121,21 @@ function CategoryDetails() {
                             totalInventory += parseInt(variant.inventory);
                         });
                     }
+                    if (furnitureData.orders) {
+                        let totalQuantitySold = 0;
+                        Object.values(furnitureData.orders).forEach(order => {
+                            totalQuantitySold += order.quantity;
+                        });
+                        furnitureItem.quantity_sold = totalQuantitySold;
+                        totalSales += totalQuantitySold;
+                        totalRevenue += totalQuantitySold * furnitureData.price;
+                    }
                 }
             });
             setFurniture(furniture);
             setInventory(totalInventory);
+            setFurnitureSales(totalSales);
+            setFurnitureRevenue(totalRevenue);
             console.log(furniture);
         });
     }, [furnitureIds, subcategories]);
@@ -621,7 +636,7 @@ function CategoryDetails() {
                             <MdOutlineSell color='#d69511' size='35'/>
                             <Box ml={4}>
                                 <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>Furniture Sales</Text>
-                                <Text fontSize='md'>0 sold</Text>                                
+                                <Text fontSize='md'>{furnitureSales} sold</Text>                                
                             </Box>
                         </Flex>
                     </Box>
@@ -639,7 +654,7 @@ function CategoryDetails() {
                             <GiMoneyStack color='#d69511' size='40'/>
                             <Box ml={4}>
                                 <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>Total Revenue</Text>
-                                <Text fontSize='md'>RM 10000</Text>                                
+                                <Text fontSize='md'>RM {furnitureRevenue}</Text>                                
                             </Box>
                         </Flex>
                     </Box>

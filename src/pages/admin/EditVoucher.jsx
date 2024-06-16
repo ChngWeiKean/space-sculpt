@@ -74,7 +74,7 @@ function EditVoucher() {
         onValue(usersQuery, (snapshot) => {
             const users = [];
             snapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val().role === "Customer" && childSnapshot.val().vouchers && childSnapshot.val().vouchers[id]) {
+                if (childSnapshot.val().role === "Customer" && childSnapshot.val().vouchers && childSnapshot.val().vouchers.hasOwnProperty(id)) {
                     users.push({
                         id: childSnapshot.key,
                         ...childSnapshot.val(),

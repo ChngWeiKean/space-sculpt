@@ -12,7 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { NavLink, useLocation } from "react-router-dom";
 import { BiChevronDown } from "react-icons/bi";
-import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
+import { IoHomeOutline, IoSettingsOutline, IoDocumentTextOutline } from "react-icons/io5";
 import { logout } from "../../../api/auth.js";
 import { useAuth } from "../AuthCtx.jsx";
 
@@ -47,12 +47,17 @@ const LogisticsNavbar = () => {
 			
 			<Flex alignItems="center">
 				<Link as={NavLink} color="gray.500" to="/" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					<Flex alignItems="center" gap={2}>
+					<Flex alignItems="center" gap={1}>
 						<IoHomeOutline/> Home
 					</Flex>
 				</Link>
+				<Link as={NavLink} color="gray.500" to="/manage-orders" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={1}>
+						<IoDocumentTextOutline/> Orders
+					</Flex>
+				</Link>
 				<Link as={NavLink} color="gray.500" to="/settings" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
-					<Flex alignItems="center" gap={2}>
+					<Flex alignItems="center" gap={1}>
 						<IoSettingsOutline/> Settings
 					</Flex>
 				</Link>
