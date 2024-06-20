@@ -348,7 +348,8 @@ function AdminDashboard() {
                 as={NavLink}
                 to={`/admin/customer-order-details/${item.order_id}`}
                 direction="column" 
-                gap={2} w="full" 
+                gap={2} 
+                w="11rem" 
                 p={2} 
                 boxShadow={"lg"} 
                 rounded={"md"} 
@@ -357,35 +358,39 @@ function AdminDashboard() {
                 _hover={{ transform: "scale(1.02)" }}
             > 
                 <Flex>
-                    <Text fontSize="md" fontWeight="800" color="gray.600">
+                    <Text fontSize="md" fontWeight="800" color="gray.600" isTruncated>
                         {item.arrival_status}
                     </Text>                    
                 </Flex>
                 <Flex gap={2}>
-                    <Text fontSize="sm" fontWeight="600" color="gray.600">{item.shipping_date}</Text>
-                    <Text fontSize="sm" fontWeight="600" color="gray.600">|</Text>
-                    <Text fontSize="sm" fontWeight="600" color="gray.600">{item.shipping_time}</Text>
+                    <Text fontSize="sm" fontWeight="600" color="gray.600" isTruncated>
+                        {item.shipping_date} | {item.shipping_time}
+                    </Text>
                 </Flex>
                 <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
                 <Flex direction="column" gap={1}>
                     <Flex w="full" gap={2}>
                         <AiOutlineUser size={20} color='gray'/>
-                        <Text fontSize="sm" fontWeight="600" color="gray.600">{item?.user?.name}</Text>
+                        <Text fontSize="sm" fontWeight="600" color="gray.600" isTruncated>
+                            {item?.user?.name}
+                        </Text>
                     </Flex>
                     <Flex w="full" gap={2}>
                         <MdOutlineAlternateEmail size={20} color='gray'/>
-                        <Text fontSize="sm" fontWeight="600" color="gray.600">{item?.user?.email}</Text>
+                        <Text fontSize="sm" fontWeight="600" color="gray.600" isTruncated>
+                            {item?.user?.email}
+                        </Text>
                     </Flex>
                 </Flex>                
                 <Flex onClick={(e) => e.preventDefault()} mb={5}>
                     <Flex w="100px" direction="column">
-                        <Slider {...settings}>
-                            {item.items.map((furniture, itemIndex) => (
-                                <Flex key={itemIndex}>
-                                    <img src={furniture.image} alt={furniture.color} style={{ width: "100%", height: "100%", objectFit: "cover", border:"none" }} />
-                                </Flex>
-                            ))}
-                        </Slider>                                                
+                    <Slider {...settings}>
+                        {item.items.map((furniture, itemIndex) => (
+                        <Flex key={itemIndex}>
+                            <img src={furniture.image} alt={furniture.color} style={{ width: "100%", height: "100%", objectFit: "cover", border:"none" }} />
+                        </Flex>
+                        ))}
+                    </Slider>                                                
                     </Flex>                                                    
                 </Flex>
             </Flex>
