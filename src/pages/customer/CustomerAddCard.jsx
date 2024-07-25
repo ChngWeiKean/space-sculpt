@@ -51,6 +51,7 @@ import { addCard } from "../../../api/customer.js";
 import { encrypt, decrypt } from 'n-krypta'
 import {fetchAndActivate, getValue} from "firebase/remote-config";
 import {remoteConfig} from "../../../api/firebase.js";
+import CryptoJS from 'crypto-js';
 
 function CustomerAddCard() {
     const { user } = useAuth();
@@ -82,6 +83,19 @@ function CustomerAddCard() {
         setState((prev) => ({ ...prev, focus: evt.target.name }));
     }
 
+    const decryptAES = (combined, key) => {
+        const combinedWordArray = CryptoJS.enc.Base64.parse(combined);
+        const iv = CryptoJS.lib.WordArray.create(combinedWordArray.words.slice(0, 4));
+        const ciphertext = CryptoJS.lib.WordArray.create(combinedWordArray.words.slice(4));
+    
+        const decrypted = CryptoJS.AES.decrypt({ ciphertext: ciphertext }, CryptoJS.enc.Utf8.parse(key), {
+            iv: iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+        return decrypted.toString(CryptoJS.enc.Utf8);
+    };    
+
     useEffect(() => {
         fetchAndActivate(remoteConfig)
             .then(() => {
@@ -93,10 +107,10 @@ function CustomerAddCard() {
                         let cardNumbers = [];
                         for (let key in data) {
                             let card = data[key];
-                            card.number = decrypt(card.number, private_key);
-                            card.expiry = decrypt(card.expiry, private_key);
-                            card.name = decrypt(card.name, private_key);
-                            card.cvc = decrypt(card.cvc, private_key);
+                            card.number = decryptAES(card.number, private_key);
+                            card.expiry = decryptAES(card.expiry, private_key);
+                            card.name = decryptAES(card.name, private_key);
+                            card.cvc = decryptAES(card.cvc, private_key);
                             cardNumbers.push(card.number);
                             console.log(card);
                         }

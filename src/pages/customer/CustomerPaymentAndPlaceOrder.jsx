@@ -6,70 +6,31 @@ import {
     Input,
     FormControl,
     FormLabel,
-    FormErrorMessage,
     InputLeftAddon,
-    InputRightAddon,
     Textarea,
     useToast,
     Divider,
     InputGroup,
-    Spinner,
     Select,
-    Badge,
-    Alert,
-    AlertIcon,
-    Tabs,
-    TabList,
-    TabPanels,
-    Tab,
-    TabPanel,
-    TabIndicator,
-    HStack,
-    useDisclosure,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    Tooltip,
-    Accordion,
-    AccordionItem,
-    AccordionButton,
-    AccordionPanel,
-    AccordionIcon,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill, BsPinMap, BsCart3 } from "react-icons/bs";
+import { useState, useEffect } from "react";
+import { BsCart3 } from "react-icons/bs";
 import { LiaShippingFastSolid } from "react-icons/lia";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
-import { BiLinkExternal } from "react-icons/bi";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning, CiCreditCard1, CiDeliveryTruck } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
-import { BsCash } from "react-icons/bs";
+import { IoMdArrowRoundBack } from "react-icons/io";
 import { SiCashapp } from "react-icons/si";
-import { RiCoupon3Line, RiCoupon2Fill } from "react-icons/ri";
-import { GrThreeD } from "react-icons/gr";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
-import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
 import { FaRegUser } from "react-icons/fa";
-import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { MdOutlineAlternateEmail } from "react-icons/md";
+import { useForm } from "react-hook-form";
+import { useLocation } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import Cards from 'react-credit-cards-2';
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
-import { encrypt, decrypt } from 'n-krypta'
 import { fetchAndActivate, getValue } from "firebase/remote-config";
 import { remoteConfig } from "../../../api/firebase.js";
-import { DirectionsRenderer, GoogleMap, InfoWindow, Marker } from '@react-google-maps/api';
 import { placeOrder } from "../../../api/customer.js";
+import CryptoJS from 'crypto-js';
 
 function CustomerPaymentAndPlaceOrder() {
     const { user } = useAuth();
@@ -80,14 +41,22 @@ function CustomerPaymentAndPlaceOrder() {
     const order = useLocation().state;
     console.log(order);
     const {
-        handleSubmit,
         register,
-        setValue,
-        formState: {
-            errors, isSubmitting
-        },
         watch
     } = useForm();
+
+    const decryptAES = (combined, key) => {
+        const combinedWordArray = CryptoJS.enc.Base64.parse(combined);
+        const iv = CryptoJS.lib.WordArray.create(combinedWordArray.words.slice(0, 4));
+        const ciphertext = CryptoJS.lib.WordArray.create(combinedWordArray.words.slice(4));
+    
+        const decrypted = CryptoJS.AES.decrypt({ ciphertext: ciphertext }, CryptoJS.enc.Utf8.parse(key), {
+            iv: iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+        return decrypted.toString(CryptoJS.enc.Utf8);
+    };   
 
     useEffect(() => {
         if (order.payment === "card") {
@@ -97,9 +66,9 @@ function CustomerPaymentAndPlaceOrder() {
             fetchAndActivate(remoteConfig)
                 .then(() => {
                     const private_key = getValue(remoteConfig, 'private_key').asString();
-                    let decryptedNumber = decrypt(userCard.number, private_key);
-                    let decryptedExpiry = decrypt(userCard.expiry, private_key);
-                    let decryptedName = decrypt(userCard.name, private_key);
+                    let decryptedNumber = decryptAES(userCard.number, private_key);
+                    let decryptedExpiry = decryptAES(userCard.expiry, private_key);
+                    let decryptedName = decryptAES(userCard.name, private_key);
                     setCard({
                         number: decryptedNumber,
                         expiry: decryptedExpiry,
@@ -110,7 +79,6 @@ function CustomerPaymentAndPlaceOrder() {
     }, [order, user]); 
 
     useEffect(() => {
-        // get settings
         const settingsRef = ref(db, 'settings');
         onValue(settingsRef, (snapshot) => {
             const data = snapshot.val();
@@ -119,7 +87,7 @@ function CustomerPaymentAndPlaceOrder() {
     }, [order]);
 
     // Define the helper functions
-    function generateTimeOptions(startTime, endTime, interval = 60) { // Interval set to 60 minutes (1 hour)
+    function generateTimeOptions(startTime, endTime, interval = 60) { 
         const times = [];
         let start = parseTime(startTime);
         const end = parseTime(endTime);
@@ -160,9 +128,7 @@ function CustomerPaymentAndPlaceOrder() {
     }
 
     useEffect(() => {
-        // Check if settings is defined before generating time options
         if (settings && settings.initial_delivery_time && settings.end_delivery_time) {
-            // Generate the time options based on settings with 1-hour interval
             let options = generateTimeOptions(settings.initial_delivery_time, settings.end_delivery_time, 60);
             setTimeOptions(options);
         }

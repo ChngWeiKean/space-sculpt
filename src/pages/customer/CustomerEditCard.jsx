@@ -47,6 +47,7 @@ import { addCard, deleteCard, editCard } from "../../../api/customer.js";
 import { encrypt, decrypt } from 'n-krypta'
 import {fetchAndActivate, getValue} from "firebase/remote-config";
 import {remoteConfig} from "../../../api/firebase.js";
+import CryptoJS from 'crypto-js';
 
 function CustomerEditCard() {
     const { user } = useAuth();
@@ -81,6 +82,22 @@ function CustomerEditCard() {
         setState((prev) => ({ ...prev, focus: evt.target.name }));
     }
 
+    const decryptAES = (combined, key) => {
+        const combinedWordArray = CryptoJS.enc.Base64.parse(combined);
+        console.log(combinedWordArray);
+        const iv = CryptoJS.lib.WordArray.create(combinedWordArray.words.slice(0, 4));
+        console.log(iv);
+        const ciphertext = CryptoJS.lib.WordArray.create(combinedWordArray.words.slice(4));
+        console.log(ciphertext);
+    
+        const decrypted = CryptoJS.AES.decrypt({ ciphertext: ciphertext }, CryptoJS.enc.Utf8.parse(key), {
+            iv: iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+        return decrypted.toString(CryptoJS.enc.Utf8);
+    };    
+
     useEffect(() => {
         fetchAndActivate(remoteConfig)
             .then(() => {
@@ -93,11 +110,11 @@ function CustomerEditCard() {
                         for (let key in data) {
                             if (key === id) {
                                 let card = data[key];
-                                card.number = decrypt(card.number, private_key);
-                                card.expiry = decrypt(card.expiry, private_key);
-                                card.name = decrypt(card.name, private_key);
-                                card.cvc = decrypt(card.cvc, private_key);
-                                card.billing_address = decrypt(card.billing_address, private_key);
+                                card.number = decryptAES(card.number, private_key);
+                                card.expiry = decryptAES(card.expiry, private_key);
+                                card.name = decryptAES(card.name, private_key);
+                                card.cvc = decryptAES(card.cvc, private_key);
+                                card.billing_address = decryptAES(card.billing_address, private_key);
                                 setCurrentCard(card);
                                 setState({
                                     number: card.number,
@@ -108,11 +125,11 @@ function CustomerEditCard() {
                                 });
                             } else {
                                 let card = data[key];
-                                card.number = decrypt(card.number, private_key);
-                                card.expiry = decrypt(card.expiry, private_key);
-                                card.name = decrypt(card.name, private_key);
-                                card.cvc = decrypt(card.cvc, private_key);
-                                card.billing_address = decrypt(card.billing_address, private_key);
+                                card.number = decryptAES(card.number, private_key);
+                                card.expiry = decryptAES(card.expiry, private_key);
+                                card.name = decryptAES(card.name, private_key);
+                                card.cvc = decryptAES(card.cvc, private_key);
+                                card.billing_address = decryptAES(card.billing_address, private_key);
                                 cardNumbers.push(card.number);                                
                             }
                         }

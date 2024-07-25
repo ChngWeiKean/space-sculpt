@@ -15,6 +15,7 @@
     "@emotion/styled": "^11.11.5",
     "@react-google-maps/api": "^2.19.3",
     "chart.js": "^4.4.2",
+    "crypto-js": "^4.2.0",
     "encrypt-rsa": "^2.1.5",
     "firebase": "^10.10.0",
     "framer-motion": "^11.0.25",
