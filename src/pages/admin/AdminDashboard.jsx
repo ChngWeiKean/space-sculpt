@@ -349,7 +349,7 @@ function AdminDashboard() {
                 to={`/admin/customer-order-details/${item.order_id}`}
                 direction="column" 
                 gap={2} 
-                w="11rem" 
+                w="10rem" 
                 p={2} 
                 boxShadow={"lg"} 
                 rounded={"md"} 

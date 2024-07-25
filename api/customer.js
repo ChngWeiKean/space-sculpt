@@ -4,8 +4,8 @@ import {deleteUser, signInWithEmailAndPassword, updateEmail, updatePassword} fro
 import {fetchAndActivate, getValue} from "firebase/remote-config";
 import {remoteConfig} from "./firebase.js";
 import {storage} from "./firebase.js";
-import { encrypt, decrypt } from 'n-krypta'
 import {getDownloadURL, ref as sRef, uploadBytes} from "firebase/storage";
+import CryptoJS from 'crypto-js';
 
 export const addToFavourites = async (furnitureId, userId) => {
     try {
@@ -343,17 +343,31 @@ export const update_password = async (data, new_password) => {
 	});
 }
 
+const generateIV = () => CryptoJS.lib.WordArray.random(16);
+
+const encryptAES = (text, key) => {
+    const iv = generateIV();
+    const encrypted = CryptoJS.AES.encrypt(text, CryptoJS.enc.Utf8.parse(key), {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+    const combined = iv.concat(encrypted.ciphertext);
+    return combined.toString(CryptoJS.enc.Base64);
+};
+
 export const addCard = async (userId, card) => {
     const { number, name, expiry, cvc, billing_address } = card;
 
     fetchAndActivate(remoteConfig)
         .then(() => {
             const private_key = getValue(remoteConfig, 'private_key').asString();
-            const encrypted_number = encrypt(number, private_key);
-            const encrypted_expiry = encrypt(expiry, private_key);
-            const encrypted_name = encrypt(name, private_key);
-            const encrypted_cvc = encrypt(cvc, private_key);
-            const encrypted_billing_address = encrypt(billing_address, private_key);
+
+            const encrypted_number = encryptAES(number, private_key);
+            const encrypted_expiry = encryptAES(expiry, private_key);
+            const encrypted_name = encryptAES(name, private_key);
+            const encrypted_cvc = encryptAES(cvc, private_key);
+            const encrypted_billing_address = encryptAES(billing_address, private_key);
 
             const cardRef = ref(db, `users/${userId}/cards`);
             const newCardRef = push(cardRef);
@@ -377,11 +391,12 @@ export const editCard = async (userId, cardId, card) => {
     fetchAndActivate(remoteConfig)
         .then(() => {
             const private_key = getValue(remoteConfig, 'private_key').asString();
-            const encrypted_number = encrypt(number, private_key);
-            const encrypted_expiry = encrypt(expiry, private_key);
-            const encrypted_name = encrypt(name, private_key);
-            const encrypted_cvc = encrypt(cvc, private_key);
-            const encrypted_billing_address = encrypt(billing_address, private_key);
+
+            const encrypted_number = encryptAES(number, private_key);
+            const encrypted_expiry = encryptAES(expiry, private_key);
+            const encrypted_name = encryptAES(name, private_key);
+            const encrypted_cvc = encryptAES(cvc, private_key);
+            const encrypted_billing_address = encryptAES(billing_address, private_key);
 
             const cardRef = ref(db, `users/${userId}/cards/${cardId}`);
             update(cardRef, {

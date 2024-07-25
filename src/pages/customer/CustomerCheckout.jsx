@@ -75,16 +75,12 @@ import { fetchAndActivate, getValue } from "firebase/remote-config";
 import { remoteConfig } from "../../../api/firebase.js";
 import { DirectionsRenderer, GoogleMap, InfoWindow, Marker } from '@react-google-maps/api';
 import { redeemVoucher } from "../../../api/customer.js";
+import CryptoJS from 'crypto-js';
+
 
 function CustomerCheckout() {
     const {
-        handleSubmit,
-        register,
         setValue,
-        formState: {
-            errors, isSubmitting
-        },
-        watch
     } = useForm();
     const { user } = useAuth();
     const [ selectedAddress, setSelectedAddress ] = useState(null);
@@ -140,6 +136,19 @@ function CustomerCheckout() {
         onCloseVouchersModal();
     };
 
+    const decryptAES = (combined, key) => {
+        const combinedWordArray = CryptoJS.enc.Base64.parse(combined);
+        const iv = CryptoJS.lib.WordArray.create(combinedWordArray.words.slice(0, 4));
+        const ciphertext = CryptoJS.lib.WordArray.create(combinedWordArray.words.slice(4));
+    
+        const decrypted = CryptoJS.AES.decrypt({ ciphertext: ciphertext }, CryptoJS.enc.Utf8.parse(key), {
+            iv: iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+        return decrypted.toString(CryptoJS.enc.Utf8);
+    };    
+
     const sortedAddresses = [...defaultAddress, ...nonDefaultAddresses];
     const furniture = useLocation();
     console.log(furniture.state)
@@ -158,9 +167,9 @@ function CustomerCheckout() {
                 const private_key = getValue(remoteConfig, 'private_key').asString();
                 const decryptedCards = {};
                 Object.keys(user?.cards).forEach(card => {
-                    let decryptedNumber = decrypt(user?.cards[card].number, private_key);
-                    let decryptedExpiry = decrypt(user?.cards[card].expiry, private_key);
-                    let decryptedName = decrypt(user?.cards[card].name, private_key);
+                    let decryptedNumber = decryptAES(user?.cards[card].number, private_key);
+                    let decryptedExpiry = decryptAES(user?.cards[card].expiry, private_key);
+                    let decryptedName = decryptAES(user?.cards[card].name, private_key);
                     decryptedCards[card] = {
                         number: decryptedNumber,
                         expiry: decryptedExpiry,
