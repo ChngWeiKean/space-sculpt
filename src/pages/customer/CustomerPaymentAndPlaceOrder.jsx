@@ -245,7 +245,7 @@ function CustomerPaymentAndPlaceOrder() {
                 duration: 3000,
                 isClosable: true,
             });
-            window.location.href = "/";
+            // window.location.href = "/";
         } catch (error) {
             console.error(error);
             toast({
