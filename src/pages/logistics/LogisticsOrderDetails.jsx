@@ -462,7 +462,7 @@ function LogisticsOrderDetails() {
                                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Order ID</FormLabel>
                                     <Input 
                                         variant="outline"
-                                        defaultValue={id}
+                                        defaultValue={order?.order_id}
                                         size="md"
                                         focusBorderColor="blue.500"
                                         w="full"
@@ -538,7 +538,11 @@ function LogisticsOrderDetails() {
                                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Arrival Status</FormLabel>
                                     <Input 
                                         variant="outline"
-                                        defaultValue={order?.arrival_status}
+                                        defaultValue={
+                                            order?.completion_status && (
+                                                `${Object.keys(order.completion_status).pop()}`
+                                            )
+                                        }
                                         size="md"
                                         focusBorderColor="blue.500"
                                         w="full"

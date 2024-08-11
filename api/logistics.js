@@ -127,6 +127,12 @@ export const assignOrderToDriver = async (orderID, newDriverID) => {
             });
         }
 
+        const orderCompletionStatus = orderData.completion_status || {};
+        orderCompletionStatus.ReadyForShipping = new Date().toISOString();
+        await update(orderRef, {
+            completion_status: orderCompletionStatus
+        });
+
         return { success: true };
     } catch (error) {
         console.error("Error assigning order to driver:", error);

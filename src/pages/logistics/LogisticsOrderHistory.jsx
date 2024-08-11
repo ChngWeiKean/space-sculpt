@@ -98,6 +98,10 @@ function LogisticsOrderHistory() {
 
             const orderPromises = [];
 
+            if (!snapshot.exists()) {
+                return;
+            }
+
             snapshot.forEach((orderSnapshot) => {
                 const order = orderSnapshot.val();
 
@@ -108,6 +112,7 @@ function LogisticsOrderHistory() {
 
                 order.created_on = formattedDate;
                 order.shipping_date = formattedShippingDate;
+                order.id = orderSnapshot.key;
 
                 const userPromise = new Promise((resolve) => {
                     const userQuery = query(userRef, orderByChild('uid'), equalTo(order.user_id));
@@ -126,7 +131,7 @@ function LogisticsOrderHistory() {
             const orders = await Promise.all(orderPromises);
 
             orders.forEach((order) => {
-                if (order.completion_status === "Pending") {
+                if (order.completion_status.Pending) {
                     console.log(order);
                     newPendingOrders.push(order);
                 } else {
@@ -173,7 +178,7 @@ function LogisticsOrderHistory() {
                                     </Flex>
                                 ) : (
                                     pendingOrders.map((order, index) => (
-                                        <NavLink key={index} to={`/order-details/${order.order_id}`} style={{ textDecoration: "none" }}>
+                                        <NavLink key={index} to={`/order-details/${order.id}`} style={{ textDecoration: "none" }}>
                                             <Flex w="full" h="20rem" direction="column" p={3} bg="white" boxShadow="lg" my={2} transition="transform 0.2s" _hover={{ transform: 'scale(1.01)' }}>
                                                 <Flex w="full" direction="row" justifyContent="space-between">
                                                     <Flex w="full" direction="column" gap={3} ml={2}>
@@ -202,7 +207,17 @@ function LogisticsOrderHistory() {
                                                                     <TbTruckDelivery size={30} color='#d69511'/>
                                                                     <Flex direction="column">
                                                                         <Text fontSize="md" fontWeight="semibold" color="gray.500">Arrival Status</Text>
-                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.arrival_status}</Text>                                                                
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">
+                                                                            {order.completion_status ? (
+                                                                                Object.entries(order.completion_status).map(([status, timestamp]) => (
+                                                                                    <Text key={status} fontSize="md" fontWeight="semibold" color="blue.500">
+                                                                                        {status}
+                                                                                    </Text>
+                                                                                ))
+                                                                            ) : (
+                                                                                <Text fontSize="md" fontWeight="semibold" color="blue.500">Status not available</Text>
+                                                                            )}
+                                                                        </Text>                                                                
                                                                     </Flex>
                                                                 </Flex>
                                                             </Flex>

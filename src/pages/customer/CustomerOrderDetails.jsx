@@ -46,9 +46,35 @@ function CustomerOrderDetails() {
     const [ shippingDate, setShippingDate ] = useState(order?.shipping_date);
     const [ shippingTime, setShippingTime ] = useState(order?.shipping_time);
     const [ hoursDifference, setHoursDifference ] = useState(0);
+    const [steps, setSteps] = useState([]);
 
-    const updateDeliveryStatus = (status) => {
-        switch (status) {
+    const formatTimestamp = (timestamp) => {
+        return new Date(timestamp).toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }).replace(',', '');
+    };
+
+    const updateDeliveryStatus = (completionStatus) => {
+        if (!completionStatus) {
+            setActiveStep(0);
+            return;
+        }
+
+        const statusOrder = ['Pending', 'Ready For Shipping', 'Shipping', 'Arrived'];
+        let latestStatus = 'Pending';
+
+        for (const status of statusOrder) {
+            if (completionStatus[status]) {
+                latestStatus = status;
+            }
+        }
+
+        switch (latestStatus) {
             case 'Pending':
                 setActiveStep(0);
                 break;
@@ -56,25 +82,47 @@ function CustomerOrderDetails() {
                 setActiveStep(1);
                 break;
             case 'Shipping':
-                setActiveStep(1);
+                setActiveStep(2);
                 break;
             case 'Arrived':
-                setActiveStep(2);
+                setActiveStep(3);
                 break;
             default:
                 setActiveStep(0);
         }
     };
 
+    const updateSteps = (completionStatus) => {
+        const defaultSteps = [
+            { title: 'Order Placed', description: 'Your order has been placed' },
+            { title: 'Ready For Shipping', description: 'Your order is ready for shipping' },
+            { title: 'Shipped', description: 'Your order is on the way' },
+            { title: 'Delivered', description: 'Your order has been delivered' },
+        ];
+
+        const stepsWithTimestamps = defaultSteps.map((step, index) => {
+            const statusKey = Object.keys(completionStatus)[index];
+            if (statusKey) {
+                return {
+                    ...step,
+                    timestamp: formatTimestamp(completionStatus[statusKey])
+                };
+            }
+            return step;
+        });
+
+        setSteps(stepsWithTimestamps);
+    };
+
     useEffect(() => {
         const orderRef = ref(db, `orders/${id}`);
         onValue(orderRef, (snapshot) => {
             const data = snapshot.val();
-            const createdOnDate = new Date(data.created_on);
+            const createdOnDate = new Date(data?.created_on);
             const now = new Date();
             const timeDifference = now - createdOnDate;
             setHoursDifference(timeDifference / (1000 * 60 * 60));            
-            data.created_on = new Date(data.created_on).toLocaleString('en-GB', {
+            data.created_on = new Date(data?.created_on).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'long',
                 year: 'numeric',
@@ -84,7 +132,10 @@ function CustomerOrderDetails() {
             }).replace(',', ''); 
             console.log("ORDER DATA:", data);
             setOrder(data);
-            updateDeliveryStatus(data.arrival_status);
+            updateDeliveryStatus(data.completion_status);
+            updateSteps(data.completion_status);
+
+            console.log("ORDER DATA:", data.completion_status);
         });
     }, [id]);
 
@@ -319,13 +370,6 @@ function CustomerOrderDetails() {
 
     const header = renderHeader();
 
-    const steps = [
-        { title: 'Order Placed', description: 'Your order has been placed' },
-        { title: 'Ready For Shipping', description: 'Your order is ready for shipping' },
-        { title: 'Shipped', description: 'Your order is on the way' },
-        { title: 'Delivered', description: 'Your order has been delivered' },
-    ];
-
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={4}>
             <Flex w="full" direction="row" gap={5}>
@@ -432,7 +476,7 @@ function CustomerOrderDetails() {
                                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Order ID</FormLabel>
                                     <Input 
                                         variant="outline"
-                                        defaultValue={id}
+                                        defaultValue={order?.order_id}
                                         size="md"
                                         focusBorderColor="blue.500"
                                         w="full"
@@ -529,9 +573,13 @@ function CustomerOrderDetails() {
                                 </FormControl>
                                 <FormControl>
                                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Arrival Status</FormLabel>
-                                    <Input 
+                                    <Input
                                         variant="outline"
-                                        defaultValue={order?.arrival_status}
+                                        defaultValue={
+                                            order?.completion_status && (
+                                                `${Object.keys(order.completion_status).pop()}`
+                                            )
+                                        }
                                         size="md"
                                         focusBorderColor="blue.500"
                                         w="full"
@@ -562,6 +610,11 @@ function CustomerOrderDetails() {
                                         <Box flexShrink='0'>
                                             <StepTitle>{step.title}</StepTitle>
                                             <StepDescription>{step.description}</StepDescription>
+                                            {step.timestamp && (
+                                                <Text fontSize="sm" color="gray.500">
+                                                    {step.timestamp}
+                                                </Text>
+                                            )}
                                         </Box>
 
                                         <StepSeparator />

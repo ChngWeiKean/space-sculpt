@@ -485,12 +485,60 @@ export const placeOrder = async (data) => {
         shipping_date,
         shipping_time
     } = data;
+    
     try {
-        const orderRef = ref(db, `orders`);
-        const newOrderRef = push(orderRef);
-        const order_id = newOrderRef.key;
+        // Fetch existing order IDs and determine the max order ID
+        const ordersRef = ref(db, 'orders');
+        const ordersSnapshot = await get(ordersRef);
+        let maxOrderId = 0;
+        
+        if (ordersSnapshot.exists()) {
+            const orders = ordersSnapshot.val();
+            Object.values(orders).forEach(order => {
+                const orderId = parseInt(order.order_id.replace('OID', ''));
+                if (orderId > maxOrderId) {
+                    maxOrderId = orderId;
+                }
+            });
+        }
+        
+        // Generate new order ID
+        const newOrderId = `OID${maxOrderId + 1}`;
 
-        // if voucher is applied, add order_id to the voucher/orders
+        // Create a new order reference with auto-generated key
+        const newOrderRef = push(ordersRef);
+        const newOrderKey = newOrderRef.key;
+
+        // Prepare the order data with the generated order ID
+        const orderData = {
+            order_id: newOrderId,
+            user_id: user_id,
+            items: items,
+            address: address,
+            payment: payment,
+            payment_method: payment_method,
+            subtotal: subtotal,
+            shipping: shipping,
+            weight: parseFloat(weight).toFixed(2),
+            discount: parseFloat(discount).toFixed(2),
+            voucher: voucher,
+            total: total,
+            shipping_date: shipping_date,
+            shipping_time: shipping_time,
+            completion_status: {
+                Pending: new Date().toISOString(),
+                ReadyForShipping: null,
+                Shipping: null,
+                Arrived: null,
+                Completed: null
+            },
+            created_on: new Date().toISOString()
+        };
+
+        // Set the order data to the new order reference
+        await set(newOrderRef, orderData);
+
+        // If voucher is applied, add order_id to the voucher/orders
         if (voucher) {
             try {
                 const voucherRef = ref(db, `vouchers/${voucher.id}/orders`);
@@ -503,16 +551,16 @@ export const placeOrder = async (data) => {
                 }
 
                 // Append the new order_id to the current orders array
-                currentOrders.push(order_id);
+                currentOrders.push(newOrderKey);
 
                 // Update the database with the updated orders array
                 await set(voucherRef, currentOrders);
 
-                // update the user's voucher to be redeemed
+                // Update the user's voucher to be redeemed
                 const userVoucherRef = ref(db, `users/${user_id}/vouchers/${voucher.id}`);
                 await set(userVoucherRef, false);
 
-                // update the voucher's user to be redeemed
+                // Update the voucher's user to be redeemed
                 const voucherUserRef = ref(db, `vouchers/${voucher.id}/users/${user_id}`);
                 await set(voucherUserRef, false);                
             } catch (error) {
@@ -520,7 +568,7 @@ export const placeOrder = async (data) => {
             }
         }
 
-        // store order id in user/orders encase in try catch
+        // Store order id in user/orders
         try {
             const userOrderRef = ref(db, `users/${user_id}/orders`);
             const userOrderSnapshot = await get(userOrderRef);
@@ -529,7 +577,7 @@ export const placeOrder = async (data) => {
                 userOrders = userOrderSnapshot.val();
             }
 
-            userOrders.push(order_id);
+            userOrders.push(newOrderKey);
             await set(userOrderRef, userOrders);
         } catch (error) {
             console.error("Error adding order to user:", error);
@@ -541,7 +589,8 @@ export const placeOrder = async (data) => {
                 acc[item.id] = {
                     selected_variants: [item.variantId],
                     quantity: item.quantity,
-                    price: item.price * item.quantity // Calculating total price for the item
+                    price: item.price * item.quantity, // Calculating total price for the item
+                    discount: item.discount ? item.discount : 0 // Ensure discount is always set
                 };
             } else {
                 acc[item.id].selected_variants.push(item.variantId);
@@ -562,7 +611,7 @@ export const placeOrder = async (data) => {
                     furnitureOrders = furnitureOrderSnapshot.val();
                 }
                 furnitureOrders.push({
-                    order_id: order_id,
+                    order_id: newOrderId,
                     created_on: new Date().toISOString(), // Assuming order creation time
                     customer_id: user_id,
                     discount: item.discount,
@@ -583,31 +632,11 @@ export const placeOrder = async (data) => {
             console.error("Error clearing cart:", error);
         }
 
-        await set(newOrderRef, {
-            order_id: order_id,
-            user_id: user_id,
-            items: items,
-            address: address,
-            payment: payment,
-            payment_method: payment_method,
-            subtotal: subtotal,
-            shipping: shipping,
-            weight: weight,
-            discount: discount,
-            voucher: voucher,
-            total: total,
-            shipping_date: shipping_date,
-            shipping_time: shipping_time,
-            completion_status: "Pending", 
-            arrival_status: "Pending",
-            created_on: new Date().toISOString()
-        });
-
         return { success: true };
     } catch (error) {
         throw error;
     }
-}
+};
 
 export const updateShipping = async (order_id, data) => {
     const { shipping_date, shipping_time } = data;

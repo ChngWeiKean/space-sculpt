@@ -91,30 +91,34 @@ function CustomerOrderHistory() {
             let orderIds = user.orders;
             let newPendingOrders = [];
             let newOrderHistory = [];
+            if (!orderIds) return;
             orderIds.forEach(orderId => {
                 let orderRef = ref(db, `orders/${orderId}`);
                 onValue(orderRef, (snapshot) => {
                     let order = snapshot.val();
-                    let date = new Date(order.created_on);
-                    let formattedDate = date.getDate() + " " + date.toLocaleString('default', { month: 'long' }) + " " + date.getFullYear();
-                    let shippingDate = new Date(order.shipping_date);
-                    let formattedShippingDate = shippingDate.getDate() + " " + shippingDate.toLocaleString('default', { month: 'long' }) + " " + shippingDate.getFullYear();
-                    order.created_on = formattedDate;
-                    order.shipping_date = formattedShippingDate;
-
-                    if (order.completion_status === "Pending") {
-                        newPendingOrders.push(order);
-                        console.log(newPendingOrders);
-                        setPendingOrders([...newPendingOrders]);
-                    } else {
-                        newOrderHistory.push(order);
-                        setOrderHistory([...newOrderHistory]);
+                    if (order) {
+                        let date = new Date(order.created_on);
+                        let formattedDate = date.getDate() + " " + date.toLocaleString('default', { month: 'long' }) + " " + date.getFullYear();
+                        let shippingDate = new Date(order.shipping_date);
+                        let formattedShippingDate = shippingDate.getDate() + " " + shippingDate.toLocaleString('default', { month: 'long' }) + " " + shippingDate.getFullYear();
+                        order.created_on = formattedDate;
+                        order.shipping_date = formattedShippingDate;
+                        order.id = snapshot.key;
+    
+                        if (order.completion_status.Pending) {
+                            newPendingOrders.push(order);
+                            console.log(newPendingOrders);
+                            setPendingOrders([...newPendingOrders]);
+                        } else {
+                            newOrderHistory.push(order);
+                            setOrderHistory([...newOrderHistory]);
+                        }
                     }
                 });
             });
         }
     }, [user]);
-
+    
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={3}>
             <Flex w="full">
@@ -128,14 +132,14 @@ function CustomerOrderHistory() {
                         <TabPanel>
                             <Flex w="full" direction="column">
                                 {pendingOrders.length === 0 ? (
-                                    <Flex w="full" direction="column" alignItems="center">
+                                    <Flex w="full" direction="column" alignItems="center" gap={4}>
                                         <Text fontSize="xl" fontWeight="700">No pending orders</Text>
                                         <Text fontSize="lg" fontWeight="400">Looks like you haven't ordered anything yet</Text>
                                         <Button colorScheme="blue" size="lg" as={NavLink} to={'/'}>Start Shopping</Button>
                                     </Flex>
                                 ) : (
                                     pendingOrders.map((order, index) => (
-                                        <NavLink key={index} to={`/orders/${order.order_id}`} style={{ textDecoration: "none" }}>
+                                        <NavLink key={index} to={`/orders/${order.id}`} style={{ textDecoration: "none" }}>
                                             <Flex w="full" h="20rem" direction="column" p={3} bg="white" boxShadow="lg" my={2} transition="transform 0.2s" _hover={{ transform: 'scale(1.01)' }}>
                                                 <Flex w="full" direction="row" justifyContent="space-between">
                                                     <Flex w="full" direction="column" gap={3} ml={2}>
@@ -164,7 +168,15 @@ function CustomerOrderHistory() {
                                                                     <TbTruckDelivery size={30} color='#d69511'/>
                                                                     <Flex direction="column">
                                                                         <Text fontSize="md" fontWeight="semibold" color="gray.500">Arrival Status</Text>
-                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.arrival_status}</Text>                                                                
+                                                                        {order.completion_status ? (
+                                                                            Object.entries(order.completion_status).map(([status, timestamp]) => (
+                                                                                <Text key={status} fontSize="md" fontWeight="semibold" color="blue.500">
+                                                                                    {status}
+                                                                                </Text>
+                                                                            ))
+                                                                        ) : (
+                                                                            <Text fontSize="md" fontWeight="semibold" color="blue.500">Status not available</Text>
+                                                                        )}
                                                                     </Flex>
                                                                 </Flex>
                                                             </Flex>
