@@ -360,9 +360,9 @@ function CustomerOrderDetails() {
             <Flex w="full" direction="row" gap={2} alignItems="center">
                 <Checkbox 
                     size="lg" 
-                    checked={rowData.checked} 
+                    isChecked={rowData.checked} 
                     onChange={(e) => onCheckChange(e, rowData)} 
-                    isDisabled={ rowData?.arrival_status === "Arrived" ? false : true }
+                    isDisabled={!rowData?.completion_status?.Arrived}
                 />
             </Flex>
         );   

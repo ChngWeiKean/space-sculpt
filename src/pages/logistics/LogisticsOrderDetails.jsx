@@ -492,7 +492,7 @@ function LogisticsOrderDetails() {
                                             <Text fontSize="lg" fontWeight="700" color="gray.700">{order?.weight}</Text>
                                         </Flex>
                                         <Flex w="full" gap={1}>
-                                            <Text fontSize="md" fontWeight="700" color="gray.600">RM</Text>
+                                            <Text fontSize="md" fontWeight="700" color="gray.600">- RM</Text>
                                             <Text fontSize="lg" fontWeight="700" color="gray.700">{order?.discount}</Text>
                                         </Flex>
                                     </Flex>

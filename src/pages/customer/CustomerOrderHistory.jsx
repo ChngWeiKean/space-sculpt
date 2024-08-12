@@ -118,6 +118,13 @@ function CustomerOrderHistory() {
             });
         }
     }, [user]);
+
+    const formatStatus = (status) => {
+        if (status === "ReadyForShipping") {
+            return "Ready For Shipping";
+        }
+        return status;
+    };    
     
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={3}>
@@ -174,7 +181,7 @@ function CustomerOrderHistory() {
                                                                                 .slice(0, 1)
                                                                                 .map(([status]) => (
                                                                                     <Text key={status} fontSize="md" fontWeight="semibold" color="blue.500">
-                                                                                        {status}
+                                                                                        {formatStatus(status)}
                                                                                     </Text>
                                                                                 ))
                                                                         ) : (
