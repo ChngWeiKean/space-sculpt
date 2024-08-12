@@ -58,51 +58,49 @@ function CustomerOrderDetails() {
             hour12: true
         }).replace(',', '');
     };
-
-    const updateDeliveryStatus = (completionStatus) => {
-        if (!completionStatus) {
-            setActiveStep(0);
-            return;
-        }
-
-        const statusOrder = ['Pending', 'Ready For Shipping', 'Shipping', 'Arrived'];
-        let latestStatus = 'Pending';
-
-        for (const status of statusOrder) {
-            if (completionStatus[status]) {
-                latestStatus = status;
-            }
-        }
-
+    
+    const updateDeliveryStatus = (latestStatus) => {
         switch (latestStatus) {
             case 'Pending':
-                setActiveStep(0);
-                break;
-            case 'Ready For Shipping':
                 setActiveStep(1);
                 break;
-            case 'Shipping':
+            case 'ReadyForShipping':
                 setActiveStep(2);
                 break;
-            case 'Arrived':
+            case 'Shipping':
                 setActiveStep(3);
+                break;
+            case 'Arrived':
+                setActiveStep(4);
+                break;
+            case 'Completed':
+                setActiveStep(5);
                 break;
             default:
                 setActiveStep(0);
         }
     };
-
+    
     const updateSteps = (completionStatus) => {
+        const statusMapping = {
+            'Pending': 'Order Placed',
+            'ReadyForShipping': 'Ready For Shipping',
+            'Shipping': 'Shipped',
+            'Arrived': 'Delivered',
+            'Completed': 'Completed'
+        };
+    
         const defaultSteps = [
             { title: 'Order Placed', description: 'Your order has been placed' },
             { title: 'Ready For Shipping', description: 'Your order is ready for shipping' },
             { title: 'Shipped', description: 'Your order is on the way' },
             { title: 'Delivered', description: 'Your order has been delivered' },
+            { title: 'Completed', description: 'Your order has been completed' }
         ];
-
-        const stepsWithTimestamps = defaultSteps.map((step, index) => {
-            const statusKey = Object.keys(completionStatus)[index];
-            if (statusKey) {
+    
+        const stepsWithTimestamps = defaultSteps.map((step) => {
+            const statusKey = Object.keys(completionStatus).find(key => statusMapping[key] === step.title);
+            if (statusKey && completionStatus[statusKey]) {
                 return {
                     ...step,
                     timestamp: formatTimestamp(completionStatus[statusKey])
@@ -110,19 +108,17 @@ function CustomerOrderDetails() {
             }
             return step;
         });
-
+    
         setSteps(stepsWithTimestamps);
     };
-
+    
     useEffect(() => {
         const orderRef = ref(db, `orders/${id}`);
         onValue(orderRef, (snapshot) => {
             const data = snapshot.val();
-            const createdOnDate = new Date(data?.created_on);
-            const now = new Date();
-            const timeDifference = now - createdOnDate;
-            setHoursDifference(timeDifference / (1000 * 60 * 60));            
-            data.created_on = new Date(data?.created_on).toLocaleString('en-GB', {
+    
+            // Format the created_on date
+            data.created_on = new Date(data.created_on).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'long',
                 year: 'numeric',
@@ -130,15 +126,28 @@ function CustomerOrderDetails() {
                 minute: '2-digit',
                 hour12: true
             }).replace(',', ''); 
-            console.log("ORDER DATA:", data);
+    
+            // Format the shipping_date
+            data.shipping_date = new Date(data.shipping_date).toLocaleString('en-GB', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+            });
+    
+            // Sort the completion_status by timestamp and get the latest status
+            const sortedStatuses = Object.entries(data.completion_status || {}).sort(
+                ([, aTimestamp], [, bTimestamp]) => new Date(bTimestamp) - new Date(aTimestamp)
+            );
+    
+            const latestStatus = sortedStatuses.length > 0 ? sortedStatuses[0][0] : null;
+    
+            console.log("Status", latestStatus);
             setOrder(data);
-            updateDeliveryStatus(data.completion_status);
+            updateDeliveryStatus(latestStatus); 
             updateSteps(data.completion_status);
-
-            console.log("ORDER DATA:", data.completion_status);
         });
     }, [id]);
-
+    
     useEffect(() => {
         const settingsRef = ref(db, 'settings');
         onValue(settingsRef, (snapshot) => {
@@ -368,6 +377,13 @@ function CustomerOrderDetails() {
         );
     }
 
+    const formatStatus = (status) => {
+        if (status === "ReadyForShipping") {
+            return "Ready For Shipping";
+        }
+        return status;
+    };    
+
     const header = renderHeader();
 
     return (
@@ -577,7 +593,9 @@ function CustomerOrderDetails() {
                                         variant="outline"
                                         defaultValue={
                                             order?.completion_status && (
-                                                `${Object.keys(order.completion_status).pop()}`
+                                                `${formatStatus(Object.entries(order.completion_status)
+                                                    .sort(([ , aTimestamp], [ , bTimestamp]) => new Date(bTimestamp) - new Date(aTimestamp))
+                                                    .map(([status]) => status)[0])}`
                                             )
                                         }
                                         size="md"

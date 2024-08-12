@@ -208,15 +208,18 @@ function AdminOrderHistory() {
                                                                     <Flex direction="column">
                                                                         <Text fontSize="md" fontWeight="semibold" color="gray.500">Arrival Status</Text>
                                                                         <Text fontSize="md" fontWeight="semibold" color="blue.500">
-                                                                            {order.completion_status ? (
-                                                                                Object.entries(order.completion_status).map(([status, timestamp]) => (
+                                                                        {order.completion_status ? (
+                                                                            Object.entries(order.completion_status)
+                                                                                .sort((a, b) => new Date(b[1]) - new Date(a[1]))
+                                                                                .slice(0, 1)
+                                                                                .map(([status]) => (
                                                                                     <Text key={status} fontSize="md" fontWeight="semibold" color="blue.500">
                                                                                         {status}
                                                                                     </Text>
                                                                                 ))
-                                                                            ) : (
-                                                                                <Text fontSize="md" fontWeight="semibold" color="blue.500">Status not available</Text>
-                                                                            )}
+                                                                        ) : (
+                                                                            <Text fontSize="md" fontWeight="semibold" color="blue.500">Status not available</Text>
+                                                                        )}
                                                                         </Text>                                                                
                                                                     </Flex>
                                                                 </Flex>
