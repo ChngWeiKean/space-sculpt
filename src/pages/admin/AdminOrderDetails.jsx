@@ -82,30 +82,78 @@ function AdminOrderDetails() {
     const [ order, setOrder ] = useState(null);
     const [ activeStep, setActiveStep ] = useState(0);
     const [ deliveryDriver, setDeliveryDriver ] = useState(null);
+    const [steps, setSteps] = useState([]);
 
-    const updateDeliveryStatus = (status) => {
-        switch (status) {
+    const formatTimestamp = (timestamp) => {
+        return new Date(timestamp).toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }).replace(',', '');
+    };
+    
+    const updateDeliveryStatus = (latestStatus) => {
+        switch (latestStatus) {
             case 'Pending':
-                setActiveStep(0);
-                break;
-            case 'Ready For Shipping':
                 setActiveStep(1);
+                break;
+            case 'ReadyForShipping':
+                setActiveStep(2);
                 break;
             case 'Shipping':
-                setActiveStep(1);
+                setActiveStep(3);
                 break;
             case 'Arrived':
-                setActiveStep(2);
+                setActiveStep(4);
+                break;
+            case 'Completed':
+                setActiveStep(5);
                 break;
             default:
                 setActiveStep(0);
         }
     };
-
+    
+    const updateSteps = (completionStatus) => {
+        const statusMapping = {
+            'Pending': 'Order Placed',
+            'ReadyForShipping': 'Ready For Shipping',
+            'Shipping': 'Shipped',
+            'Arrived': 'Delivered',
+            'Completed': 'Completed'
+        };
+    
+        const defaultSteps = [
+            { title: 'Order Placed', description: 'The order has been placed' },
+            { title: 'Ready For Shipping', description: 'The order is ready for shipping' },
+            { title: 'Shipped', description: 'The order is on the way' },
+            { title: 'Delivered', description: 'The order has been delivered' },
+            { title: 'Completed', description: 'The order has been completed' }
+        ];
+    
+        const stepsWithTimestamps = defaultSteps.map((step) => {
+            const statusKey = Object.keys(completionStatus).find(key => statusMapping[key] === step.title);
+            if (statusKey && completionStatus[statusKey]) {
+                return {
+                    ...step,
+                    timestamp: formatTimestamp(completionStatus[statusKey])
+                };
+            }
+            return step;
+        });
+    
+        setSteps(stepsWithTimestamps);
+    };
+    
     useEffect(() => {
         const orderRef = ref(db, `orders/${id}`);
         onValue(orderRef, (snapshot) => {
             const data = snapshot.val();
+    
+            // Format the created_on date
             data.created_on = new Date(data.created_on).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'long',
@@ -114,15 +162,27 @@ function AdminOrderDetails() {
                 minute: '2-digit',
                 hour12: true
             }).replace(',', ''); 
+    
+            // Format the shipping_date
             data.shipping_date = new Date(data.shipping_date).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'long',
                 year: 'numeric',
             });
+    
+            // Sort the completion_status by timestamp and get the latest status
+            const sortedStatuses = Object.entries(data.completion_status || {}).sort(
+                ([, aTimestamp], [, bTimestamp]) => new Date(bTimestamp) - new Date(aTimestamp)
+            );
+    
+            const latestStatus = sortedStatuses.length > 0 ? sortedStatuses[0][0] : null;
+    
+            console.log("Status", latestStatus);
             setOrder(data);
-            updateDeliveryStatus(data.arrival_status);
+            updateDeliveryStatus(latestStatus); 
+            updateSteps(data.completion_status);
         });
-    }, [id]);
+    }, [id]);  
 
     useEffect(() => {
         if (order?.driver_id) {
@@ -222,14 +282,14 @@ function AdminOrderDetails() {
         );
     }
 
-    const header = renderHeader();
+    const formatStatus = (status) => {
+        if (status === "ReadyForShipping") {
+            return "Ready For Shipping";
+        }
+        return status;
+    }; 
 
-    const steps = [
-        { title: 'Order Placed', description: 'Your order has been placed' },
-        { title: 'Ready For Shipping', description: 'Your order is ready for shipping' },
-        { title: 'Shipped', description: 'Your order is on the way' },
-        { title: 'Delivered', description: 'Your order has been delivered' },
-    ];
+    const header = renderHeader();
 
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={4}>
@@ -386,7 +446,9 @@ function AdminOrderDetails() {
                                         variant="outline"
                                         defaultValue={
                                             order?.completion_status && (
-                                                `${Object.keys(order.completion_status).pop()}`
+                                                `${formatStatus(Object.entries(order.completion_status)
+                                                    .sort(([ , aTimestamp], [ , bTimestamp]) => new Date(bTimestamp) - new Date(aTimestamp))
+                                                    .map(([status]) => status)[0])}`
                                             )
                                         }
                                         size="md"
@@ -439,6 +501,11 @@ function AdminOrderDetails() {
                                         <Box flexShrink='0'>
                                             <StepTitle>{step.title}</StepTitle>
                                             <StepDescription>{step.description}</StepDescription>
+                                            {step.timestamp && (
+                                                <Text fontSize="sm" color="gray.500">
+                                                    {step.timestamp}
+                                                </Text>
+                                            )}
                                         </Box>
 
                                         <StepSeparator />

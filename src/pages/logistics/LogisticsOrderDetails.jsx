@@ -85,30 +85,78 @@ function LogisticsOrderDetails() {
     const [ selectedDriver, setSelectedDriver ] = useState('');
     const [ deliveryDrivers, setDeliveryDrivers ] = useState([]);
     const [ availableDrivers, setAvailableDrivers ] = useState([]);
+    const [steps, setSteps] = useState([]);
 
-    const updateDeliveryStatus = (status) => {
-        switch (status) {
+    const formatTimestamp = (timestamp) => {
+        return new Date(timestamp).toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }).replace(',', '');
+    };
+    
+    const updateDeliveryStatus = (latestStatus) => {
+        switch (latestStatus) {
             case 'Pending':
-                setActiveStep(0);
-                break;
-            case 'Ready For Shipping':
                 setActiveStep(1);
+                break;
+            case 'ReadyForShipping':
+                setActiveStep(2);
                 break;
             case 'Shipping':
-                setActiveStep(1);
+                setActiveStep(3);
                 break;
             case 'Arrived':
-                setActiveStep(2);
+                setActiveStep(4);
+                break;
+            case 'Completed':
+                setActiveStep(5);
                 break;
             default:
                 setActiveStep(0);
         }
     };
-
+    
+    const updateSteps = (completionStatus) => {
+        const statusMapping = {
+            'Pending': 'Order Placed',
+            'ReadyForShipping': 'Ready For Shipping',
+            'Shipping': 'Shipped',
+            'Arrived': 'Delivered',
+            'Completed': 'Completed'
+        };
+    
+        const defaultSteps = [
+            { title: 'Order Placed', description: 'The order has been placed' },
+            { title: 'Ready For Shipping', description: 'The order is ready for shipping' },
+            { title: 'Shipped', description: 'The order is on the way' },
+            { title: 'Delivered', description: 'The order has been delivered' },
+            { title: 'Completed', description: 'The order has been completed' }
+        ];
+    
+        const stepsWithTimestamps = defaultSteps.map((step) => {
+            const statusKey = Object.keys(completionStatus).find(key => statusMapping[key] === step.title);
+            if (statusKey && completionStatus[statusKey]) {
+                return {
+                    ...step,
+                    timestamp: formatTimestamp(completionStatus[statusKey])
+                };
+            }
+            return step;
+        });
+    
+        setSteps(stepsWithTimestamps);
+    };
+    
     useEffect(() => {
         const orderRef = ref(db, `orders/${id}`);
         onValue(orderRef, (snapshot) => {
             const data = snapshot.val();
+    
+            // Format the created_on date
             data.created_on = new Date(data.created_on).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'long',
@@ -117,15 +165,27 @@ function LogisticsOrderDetails() {
                 minute: '2-digit',
                 hour12: true
             }).replace(',', ''); 
+    
+            // Format the shipping_date
             data.shipping_date = new Date(data.shipping_date).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'long',
                 year: 'numeric',
             });
+    
+            // Sort the completion_status by timestamp and get the latest status
+            const sortedStatuses = Object.entries(data.completion_status || {}).sort(
+                ([, aTimestamp], [, bTimestamp]) => new Date(bTimestamp) - new Date(aTimestamp)
+            );
+    
+            const latestStatus = sortedStatuses.length > 0 ? sortedStatuses[0][0] : null;
+    
+            console.log("Status", latestStatus);
             setOrder(data);
-            updateDeliveryStatus(data.arrival_status);
+            updateDeliveryStatus(latestStatus); 
+            updateSteps(data.completion_status);
         });
-    }, [id]);
+    }, [id]);  
 
     useEffect(() => {
         const driversRef = ref(db, 'users');
@@ -299,13 +359,6 @@ function LogisticsOrderDetails() {
 
     const header = renderHeader();
 
-    const steps = [
-        { title: 'Order Placed', description: 'Your order has been placed' },
-        { title: 'Ready For Shipping', description: 'Your order is ready for shipping' },
-        { title: 'Shipped', description: 'Your order is on the way' },
-        { title: 'Delivered', description: 'Your order has been delivered' },
-    ];
-
     const { isOpen: isOpenConfirmReadyForDeliveryModal, onOpen: onOpenConfirmReadyForDeliveryModal, onClose: onCloseConfirmReadyForDeliveryModal } = useDisclosure();
     const { isOpen: isOpenConfirmAssignDriverModal, onOpen: onOpenConfirmAssignDriverModal, onClose: onCloseConfirmAssignDriverModal } = useDisclosure();
     
@@ -329,7 +382,7 @@ function LogisticsOrderDetails() {
 
     const handleSetReadyForDelivery = async () => {
         try {
-            await updateOrderStatus(id, 'Ready For Shipping');
+            await updateOrderStatus(id, 'ReadyForShipping');
             toast({
                 title: "Order status updated",
                 description: "Order status has been updated to Ready For Shipping",
@@ -384,6 +437,13 @@ function LogisticsOrderDetails() {
             });
         }
     }
+
+    const formatStatus = (status) => {
+        if (status === "ReadyForShipping") {
+            return "Ready For Shipping";
+        }
+        return status;
+    };    
 
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={4}>
@@ -540,7 +600,9 @@ function LogisticsOrderDetails() {
                                         variant="outline"
                                         defaultValue={
                                             order?.completion_status && (
-                                                `${Object.keys(order.completion_status).pop()}`
+                                                `${formatStatus(Object.entries(order.completion_status)
+                                                    .sort(([ , aTimestamp], [ , bTimestamp]) => new Date(bTimestamp) - new Date(aTimestamp))
+                                                    .map(([status]) => status)[0])}`
                                             )
                                         }
                                         size="md"
@@ -560,45 +622,64 @@ function LogisticsOrderDetails() {
                         <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
                         <Flex w="full" p={6}>
                             {
-                                order && order.arrival_status === "Pending" ? (
-                                    <Button
-                                        w="full"
-                                        colorScheme="blue"
-                                        size="lg"
-                                        style={{ outline:"none" }}
-                                        onClick={handleOpenConfirmReadyForDeliveryModal}
-                                    >
-                                        Mark as Ready For Delivery
-                                    </Button>
+                                order && order.completion_status ? (
+                                    // Get the latest status by sorting the entries by timestamp
+                                    (() => {
+                                        const latestStatus = Object.entries(order.completion_status)
+                                            .sort((a, b) => new Date(b[1]) - new Date(a[1]))[0]; // Get the latest status
+
+                                        // If the latest status is "Pending", show the "Mark as Ready For Delivery" button
+                                        if (latestStatus && latestStatus[0] === "Pending") {
+                                            return (
+                                                <Button
+                                                    w="full"
+                                                    colorScheme="blue"
+                                                    size="lg"
+                                                    style={{ outline: "none" }}
+                                                    onClick={handleOpenConfirmReadyForDeliveryModal}
+                                                >
+                                                    Mark as Ready For Delivery
+                                                </Button>
+                                            );
+                                        } else {
+                                            // Otherwise, show the "Assign Delivery Driver" form
+                                            return (
+                                                <Flex w="full" direction="column" gap={3}>
+                                                    <FormControl>
+                                                        <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">
+                                                            Assign Delivery Driver
+                                                        </FormLabel>
+                                                        <Select
+                                                            variant="filled"
+                                                            size="md"
+                                                            focusBorderColor="blue.500"
+                                                            w="full"
+                                                            onChange={(e) => setSelectedDriver(e.target.value)}
+                                                        >
+                                                            <option value="">Select a driver</option>
+                                                            {availableDrivers.map((driver) => (
+                                                                <option key={driver.uid} value={driver.uid}>
+                                                                    {driver.name}
+                                                                </option>
+                                                            ))}
+                                                        </Select>
+                                                    </FormControl>
+                                                    <Button
+                                                        w="full"
+                                                        colorScheme="blue"
+                                                        size="lg"
+                                                        style={{ outline: "none" }}
+                                                        onClick={handleOpenConfirmAssignDriverModal}
+                                                    >
+                                                        Assign Driver
+                                                    </Button>
+                                                </Flex>
+                                            );
+                                        }
+                                    })()
                                 ) : (
-                                    <Flex w="full" direction="column" gap={3}>
-                                        <FormControl>
-                                            <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Assign Delivery Driver</FormLabel>
-                                            <Select
-                                                variant="filled"
-                                                size="md"
-                                                focusBorderColor="blue.500"
-                                                w="full"
-                                                onChange={(e) => setSelectedDriver(e.target.value)}
-                                            >
-                                                <option value="">Select a driver</option>
-                                                {
-                                                    availableDrivers.map((driver) => (
-                                                        <option key={driver.uid} value={driver.uid}>{driver.name}</option>
-                                                    ))
-                                                }
-                                            </Select>
-                                        </FormControl>
-                                        <Button
-                                            w="full"
-                                            colorScheme="blue"
-                                            size="lg"
-                                            style={{ outline:"none" }}
-                                            onClick={handleOpenConfirmAssignDriverModal}
-                                        >
-                                            Assign Driver
-                                        </Button>
-                                    </Flex>
+                                    // Fallback content if there's no completion_status
+                                    <Text fontSize="md" fontWeight="semibold" color="red.500">No status available</Text>
                                 )
                             }
                             {
@@ -701,6 +782,11 @@ function LogisticsOrderDetails() {
                                         <Box flexShrink='0'>
                                             <StepTitle>{step.title}</StepTitle>
                                             <StepDescription>{step.description}</StepDescription>
+                                            {step.timestamp && (
+                                                <Text fontSize="sm" color="gray.500">
+                                                    {step.timestamp}
+                                                </Text>
+                                            )}
                                         </Box>
 
                                         <StepSeparator />

@@ -73,8 +73,24 @@ export const updateSettings = async (settings) => {
 export const updateOrderStatus = async (orderID, status) => {
     try {
         const orderRef = ref(db, `orders/${orderID}`);
+
+        // Fetch the current completion_status from the order
+        const snapshot = await get(orderRef);
+        const orderData = snapshot.val();
+
+        let updatedCompletionStatus = {};
+        
+        // If there is already a completion_status, retain the existing statuses
+        if (orderData && orderData.completion_status) {
+            updatedCompletionStatus = { ...orderData.completion_status };
+        }
+
+        // Add the new status with the current timestamp
+        updatedCompletionStatus[status] = new Date().toISOString();
+
+        // Update the order in the database
         await update(orderRef, {
-            arrival_status: status,
+            completion_status: updatedCompletionStatus,
             updated_at: new Date().toISOString(),
             updated_by: auth.currentUser.uid
         });
@@ -126,12 +142,6 @@ export const assignOrderToDriver = async (orderID, newDriverID) => {
                 pending_orders: newPendingOrders
             });
         }
-
-        const orderCompletionStatus = orderData.completion_status || {};
-        orderCompletionStatus.ReadyForShipping = new Date().toISOString();
-        await update(orderRef, {
-            completion_status: orderCompletionStatus
-        });
 
         return { success: true };
     } catch (error) {
