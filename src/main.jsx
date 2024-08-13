@@ -44,6 +44,7 @@ import LogisticsOrderDetails from './pages/logistics/LogisticsOrderDetails.jsx'
 import AdminOrderHistory from './pages/admin/AdminOrderHistory.jsx'
 import AdminOrderDetails from './pages/admin/AdminOrderDetails.jsx'
 import CustomerVouchers from './pages/customer/CustomerVouchers.jsx'
+import ViewDeliveryDriver from './pages/logistics/ViewDeliveryDriver.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -83,6 +84,7 @@ const router = createBrowserRouter(
 			<Route element={<LogisticsLayout/>}>
 				<Route path="manage-orders" element={<LogisticsOrderHistory/>}/>
 				<Route path="order-details/:id" element={<LogisticsOrderDetails/>}/>
+				<Route path="view-driver/:id" element={<ViewDeliveryDriver/>}/>
 				<Route path="settings" element={<LogisticsSettings/>}/>
 			</Route>
 			<Route path='/admin' element={<AdminLayout/>}>

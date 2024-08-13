@@ -20,6 +20,7 @@ import {
     Stepper,
     Checkbox,
     IconButton,
+    Button,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { IoMdArrowRoundBack } from "react-icons/io";
@@ -34,7 +35,7 @@ import "slick-carousel/slick/slick-theme.css";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
-import { updateShipping } from "../../../api/customer.js";
+import { completeOrder, updateShipping } from "../../../api/customer.js";
 
 function CustomerOrderDetails() {
     const { id } = useParams();
@@ -127,12 +128,8 @@ function CustomerOrderDetails() {
                 hour12: true
             }).replace(',', ''); 
     
-            // Format the shipping_date
-            data.shipping_date = new Date(data.shipping_date).toLocaleString('en-GB', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-            });
+            // Format the shipping_date to yyyy-mm-dd
+            data.shipping_date = new Date(data.shipping_date).toISOString().split('T')[0];
     
             // Sort the completion_status by timestamp and get the latest status
             const sortedStatuses = Object.entries(data.completion_status || {}).sort(
@@ -356,13 +353,17 @@ function CustomerOrderDetails() {
     }
 
     const checkListBodyTemplate = (rowData) => {
+        const onCheckChange = (e, rowData) => {
+            rowData.checked = e.target.checked;
+        };
+
         return (
             <Flex w="full" direction="row" gap={2} alignItems="center">
                 <Checkbox 
                     size="lg" 
                     isChecked={rowData.checked} 
                     onChange={(e) => onCheckChange(e, rowData)} 
-                    isDisabled={!rowData?.completion_status?.Arrived}
+                    isDisabled={!order?.completion_status?.Arrived}
                 />
             </Flex>
         );   
@@ -370,12 +371,69 @@ function CustomerOrderDetails() {
 
     const renderHeader = () => {
         return (
-            <Flex w="full" gap={3} alignItems="center">
-                <IoMdArrowRoundBack size="40px"  onClick={() => window.history.back()}/>
-                <Text fontSize="lg" fontWeight="700" color="#d69511">Ordered Items</Text>
+            <Flex w="full" justifyContent="space-between">
+                <Flex w="full" gap={3} alignItems="center">
+                    <IoMdArrowRoundBack size="40px"  onClick={() => window.history.back()}/>
+                    <Text fontSize="lg" fontWeight="700" color="#d69511">Ordered Items</Text>
+                </Flex>
+                <Flex gap={3} alignItems="center">
+                    <Button
+                        w="15rem"
+                        colorScheme="blue"
+                        size="md"
+                        style={{ outline:'none' }}
+                        onClick={() => handleCompleteOrder()}
+                    >
+                        Order Completed
+                    </Button>
+                    <Button
+                        w="15rem"
+                        colorScheme="red"
+                        size="md"
+                        style={{ outline:'none' }}
+                        onClick={() => {}}
+                    >
+                        Report Incomplete Order
+                    </Button>
+                </Flex>
             </Flex>
         );
     }
+
+    const handleCompleteOrder = async () => {
+        // Check if all items are checked
+        const allChecked = order.items.every(item => item.checked);
+
+        if (!allChecked) {
+            toast({
+                title: "Please check all items in the checklist",
+                status: "error",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        try {
+            await completeOrder(id);
+            toast({
+                title: "Order completed successfully",
+                status: "success",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+        } catch (error) {
+            toast({
+                title: "Failed to complete order",
+                status: "error",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+    };
 
     const formatStatus = (status) => {
         if (status === "ReadyForShipping") {
