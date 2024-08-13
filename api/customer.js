@@ -638,6 +638,34 @@ export const placeOrder = async (data) => {
     }
 };
 
+export const completeOrder = async (order_id) => {
+    try {
+        const orderRef = ref(db, `orders/${order_id}`);
+
+        // Retrieve the current completion_status
+        const snapshot = await get(orderRef);
+        const orderData = snapshot.val();
+        
+        if (!orderData.completion_status) {
+            throw new Error("Completion status not found");
+        }
+
+        // Update only the Completed status
+        const updatedCompletionStatus = {
+            ...orderData.completion_status,
+            Completed: new Date().toISOString()
+        };
+
+        await update(orderRef, {
+            completion_status: updatedCompletionStatus
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
+
 export const updateShipping = async (order_id, data) => {
     const { shipping_date, shipping_time } = data;
     try {

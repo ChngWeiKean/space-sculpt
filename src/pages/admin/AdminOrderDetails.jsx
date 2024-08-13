@@ -164,12 +164,8 @@ function AdminOrderDetails() {
             }).replace(',', ''); 
     
             // Format the shipping_date
-            data.shipping_date = new Date(data.shipping_date).toLocaleString('en-GB', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-            });
-    
+            data.shipping_date = new Date(data.shipping_date).toISOString().split('T')[0];
+            
             // Sort the completion_status by timestamp and get the latest status
             const sortedStatuses = Object.entries(data.completion_status || {}).sort(
                 ([, aTimestamp], [, bTimestamp]) => new Date(bTimestamp) - new Date(aTimestamp)

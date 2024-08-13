@@ -126,7 +126,7 @@ function CustomerVouchers() {
 
     return (
         <Flex w="full" minH="full" bg="#f4f4f4" direction="column" alignItems="center">
-            <Flex w="25%" direction="column" alignItems="center" gap={3} mt={5}>
+            <Flex w="25rem" direction="column" alignItems="center" gap={3} mt={5}>
                 <FormControl py={2}>
                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Enter Voucher Code</FormLabel>
                     <InputGroup>
@@ -145,7 +145,7 @@ function CustomerVouchers() {
                     </InputGroup>
                 </FormControl>
                 <Button
-                w="full"
+                    w="full"
                     colorScheme="blue"
                     size="md"
                     style={{ outline:'none' }}
@@ -153,15 +153,15 @@ function CustomerVouchers() {
                 >
                     Apply
                 </Button>
-                <Flex w="full" justifyContent="center">
+                <Flex w="full" justifyContent="center" direction="column" gap={2}>
                     {
                         vouchers && Object.values(vouchers).map((voucher, index) => {
                             return (
                                 <Box key={index} py={2}>
                                     <Flex
-                                        minW="500px"
+                                        minW="25rem"
                                         minH="10rem"
-                                        maxW="500px"
+                                        maxW="25rem"
                                         maxH="10rem"
                                         direction="column"
                                         gap={2}
