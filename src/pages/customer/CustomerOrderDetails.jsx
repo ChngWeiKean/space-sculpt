@@ -141,7 +141,7 @@ function CustomerOrderDetails() {
                         title: 'On Hold',
                         description: 'Your order is currently on hold',
                         timestamp: formatTimestamp(completionStatus.OnHold),
-                        isOnHold: true // Custom flag to apply specific styling
+                        isOnHold: true
                     };
                 }
                 return step;
@@ -538,6 +538,8 @@ function CustomerOrderDetails() {
     const formatStatus = (status) => {
         if (status === "ReadyForShipping") {
             return "Ready For Shipping";
+        } else if (status === "OnHold") {
+            return "Resolving Reports...";
         }
         return status;
     };    

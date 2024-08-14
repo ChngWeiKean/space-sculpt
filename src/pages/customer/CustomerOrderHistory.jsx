@@ -74,9 +74,9 @@ import "slick-carousel/slick/slick-theme.css";
 
 function CustomerOrderHistory() {
     const { user } = useAuth();
-    const [pendingOrders, setPendingOrders] = useState([]);
-    const [orderHistory, setOrderHistory] = useState([]);
-    const [reports, setReports] = useState([]);
+    const [ pendingOrders, setPendingOrders ] = useState([]);
+    const [ orderHistory, setOrderHistory ] = useState([]);
+    const [ reports, setReports ] = useState([]);
 
     const settings = {
         dots: true,
