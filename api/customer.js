@@ -666,6 +666,44 @@ export const completeOrder = async (order_id) => {
     }
 }
 
+export const reportDelivery = async (data) => {
+    const { orderID, description, reportedItems } = data;
+
+    try {
+        const orderRef = ref(db, `orders/${orderID}`);
+        const orderSnapshot = await get(orderRef);
+        const orderData = orderSnapshot.val();
+
+        if (!orderData) {
+            throw new Error("Order not found");
+        }
+
+        // Update order.completion_status to "OnHold"
+        const updatedCompletionStatus = {
+            ...orderData.completion_status,
+            OnHold: new Date().toISOString()
+        };
+
+        await update(orderRef, {
+            completion_status: updatedCompletionStatus
+        });
+
+        // Create a new report in the separate "reports" node
+        const reportsRef = ref(db, `reports`);
+        const newReportRef = push(reportsRef);
+        await set(newReportRef, {
+            order_id: orderID,
+            description: description,
+            items: reportedItems,
+            created_on: new Date().toISOString()
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
+
 export const updateShipping = async (order_id, data) => {
     const { shipping_date, shipping_time } = data;
     try {

@@ -74,8 +74,9 @@ import "slick-carousel/slick/slick-theme.css";
 
 function CustomerOrderHistory() {
     const { user } = useAuth();
-    const [pendingOrders, setPendingOrders] = useState([]);
-    const [orderHistory, setOrderHistory] = useState([]);
+    const [ pendingOrders, setPendingOrders ] = useState([]);
+    const [ orderHistory, setOrderHistory ] = useState([]);
+    const [ reports, setReports ] = useState([]);
 
     const settings = {
         dots: true,
@@ -91,6 +92,7 @@ function CustomerOrderHistory() {
             let orderIds = user.orders;
             let newPendingOrders = [];
             let newOrderHistory = [];
+            let newReports = [];
             if (!orderIds) return;
             orderIds.forEach(orderId => {
                 let orderRef = ref(db, `orders/${orderId}`);
@@ -105,10 +107,12 @@ function CustomerOrderHistory() {
                         order.shipping_date = formattedShippingDate;
                         order.id = snapshot.key;
     
-                        if (order.completion_status.Pending) {
+                        if (!order.completion_status.Completed && !order.completion_status.OnHold) {
                             newPendingOrders.push(order);
-                            console.log(newPendingOrders);
                             setPendingOrders([...newPendingOrders]);
+                        } else if (order.completion_status.OnHold) {
+                            newReports.push(order);
+                            setReports([...newReports]);
                         } else {
                             newOrderHistory.push(order);
                             setOrderHistory([...newOrderHistory]);
@@ -122,6 +126,8 @@ function CustomerOrderHistory() {
     const formatStatus = (status) => {
         if (status === "ReadyForShipping") {
             return "Ready For Shipping";
+        } else if (status === "OnHold") {
+            return "Resolving Reports...";
         }
         return status;
     };    
@@ -133,6 +139,7 @@ function CustomerOrderHistory() {
                     <TabList>
                         <Tab style={{ outline: "none" }}>Pending Orders</Tab>
                         <Tab style={{ outline: "none" }}>Order History</Tab>
+                        <Tab style={{ outline: "none" }}>Reports</Tab>
                     </TabList>
                     <TabIndicator mt='-1.5px' height='2px' bg='blue.500' borderRadius='1px' />
                     <TabPanels>
@@ -174,7 +181,7 @@ function CustomerOrderHistory() {
                                                                 <Flex alignItems="center" gap={3}>
                                                                     <TbTruckDelivery size={30} color='#d69511'/>
                                                                     <Flex direction="column">
-                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Arrival Status</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Delivery Status</Text>
                                                                         {order.completion_status ? (
                                                                             Object.entries(order.completion_status)
                                                                                 .sort((a, b) => new Date(b[1]) - new Date(a[1]))
@@ -254,7 +261,236 @@ function CustomerOrderHistory() {
                             </Flex>
                         </TabPanel>
                         <TabPanel>
-                            <Text>WOW</Text>
+                            <Flex w="full" direction="column">
+                                {orderHistory.length === 0 ? (
+                                    <Flex w="full" direction="column" alignItems="center" gap={4}>
+                                        <Text fontSize="xl" fontWeight="700">No past orders</Text>
+                                        <Text fontSize="lg" fontWeight="400">Looks like you haven't ordered anything yet</Text>
+                                        <Button colorScheme="blue" size="lg" as={NavLink} to={'/'}>Start Shopping</Button>
+                                    </Flex>
+                                ) : (
+                                    orderHistory.map((order, index) => (
+                                        <NavLink key={index} to={`/orders/${order.id}`} style={{ textDecoration: "none" }}>
+                                            <Flex w="full" h="20rem" direction="column" p={3} bg="white" boxShadow="lg" my={2} transition="transform 0.2s" _hover={{ transform: 'scale(1.01)' }}>
+                                                <Flex w="full" direction="row" justifyContent="space-between">
+                                                    <Flex w="full" direction="column" gap={3} ml={2}>
+                                                        <Flex>
+                                                            <Text fontSize="lg" fontWeight="semibold" color="gray.500">Order ID:</Text>
+                                                            <Text fontSize="lg" fontWeight="semibold" color="blue.500" ml={2}>{order.order_id}</Text>
+                                                        </Flex>
+                                                        <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
+                                                        <Flex w="full" direction="row">
+                                                            <Flex w="full" direction="column" gap={7}>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <BsCalendar2Date size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Order Date</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.created_on}</Text>                                                                
+                                                                    </Flex>                                                                    
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <TbMoneybag size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Total</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">RM {order.total}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <TbTruckDelivery size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Delivery Status</Text>
+                                                                        {order.completion_status ? (
+                                                                            Object.entries(order.completion_status)
+                                                                                .sort((a, b) => new Date(b[1]) - new Date(a[1]))
+                                                                                .slice(0, 1)
+                                                                                .map(([status]) => (
+                                                                                    <Text key={status} fontSize="md" fontWeight="semibold" color="blue.500">
+                                                                                        {formatStatus(status)}
+                                                                                    </Text>
+                                                                                ))
+                                                                        ) : (
+                                                                            <Text fontSize="md" fontWeight="semibold" color="blue.500">Status not available</Text>
+                                                                        )}
+                                                                    </Flex>
+                                                                </Flex>
+                                                            </Flex>
+                                                            <Flex w="full" direction="column" gap={7}>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <TbTruckDelivery size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Shipping Date</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.shipping_date}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <CiDiscount1 size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Discount</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">
+                                                                            { 
+                                                                                order?.voucher ? (
+                                                                                    order?.voucher?.discount_type === "Percentage" ? (
+                                                                                        order?.voucher?.discount_value + "%"
+                                                                                    ) : (
+                                                                                        "RM " + order?.voucher?.discount_value
+                                                                                    )                                                                                
+                                                                                ) :
+                                                                                "No Discount Applied"
+                                                                            }
+                                                                        </Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                            </Flex>
+                                                            <Flex w="full" direction="column" gap={7}>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <IoTimeOutline size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Shipping Time</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.shipping_time}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <CiCreditCard2 size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Payment Method</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.payment_method}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                            </Flex>
+                                                        </Flex>
+                                                    </Flex>
+                                                    <Flex onClick={(e) => e.preventDefault()} ml={3}>
+                                                        <Flex w="19rem" direction="column" mx={2}>
+                                                            <Slider {...settings}>
+                                                                {order.items.map((item, itemIndex) => (
+                                                                    <Flex key={itemIndex}>
+                                                                        <img src={item.image} alt={item.color} style={{ width: "100%", height: "100%", objectFit: "cover", border:"none" }} />
+                                                                    </Flex>
+                                                                ))}
+                                                            </Slider>                                                
+                                                        </Flex>                                                    
+                                                    </Flex>
+                                                </Flex>
+                                            </Flex>                                            
+                                        </NavLink>
+                                    ))
+                                )}
+                            </Flex>
+                        </TabPanel>
+                        <TabPanel>
+                            <Flex w="full" direction="column">
+                                {reports.length === 0 ? (
+                                    <Flex w="full" direction="column" alignItems="center" gap={4}>
+                                        <Text fontSize="xl" fontWeight="700">No reported orders</Text>
+                                    </Flex>
+                                ) : (
+                                    reports.map((order, index) => (
+                                        <NavLink key={index} to={`/orders/${order.id}`} style={{ textDecoration: "none" }}>
+                                            <Flex w="full" h="20rem" direction="column" p={3} bg="white" boxShadow="lg" my={2} transition="transform 0.2s" _hover={{ transform: 'scale(1.01)' }}>
+                                                <Flex w="full" direction="row" justifyContent="space-between">
+                                                    <Flex w="full" direction="column" gap={3} ml={2}>
+                                                        <Flex>
+                                                            <Text fontSize="lg" fontWeight="semibold" color="gray.500">Order ID:</Text>
+                                                            <Text fontSize="lg" fontWeight="semibold" color="blue.500" ml={2}>{order.order_id}</Text>
+                                                        </Flex>
+                                                        <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
+                                                        <Flex w="full" direction="row">
+                                                            <Flex w="full" direction="column" gap={7}>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <BsCalendar2Date size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Order Date</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.created_on}</Text>                                                                
+                                                                    </Flex>                                                                    
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <TbMoneybag size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Total</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">RM {order.total}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <TbTruckDelivery size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Delivery Status</Text>
+                                                                        {order.completion_status ? (
+                                                                            Object.entries(order.completion_status)
+                                                                                .sort((a, b) => new Date(b[1]) - new Date(a[1]))
+                                                                                .slice(0, 1)
+                                                                                .map(([status]) => (
+                                                                                    <Text key={status} fontSize="md" fontWeight="semibold" color="blue.500">
+                                                                                        {formatStatus(status)}
+                                                                                    </Text>
+                                                                                ))
+                                                                        ) : (
+                                                                            <Text fontSize="md" fontWeight="semibold" color="blue.500">Status not available</Text>
+                                                                        )}
+                                                                    </Flex>
+                                                                </Flex>
+                                                            </Flex>
+                                                            <Flex w="full" direction="column" gap={7}>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <TbTruckDelivery size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Shipping Date</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.shipping_date}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <CiDiscount1 size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Discount</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">
+                                                                            { 
+                                                                                order?.voucher ? (
+                                                                                    order?.voucher?.discount_type === "Percentage" ? (
+                                                                                        order?.voucher?.discount_value + "%"
+                                                                                    ) : (
+                                                                                        "RM " + order?.voucher?.discount_value
+                                                                                    )                                                                                
+                                                                                ) :
+                                                                                "No Discount Applied"
+                                                                            }
+                                                                        </Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                            </Flex>
+                                                            <Flex w="full" direction="column" gap={7}>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <IoTimeOutline size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Shipping Time</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.shipping_time}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                                <Flex alignItems="center" gap={3}>
+                                                                    <CiCreditCard2 size={30} color='#d69511'/>
+                                                                    <Flex direction="column">
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Payment Method</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="blue.500">{order.payment_method}</Text>                                                                
+                                                                    </Flex>
+                                                                </Flex>
+                                                            </Flex>
+                                                        </Flex>
+                                                    </Flex>
+                                                    <Flex onClick={(e) => e.preventDefault()} ml={3}>
+                                                        <Flex w="19rem" direction="column" mx={2}>
+                                                            <Slider {...settings}>
+                                                                {order.items.map((item, itemIndex) => (
+                                                                    <Flex key={itemIndex}>
+                                                                        <img src={item.image} alt={item.color} style={{ width: "100%", height: "100%", objectFit: "cover", border:"none" }} />
+                                                                    </Flex>
+                                                                ))}
+                                                            </Slider>                                                
+                                                        </Flex>                                                    
+                                                    </Flex>
+                                                </Flex>
+                                            </Flex>                                            
+                                        </NavLink>
+                                    ))
+                                )}
+                            </Flex>
                         </TabPanel>
                     </TabPanels>
                 </Tabs>

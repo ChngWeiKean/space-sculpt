@@ -115,6 +115,9 @@ function LogisticsOrderDetails() {
             case 'Completed':
                 setActiveStep(5);
                 break;
+            case 'OnHold':
+                setActiveStep(5);
+                break;
             default:
                 setActiveStep(0);
         }
@@ -126,7 +129,8 @@ function LogisticsOrderDetails() {
             'ReadyForShipping': 'Ready For Shipping',
             'Shipping': 'Shipped',
             'Arrived': 'Delivered',
-            'Completed': 'Completed'
+            'Completed': 'Completed',
+            'OnHold': 'On Hold'
         };
     
         const defaultSteps = [
@@ -137,7 +141,7 @@ function LogisticsOrderDetails() {
             { title: 'Completed', description: 'The order has been completed' }
         ];
     
-        const stepsWithTimestamps = defaultSteps.map((step) => {
+        let stepsWithTimestamps = defaultSteps.map((step) => {
             const statusKey = Object.keys(completionStatus).find(key => statusMapping[key] === step.title);
             if (statusKey && completionStatus[statusKey]) {
                 return {
@@ -148,8 +152,23 @@ function LogisticsOrderDetails() {
             return step;
         });
     
+        // Replace "Completed" step with "On Hold" if status is "OnHold"
+        if (completionStatus.OnHold) {
+            stepsWithTimestamps = stepsWithTimestamps.map((step, index) => {
+                if (step.title === 'Completed') {
+                    return {
+                        title: 'On Hold',
+                        description: 'The order is currently on hold',
+                        timestamp: formatTimestamp(completionStatus.OnHold),
+                        isOnHold: true
+                    };
+                }
+                return step;
+            });
+        }
+    
         setSteps(stepsWithTimestamps);
-    };
+    };    
     
     useEffect(() => {
         const orderRef = ref(db, `orders/${id}`);
@@ -437,9 +456,11 @@ function LogisticsOrderDetails() {
     const formatStatus = (status) => {
         if (status === "ReadyForShipping") {
             return "Ready For Shipping";
+        } else if (status === "OnHold") {
+            return "Resolving Reports...";
         }
         return status;
-    };    
+    };      
 
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={4}>
@@ -591,7 +612,7 @@ function LogisticsOrderDetails() {
                                     />
                                 </FormControl>
                                 <FormControl>
-                                    <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Arrival Status</FormLabel>
+                                    <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Delivery Status</FormLabel>
                                     <Input 
                                         variant="outline"
                                         defaultValue={
@@ -768,16 +789,26 @@ function LogisticsOrderDetails() {
                                 {steps.map((step, index) => (
                                     <Step key={index}>
                                         <StepIndicator>
-                                        <StepStatus
-                                            complete={<StepIcon />}
-                                            incomplete={<StepNumber />}
-                                            active={<StepNumber />}
-                                        />
+                                            {step.isOnHold ? (
+                                                <Box color="white" fontSize="lg" fontWeight="bold">
+                                                    X
+                                                </Box>
+                                            ) : (
+                                                <StepStatus
+                                                    complete={<StepIcon />}
+                                                    incomplete={<StepNumber />}
+                                                    active={<StepNumber />}
+                                                />
+                                            )}
                                         </StepIndicator>
 
                                         <Box flexShrink='0'>
-                                            <StepTitle>{step.title}</StepTitle>
-                                            <StepDescription>{step.description}</StepDescription>
+                                            <StepTitle color={step.isOnHold ? 'red.500' : 'inherit'}>
+                                                {step.title}
+                                            </StepTitle>
+                                            <StepDescription color={step.isOnHold ? 'red.400' : 'inherit'}>
+                                                {step.description}
+                                            </StepDescription>
                                             {step.timestamp && (
                                                 <Text fontSize="sm" color="gray.500">
                                                     {step.timestamp}
