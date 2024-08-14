@@ -733,7 +733,7 @@ function AddFurniture() {
                                             id="description"
                                             {
                                                 ...register("description", {
-                                                    required: "Patient description cannot be empty",
+                                                    required: "Furniture description cannot be empty",
                                                 })
                                             }
                                             placeholder="Enter furniture description here..."

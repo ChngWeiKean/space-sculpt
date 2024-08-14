@@ -1,10 +1,12 @@
 import {
 	Text,
+    Textarea,
     Flex,
     Box,
     Input,
     FormControl,
     FormLabel,
+    FormErrorMessage,
     useToast,
     Divider,
     Select,
@@ -21,6 +23,14 @@ import {
     Checkbox,
     IconButton,
     Button,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
+    useDisclosure,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { IoMdArrowRoundBack } from "react-icons/io";
@@ -30,12 +40,13 @@ import { RxCross2 } from "react-icons/rx";
 import { useParams } from 'react-router-dom';
 import { db } from "../../../api/firebase";
 import { onValue, ref } from "firebase/database";
+import { useForm } from "react-hook-form";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
-import { completeOrder, updateShipping } from "../../../api/customer.js";
+import { completeOrder, reportDelivery, updateShipping } from "../../../api/customer.js";
 
 function CustomerOrderDetails() {
     const { id } = useParams();
@@ -47,7 +58,15 @@ function CustomerOrderDetails() {
     const [ shippingDate, setShippingDate ] = useState(order?.shipping_date);
     const [ shippingTime, setShippingTime ] = useState(order?.shipping_time);
     const [ hoursDifference, setHoursDifference ] = useState(0);
+    const { isOpen, onOpen, onClose } = useDisclosure()
     const [steps, setSteps] = useState([]);
+    const {
+        handleSubmit,
+        register,
+        formState: {
+            errors, isSubmitting
+        }
+    } = useForm();
 
     const formatTimestamp = (timestamp) => {
         return new Date(timestamp).toLocaleString('en-GB', {
@@ -77,6 +96,9 @@ function CustomerOrderDetails() {
             case 'Completed':
                 setActiveStep(5);
                 break;
+            case 'OnHold':
+                setActiveStep(5);
+                break;
             default:
                 setActiveStep(0);
         }
@@ -88,7 +110,8 @@ function CustomerOrderDetails() {
             'ReadyForShipping': 'Ready For Shipping',
             'Shipping': 'Shipped',
             'Arrived': 'Delivered',
-            'Completed': 'Completed'
+            'Completed': 'Completed',
+            'OnHold': 'On Hold'
         };
     
         const defaultSteps = [
@@ -99,7 +122,7 @@ function CustomerOrderDetails() {
             { title: 'Completed', description: 'Your order has been completed' }
         ];
     
-        const stepsWithTimestamps = defaultSteps.map((step) => {
+        let stepsWithTimestamps = defaultSteps.map((step) => {
             const statusKey = Object.keys(completionStatus).find(key => statusMapping[key] === step.title);
             if (statusKey && completionStatus[statusKey]) {
                 return {
@@ -110,8 +133,23 @@ function CustomerOrderDetails() {
             return step;
         });
     
+        // Replace "Completed" step with "On Hold" if status is "OnHold"
+        if (completionStatus.OnHold) {
+            stepsWithTimestamps = stepsWithTimestamps.map((step, index) => {
+                if (step.title === 'Completed') {
+                    return {
+                        title: 'On Hold',
+                        description: 'Your order is currently on hold',
+                        timestamp: formatTimestamp(completionStatus.OnHold),
+                        isOnHold: true // Custom flag to apply specific styling
+                    };
+                }
+                return step;
+            });
+        }
+    
         setSteps(stepsWithTimestamps);
-    };
+    };    
     
     useEffect(() => {
         const orderRef = ref(db, `orders/${id}`);
@@ -363,7 +401,7 @@ function CustomerOrderDetails() {
                     size="lg" 
                     isChecked={rowData.checked} 
                     onChange={(e) => onCheckChange(e, rowData)} 
-                    isDisabled={!order?.completion_status?.Arrived}
+                    isDisabled={!order?.completion_status?.Arrived || order?.completion_status?.Completed || order?.completion_status?.OnHold}
                 />
             </Flex>
         );   
@@ -374,31 +412,92 @@ function CustomerOrderDetails() {
             <Flex w="full" justifyContent="space-between">
                 <Flex w="full" gap={3} alignItems="center">
                     <IoMdArrowRoundBack size="40px"  onClick={() => window.history.back()}/>
-                    <Text fontSize="lg" fontWeight="700" color="#d69511">Ordered Items</Text>
+                    <Text fontSize="lg" fontWeight="700" color="#d69511">Ordered Items Checklist</Text>
                 </Flex>
-                <Flex gap={3} alignItems="center">
-                    <Button
-                        w="15rem"
-                        colorScheme="blue"
-                        size="md"
-                        style={{ outline:'none' }}
-                        onClick={() => handleCompleteOrder()}
-                    >
-                        Order Completed
-                    </Button>
-                    <Button
-                        w="15rem"
-                        colorScheme="red"
-                        size="md"
-                        style={{ outline:'none' }}
-                        onClick={() => {}}
-                    >
-                        Report Incomplete Order
-                    </Button>
-                </Flex>
+                {
+                    order?.completion_status?.Arrived && !order?.completion_status?.Completed && !order?.completion_status?.OnHold && (
+                        <Flex gap={3} alignItems="center">
+                            <Button
+                                w="15rem"
+                                colorScheme="blue"
+                                size="md"
+                                style={{ outline:'none' }}
+                                onClick={() => handleCompleteOrder()}
+                            >
+                                Order Completed
+                            </Button>
+                            <Button
+                                w="15rem"
+                                colorScheme="red"
+                                size="md"
+                                style={{ outline:'none' }}
+                                onClick={() => onOpen()}
+                            >
+                                Report Delivery
+                            </Button>
+                        </Flex>
+                    )
+                }
             </Flex>
         );
     }
+
+    const handleReportDelivery = async (data) => {
+        const reportedItems = order?.items
+            .map((item, index) => {
+                if (!item.checked && data.reportedItems[index]?.reportType) {
+                    return {
+                        ...item,
+                        reportType: data.reportedItems[index].reportType,
+                    };
+                }
+                return null;
+            })
+            .filter((item) => item !== null);
+    
+        // Check if all items have a report type
+        if (reportedItems.length !== data.reportedItems.length) {
+            toast({
+                title: "Please select a report type for each item",
+                status: "error",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        const description = data.description;
+        const orderID = id;
+    
+        const reportData = {
+            orderID,
+            reportedItems,
+            description,
+        };
+        
+        console.log(reportData);
+    
+        try {
+            await reportDelivery(reportData);
+            toast({
+                title: "Report submitted successfully",
+                status: "success",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+            onClose();
+        } catch (error) {
+            toast({
+                title: "Failed to submit report",
+                status: "error",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+    };    
 
     const handleCompleteOrder = async () => {
         // Check if all items are checked
@@ -406,7 +505,8 @@ function CustomerOrderDetails() {
 
         if (!allChecked) {
             toast({
-                title: "Please check all items in the checklist",
+                title: "Checklist is not completed",
+                description: "Please check all items before completing the order",
                 status: "error",
                 position: "top",
                 duration: 3000,
@@ -646,7 +746,7 @@ function CustomerOrderDetails() {
                                     />
                                 </FormControl>
                                 <FormControl>
-                                    <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Arrival Status</FormLabel>
+                                    <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Delivery Status</FormLabel>
                                     <Input
                                         variant="outline"
                                         defaultValue={
@@ -666,6 +766,128 @@ function CustomerOrderDetails() {
                             </Flex>
                         </Flex>
                     </Flex>
+                    <Modal size='3xl' isOpen={isOpen} onClose={onClose}>
+                        <ModalOverlay bg='blackAlpha.300' />
+                        <ModalContent>
+                            <ModalHeader>
+                                <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">Report Incomplete Delivery / Damaged Products</Text>
+                            </ModalHeader>
+                            <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                            <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                            <ModalBody>
+                                <form onSubmit={handleSubmit(handleReportDelivery)}>
+                                    <Flex w="full" gap={1} direction="column">
+                                        <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">Please check the items that are damaged or not delivered</Text>
+                                        <Divider my={2} borderWidth='1px' borderColor="gray.300" />
+                                        {
+                                            order?.items.map((item, index) => (
+                                                item.checked ? null 
+                                                : (
+                                                    <Flex w="full" direction="row" key={index} gap={5} alignItems="center" flexWrap="wrap">
+                                                        <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide" flexShrink={0}>
+                                                            {item.name}
+                                                        </Text>
+                                                        <Divider h="1rem" border={"1px"} orientation="vertical" borderColor="gray.300" />
+                                                        <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide" flexShrink={0}>
+                                                            {item.color}
+                                                        </Text>
+                                                        <Divider h="1rem" border={"1px"} orientation="vertical" borderColor="gray.300" />
+                                                        {
+                                                            Number(item.discount) > 0 ? (
+                                                                <Flex w="full" direction="column" flexGrow={1}>
+                                                                    <Flex direction="row" gap={2} alignItems="center">
+                                                                        <Flex direction="row" gap={2} alignItems="center">
+                                                                            <Text fontWeight={600} color={"green"} flexShrink={0}>RM</Text>
+                                                                            <Text flexShrink={1}>{discountedPrice} x {item.quantity}</Text>
+                                                                        </Flex>
+                                                                        <Text fontWeight={600} color={"red"} textDecoration="line-through" flexShrink={0}>
+                                                                            {item.price}
+                                                                        </Text>
+                                                                    </Flex>
+                                                                    <Text fontSize="sm" color="#d69511">-{item.discount}% Discount</Text>
+                                                                </Flex>
+                                                            ) : (
+                                                                <Flex direction="row" gap={2} alignItems="center" flexGrow={1}>
+                                                                    <Text fontWeight={600} color={"green"} flexShrink={0}>RM</Text>
+                                                                    <Text flexShrink={1}>{item.price}</Text>
+                                                                    <Text fontWeight={700} fontSize={'sm'} color={"gray.600"} flexShrink={0}>x {item.quantity}</Text>
+                                                                </Flex>
+                                                            )
+                                                        }
+                                                        <FormControl w="auto">
+                                                            <Select
+                                                                placeholder="Select a report type"
+                                                                {...register(`reportedItems[${index}].reportType`, {
+                                                                    required: "Please select a report type",
+                                                                })}
+                                                            >
+                                                                <option value="damaged">Damaged Product</option>
+                                                                <option value="missing">Missing Product</option>
+                                                            </Select>
+                                                        </FormControl>
+                                                    </Flex>
+                                                )
+                                            ))
+                                        }
+                                        {
+                                            order?.items.every(item => item.checked) && (
+                                                <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">
+                                                    All items are checked. Please uncheck the items that are damaged or not delivered.
+                                                </Text>
+                                            )
+                                        }
+                                        <Divider my={2} borderWidth='1px' borderColor="gray.300" />
+                                        {
+                                            order?.items.some(item => !item.checked) && (
+                                                <FormControl isInvalid={errors.description}>
+                                                    <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                        Report Description <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                    </FormLabel>        
+                                                    <Textarea
+                                                        variant="filled"
+                                                        type="text"
+                                                        id="description"
+                                                        {
+                                                            ...register("description", {
+                                                                required: "Report description cannot be empty",
+                                                            })
+                                                        }
+                                                        placeholder="Enter report description here..."
+                                                        rounded="md"
+                                                        h={"150px"}
+                                                        borderWidth="1px"
+                                                        borderColor="gray.300"
+                                                        color="gray.900"
+                                                        size="md"
+                                                        focusBorderColor="blue.500"
+                                                        w="full"
+                                                        p={2.5}
+                                                    />
+                                                    <FormErrorMessage>
+                                                        {errors.description && errors.description.message}
+                                                    </FormErrorMessage>
+                                                </FormControl>   
+                                            )
+                                        }
+                                    </Flex>
+                                    <ModalFooter>
+                                        <Flex w="full" direction="row" gap={3} alignItems="center" justifyContent="flex-end">
+                                            {
+                                                order?.items.some(item => !item.checked) && (
+                                                    <Button colorScheme="red" type="submit">
+                                                        Report
+                                                    </Button>                                            
+                                                )
+                                            }
+                                            <Button colorScheme="blue" onClick={onClose}>
+                                                Close
+                                            </Button>
+                                        </Flex>
+                                    </ModalFooter>
+                                </form>
+                            </ModalBody>
+                        </ModalContent>
+                    </Modal>
                 </Flex>
                 <Flex w="20%" direction="column">
                     <Flex w="full" direction="column" bg="white" boxShadow="md">
@@ -676,16 +898,26 @@ function CustomerOrderDetails() {
                                 {steps.map((step, index) => (
                                     <Step key={index}>
                                         <StepIndicator>
-                                        <StepStatus
-                                            complete={<StepIcon />}
-                                            incomplete={<StepNumber />}
-                                            active={<StepNumber />}
-                                        />
+                                            {step.isOnHold ? (
+                                                <Box color="white" fontSize="lg" fontWeight="bold">
+                                                    X
+                                                </Box>
+                                            ) : (
+                                                <StepStatus
+                                                    complete={<StepIcon />}
+                                                    incomplete={<StepNumber />}
+                                                    active={<StepNumber />}
+                                                />
+                                            )}
                                         </StepIndicator>
 
                                         <Box flexShrink='0'>
-                                            <StepTitle>{step.title}</StepTitle>
-                                            <StepDescription>{step.description}</StepDescription>
+                                            <StepTitle color={step.isOnHold ? 'red.500' : 'inherit'}>
+                                                {step.title}
+                                            </StepTitle>
+                                            <StepDescription color={step.isOnHold ? 'red.400' : 'inherit'}>
+                                                {step.description}
+                                            </StepDescription>
                                             {step.timestamp && (
                                                 <Text fontSize="sm" color="gray.500">
                                                     {step.timestamp}

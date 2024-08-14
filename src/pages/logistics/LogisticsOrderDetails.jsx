@@ -591,7 +591,7 @@ function LogisticsOrderDetails() {
                                     />
                                 </FormControl>
                                 <FormControl>
-                                    <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Arrival Status</FormLabel>
+                                    <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Delivery Status</FormLabel>
                                     <Input 
                                         variant="outline"
                                         defaultValue={

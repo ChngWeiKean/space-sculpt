@@ -213,7 +213,7 @@ function LogisticsOrderHistory() {
                                                                 <Flex alignItems="center" gap={3}>
                                                                     <TbTruckDelivery size={30} color='#d69511'/>
                                                                     <Flex direction="column">
-                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Arrival Status</Text>
+                                                                        <Text fontSize="md" fontWeight="semibold" color="gray.500">Delivery Status</Text>
                                                                         <Text fontSize="md" fontWeight="semibold" color="blue.500">
                                                                         {order.completion_status ? (
                                                                             Object.entries(order.completion_status)
@@ -303,7 +303,7 @@ function LogisticsOrderHistory() {
                         <Flex w="full" direction="column">
                                 {orderHistory.length === 0 ? (
                                     <Flex w="full" direction="column" alignItems="center" mt={5}>
-                                        <Text fontSize="xl" fontWeight="700">No previous orders</Text>
+                                        <Text fontSize="xl" fontWeight="700">No past orders</Text>
                                     </Flex>
                                 ) : (
                                     orderHistory.map((order, index) => (
