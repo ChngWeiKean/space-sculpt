@@ -441,15 +441,19 @@ function CustomerOrderDetails() {
                             >
                                 Order Completed
                             </Button>
-                            <Button
-                                w="15rem"
-                                colorScheme="red"
-                                size="md"
-                                style={{ outline:'none' }}
-                                onClick={() => onOpen()}
-                            >
-                                Report Delivery
-                            </Button>
+                            {
+                                !order.completion_status?.Resolved && (
+                                    <Button
+                                        w="15rem"
+                                        colorScheme="red"
+                                        size="md"
+                                        style={{ outline:'none' }}
+                                        onClick={() => onOpen()}
+                                    >
+                                        Report Delivery
+                                    </Button>                                    
+                                )
+                            }
                         </Flex>
                     )
                 }

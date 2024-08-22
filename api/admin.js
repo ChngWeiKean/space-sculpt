@@ -674,10 +674,7 @@ export const resolveReport = async (id, reportResolveDescription) => {
                 OnHold: null,
                 Resolved: new Date().toISOString(),
             },
-            reports: {
-                ...order?.reports,
-                id
-            }
+            reports: id
         });
 
         return { success: true };
