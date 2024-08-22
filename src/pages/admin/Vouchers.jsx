@@ -1,8 +1,6 @@
 import {
-    Avatar,
     Box,
     Button,
-    Center,
     Divider,
     Flex,
     Input,
@@ -15,25 +13,22 @@ import {
     ModalFooter,
     ModalHeader,
     ModalOverlay,
-    Select,
     Text,
     useToast,
     useDisclosure,
 } from '@chakra-ui/react'
 import { useEffect, useState } from "react";
 import { db } from "../../../api/firebase.js";
-import { equalTo, onValue, orderByChild, query, ref } from "firebase/database";
+import { onValue, orderByChild, query, ref } from "firebase/database";
 import { BiSearchAlt2 } from 'react-icons/bi';
-import { FaEye, FaHospitalUser, FaStethoscope, FaTrash, FaUser, FaUserShield, FaCar } from 'react-icons/fa';
-import { RiCoupon3Line, RiCoupon2Fill, RiCoupon2Line } from "react-icons/ri";
-import { BsFillCloudArrowDownFill, BsCart3 } from "react-icons/bs";
+import { FaEye, FaTrash } from 'react-icons/fa';
+import { RiCoupon2Line } from "react-icons/ri";
+import { BsCart3 } from "react-icons/bs";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import { CiDiscount1 } from "react-icons/ci";
 import { LiaShippingFastSolid } from "react-icons/lia";
-import { FaTruck } from "react-icons/fa6";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
 import { NavLink } from 'react-router-dom';
@@ -41,7 +36,6 @@ import { deleteVoucher, restoreVoucher } from '../../../api/admin.js';
 
 function Vouchers() {
     const [ vouchers, setVouchers ] = useState([]);
-    const [ selectedVoucher, setSelectedVoucher ] = useState(null);
     const [filters, setFilters] = useState({
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
         name: { value: null, matchMode: FilterMatchMode.CONTAINS },

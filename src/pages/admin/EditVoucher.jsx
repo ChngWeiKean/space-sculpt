@@ -12,21 +12,20 @@ import {
     Select,
     InputGroup,
     InputLeftElement,
-    InputRightElement,
     InputLeftAddon,
     InputRightAddon,
     Textarea,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill, BsCart3 } from "react-icons/bs";
+import { useState, useEffect } from "react";
+import { BsCart3 } from "react-icons/bs";
 import { BiSearchAlt2 } from 'react-icons/bi';
-import { FaEye, FaHospitalUser, FaStethoscope, FaTrash, FaUser, FaUserShield, FaCar } from 'react-icons/fa';
+import { FaEye } from 'react-icons/fa';
 import { LiaShippingFastSolid } from "react-icons/lia";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { useForm } from "react-hook-form";
 import { db } from "../../../api/firebase";
 import { NavLink, useParams } from 'react-router-dom';
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref, query, orderByChild } from "firebase/database";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { InputText } from 'primereact/inputtext';
@@ -40,7 +39,6 @@ function EditVoucher() {
     const [ vouchers, setVouchers ] = useState([]);
     const [ users, setUsers ] = useState([]);
     const [ voucher, setVoucher ] = useState({});
-    const [ customers, setCustomers ] = useState([]);
     const [globalFilterValue, setGlobalFilterValue] = useState('');
     const discountType = watch("discount_type");
     const application = watch("discount_application");

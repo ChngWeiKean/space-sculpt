@@ -8,12 +8,10 @@ import {
     FormHelperText,
     FormLabel,
     IconButton,
-    Image,
     Input,
     InputGroup,
     InputRightElement,
     Avatar, 
-    Divider,
     InputLeftElement,
     Text,
     useToast,
@@ -21,7 +19,7 @@ import {
     Select,
 } from '@chakra-ui/react';
 import { IoMdEye, IoMdEyeOff } from "react-icons/io";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
+import { IoMdArrowRoundBack } from "react-icons/io";
 import { FaRegUser, FaGenderless } from "react-icons/fa";
 import { MdOutlineAlternateEmail, MdDateRange } from "react-icons/md";
 import { BiLinkExternal } from "react-icons/bi";
@@ -40,7 +38,7 @@ function ViewUser() {
 		handleSubmit,
 		register,
 		formState: {
-			errors, isSubmitting
+			errors
 		}
 	} = useForm();
     const { id } = useParams();

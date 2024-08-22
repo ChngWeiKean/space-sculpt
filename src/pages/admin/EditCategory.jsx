@@ -20,20 +20,20 @@ import {
     Badge,
     Spinner,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import { BsFillCloudArrowDownFill } from "react-icons/bs";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { IoBedOutline } from "react-icons/io5";
 import { MdOutlineSell, MdOutlineInventory } from "react-icons/md";
 import { FaPlus, FaTrash  } from "react-icons/fa6";
-import { TiTickOutline, TiTick } from "react-icons/ti";
+import { TiTick } from "react-icons/ti";
 import { CgUnavailable } from "react-icons/cg";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import { useForm } from "react-hook-form";
 import { db } from "../../../api/firebase";
 import { updateCategoryAndSubcategories } from "../../../api/admin";
 import { useParams } from "react-router-dom";
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref, query, orderByChild, equalTo } from "firebase/database";
 
 function EditCategory() {
     const {

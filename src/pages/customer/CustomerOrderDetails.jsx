@@ -58,7 +58,9 @@ function CustomerOrderDetails() {
     const [ shippingDate, setShippingDate ] = useState(order?.shipping_date);
     const [ shippingTime, setShippingTime ] = useState(order?.shipping_time);
     const [ hoursDifference, setHoursDifference ] = useState(0);
-    const { isOpen, onOpen, onClose } = useDisclosure()
+    const [ report, setReport ] = useState(null);
+    const { isOpen: isOpenReport, onOpen: onOpenReport, onClose: onCloseReport } = useDisclosure();
+    const { isOpen: isOpenResolved, onOpen: onOpenResolved, onClose: onCloseResolved } = useDisclosure();
     const [steps, setSteps] = useState([]);
     const {
         handleSubmit,
@@ -195,6 +197,25 @@ function CustomerOrderDetails() {
             setOrder(data);
             updateDeliveryStatus(latestStatus); 
             updateSteps(data.completion_status);
+        });
+    }, [id]);
+
+    useEffect(() => {
+        const reportRef = ref(db, `reports`);
+        onValue(reportRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const reports = Object.keys(data).map((key) => ({
+                    ...data[key],
+                    id: key, 
+                }));
+    
+                // Find the report with the matching order_id
+                const orderReport = reports.find((report) => report.order_id === id);
+                if (orderReport) {
+                    setReport(orderReport);
+                }
+            }
         });
     }, [id]);
     
@@ -442,15 +463,28 @@ function CustomerOrderDetails() {
                                 Order Completed
                             </Button>
                             {
-                                !order.completion_status?.Resolved && (
+                                !order.completion_status?.Resolved || !order.completion_status?.Resolved && order.completion_status.OnHold && (
                                     <Button
                                         w="15rem"
                                         colorScheme="red"
                                         size="md"
                                         style={{ outline:'none' }}
-                                        onClick={() => onOpen()}
+                                        onClick={() => onOpenReport()}
                                     >
                                         Report Delivery
+                                    </Button>                                    
+                                )
+                            }
+                            {
+                                order.completion_status?.Resolved && !order.completion_status?.OnHold && (
+                                    <Button
+                                        w="15rem"
+                                        colorScheme="red"
+                                        size="md"
+                                        style={{ outline:'none' }}
+                                        onClick={() => onOpenResolved()}
+                                    >
+                                        Resolved - Report Delivery
                                     </Button>                                    
                                 )
                             }
@@ -506,7 +540,7 @@ function CustomerOrderDetails() {
                 duration: 3000,
                 isClosable: true,
             });
-            onClose();
+            onCloseReport();
         } catch (error) {
             toast({
                 title: "Failed to submit report",
@@ -564,6 +598,11 @@ function CustomerOrderDetails() {
     };    
 
     const header = renderHeader();
+
+    const reportType = {
+        'damaged': 'Damaged Product',
+        'missing': 'Missing Item'
+    }
 
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={4}>
@@ -787,7 +826,7 @@ function CustomerOrderDetails() {
                             </Flex>
                         </Flex>
                     </Flex>
-                    <Modal size='3xl' isOpen={isOpen} onClose={onClose}>
+                    <Modal size='3xl' isOpen={isOpenReport} onClose={onCloseReport}>
                         <ModalOverlay bg='blackAlpha.300' />
                         <ModalContent>
                             <ModalHeader>
@@ -815,11 +854,12 @@ function CustomerOrderDetails() {
                                                         <Divider h="1rem" border={"1px"} orientation="vertical" borderColor="gray.300" />
                                                         {
                                                             Number(item.discount) > 0 ? (
+                                                                
                                                                 <Flex w="full" direction="column" flexGrow={1}>
                                                                     <Flex direction="row" gap={2} alignItems="center">
                                                                         <Flex direction="row" gap={2} alignItems="center">
                                                                             <Text fontWeight={600} color={"green"} flexShrink={0}>RM</Text>
-                                                                            <Text flexShrink={1}>{discountedPrice} x {item.quantity}</Text>
+                                                                            <Text flexShrink={1}>{Number(item.price) - (Number(item.price) * Number(item.discount) / 100)} x {item.quantity}</Text>
                                                                         </Flex>
                                                                         <Text fontWeight={600} color={"red"} textDecoration="line-through" flexShrink={0}>
                                                                             {item.price}
@@ -900,12 +940,130 @@ function CustomerOrderDetails() {
                                                     </Button>                                            
                                                 )
                                             }
-                                            <Button colorScheme="blue" onClick={onClose}>
+                                            <Button colorScheme="blue" onClick={onCloseReport}>
                                                 Close
                                             </Button>
                                         </Flex>
                                     </ModalFooter>
                                 </form>
+                            </ModalBody>
+                        </ModalContent>
+                    </Modal>
+                    <Modal size='3xl' isOpen={isOpenResolved} onClose={onCloseResolved}>
+                        <ModalOverlay bg='blackAlpha.300' />
+                        <ModalContent>
+                            <ModalHeader>
+                                <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">Incomplete Delivery / Damaged Products Report Resolved</Text>
+                            </ModalHeader>
+                            <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                            <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                            <ModalBody>
+                                <Flex w="full" gap={1} direction="column">
+                                    <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">Please check the items that are damaged or not delivered</Text>
+                                    <Divider my={2} borderWidth='1px' borderColor="gray.300" />
+                                    {
+                                        report?.items.map((item, index) => (
+                                            <Flex w="full" direction="row" key={index} gap={5} alignItems="center" flexWrap="wrap">
+                                                <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide" flexShrink={0}>
+                                                    {item.name}
+                                                </Text>
+                                                <Divider h="1rem" border={"1px"} orientation="vertical" borderColor="gray.300" />
+                                                <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide" flexShrink={0}>
+                                                    {item.color}
+                                                </Text>
+                                                <Divider h="1rem" border={"1px"} orientation="vertical" borderColor="gray.300" />
+                                                {
+                                                    Number(item.discount) > 0 ? (
+                                                        <Flex w="full" direction="column" flexGrow={1}>
+                                                            <Flex direction="row" gap={2} alignItems="center">
+                                                                <Flex direction="row" gap={2} alignItems="center">
+                                                                    <Text fontWeight={600} color={"green"} flexShrink={0}>RM</Text>
+                                                                    <Text flexShrink={1}>{Number(item.price) - (Number(item.price) * Number(item.discount) / 100)} x {item.quantity}</Text>
+                                                                </Flex>
+                                                                <Text fontWeight={600} color={"red"} textDecoration="line-through" flexShrink={0}>
+                                                                    {item.price}
+                                                                </Text>
+                                                            </Flex>
+                                                            <Text fontSize="sm" color="#d69511">-{item.discount}% Discount</Text>
+                                                        </Flex>
+                                                    ) : (
+                                                        <Flex direction="row" gap={2} alignItems="center" flexGrow={1}>
+                                                            <Text fontWeight={600} color={"green"} flexShrink={0}>RM</Text>
+                                                            <Text flexShrink={1}>{item.price}</Text>
+                                                            <Text fontWeight={700} fontSize={'sm'} color={"gray.600"} flexShrink={0}>x {item.quantity}</Text>
+                                                        </Flex>
+                                                    )
+                                                }
+                                                <FormControl w="auto">
+                                                    <Input
+                                                        variant="unstyled"
+                                                        type="text"
+                                                        defaultValue={reportType[item.reportType]}
+                                                        placeholder="Enter report here..."
+                                                        readOnly
+                                                        rounded="md"
+                                                        borderWidth="1px"
+                                                        borderColor="gray.300"
+                                                        color="gray.900"
+                                                        size="md"
+                                                        w="full"
+                                                        p={2.5}
+                                                    />
+                                                </FormControl>
+                                            </Flex>
+                                        ))
+                                    }
+                                    <Divider my={2} borderWidth='1px' borderColor="gray.300" />
+                                    <FormControl>
+                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                            Report Description
+                                        </FormLabel>        
+                                        <Textarea
+                                            variant="unstyled"
+                                            type="text"
+                                            id="description"
+                                            defaultValue={report?.description}
+                                            placeholder="Enter report description here..."
+                                            readOnly
+                                            rounded="md"
+                                            h={"150px"}
+                                            borderWidth="1px"
+                                            borderColor="gray.300"
+                                            color="gray.900"
+                                            size="md"
+                                            w="full"
+                                            p={2.5}
+                                        />
+                                    </FormControl>   
+                                    <FormControl>
+                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                            Resolve Description
+                                        </FormLabel>
+                                        <Textarea   
+                                            variant="unstyled"
+                                            type="text"
+                                            id="resolveDescription"
+                                            placeholder="Enter resolve description here..."
+                                            defaultValue={report?.resolved_description}
+                                            readOnly
+                                            rounded="md"
+                                            h={"150px"}
+                                            borderWidth="1px"
+                                            borderColor="gray.300"
+                                            color="gray.900"
+                                            size="md"
+                                            w="full"
+                                            p={2.5}
+                                        />
+                                    </FormControl>
+                                </Flex>
+                                <ModalFooter>
+                                    <Flex w="full" direction="row" gap={3} alignItems="center" justifyContent="flex-end">                                         
+                                        <Button colorScheme="blue" onClick={onCloseResolved}>
+                                            Close
+                                        </Button>
+                                    </Flex>
+                                </ModalFooter>
                             </ModalBody>
                         </ModalContent>
                     </Modal>

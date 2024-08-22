@@ -4,15 +4,10 @@ import {
     Box,
     Button,
     Avatar,
-    Menu,
-    MenuButton,
     Divider,
-    MenuList,
-    MenuItem,
     Input,
     InputGroup,
     InputLeftElement,
-    InputRightElement,
     Modal,
     ModalBody,
     ModalCloseButton,
@@ -23,13 +18,11 @@ import {
     useDisclosure,
     Select,
     useToast,
-
 } from "@chakra-ui/react";
-import {useRef, useState, useEffect, memo, useCallback} from "react";
+import { useState, useEffect } from "react";
 import { IoBedOutline } from "react-icons/io5";
 import { GiMoneyStack } from "react-icons/gi";
-import { GrTransaction } from "react-icons/gr";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
+import { IoIosHeart, IoMdArrowRoundBack } from "react-icons/io";
 import { MdOutlineSell, MdOutlineInventory } from "react-icons/md";
 import { CiWarning } from "react-icons/ci";
 import { GoSmiley } from "react-icons/go";
@@ -41,9 +34,8 @@ import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
 import { onValue, query, ref, orderByChild, equalTo } from "firebase/database";
-import { FaStar, FaStarHalf, FaUser, FaStethoscope, FaClinicMedical, FaEye, FaTrash } from "react-icons/fa";
+import { FaStar, FaStarHalf, FaEye, FaTrash } from "react-icons/fa";
 import { BiSearchAlt2 } from "react-icons/bi";
-import { AiOutlineUser, AiOutlineSafetyCertificate } from "react-icons/ai";
 import { NavLink, useParams } from 'react-router-dom';
 import { deleteFurniture, restoreFurniture } from "../../../api/admin";
 
@@ -58,7 +50,6 @@ function CategoryDetails() {
     const [inventory, setInventory] = useState(0);
     const [furnitureSales, setFurnitureSales] = useState(0);
     const [furnitureRevenue, setFurnitureRevenue] = useState(0);
-    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         const categoryRef = ref(db, `categories/${id}`);

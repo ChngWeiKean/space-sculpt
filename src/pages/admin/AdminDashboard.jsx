@@ -6,31 +6,19 @@ import {
     Input,
     InputGroup,
     InputLeftElement,
-    Tabs,
-    TabList,
-    TabPanels,
-    Tab,
-    TabPanel,
-    TabIndicator,
-    Avatar,
-    Menu,
-    MenuButton,
-    MenuList,
     Divider,
     Tooltip,
     Badge,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { FaUser, FaStethoscope, FaClinicMedical, FaEye } from "react-icons/fa";
+import { useState, useEffect, memo } from "react";
 import { IoBedOutline } from "react-icons/io5";
 import { GiMoneyStack } from "react-icons/gi";
 import { GrTransaction } from "react-icons/gr";
-import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
+import { IoIosHeart } from "react-icons/io";
 import { db } from "../../../api/firebase";
-import { onValue, query, ref, get, } from "firebase/database";
+import { onValue, ref, get, } from "firebase/database";
 import { FaStar, FaStarHalf } from "react-icons/fa";
-import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail } from "react-icons/md";
-import { CiMapPin } from "react-icons/ci";
+import { MdOutlineAlternateEmail } from "react-icons/md";
 import { BiSearchAlt2 } from "react-icons/bi";
 import { AiOutlineUser } from "react-icons/ai";
 import { NavLink } from 'react-router-dom';
@@ -236,6 +224,7 @@ function AdminDashboard() {
                         minute: '2-digit',
                         hour12: true
                     }).replace(',', '');
+                    data.id = childSnapshot.key;
                     count++;
     
                     const orderPromise = fetchUserDetails(data.user_id).then(userData => {
@@ -346,7 +335,7 @@ function AdminDashboard() {
         return (
             <Flex 
                 as={NavLink}
-                to={`/admin/customer-order-details/${item.order_id}`}
+                to={`/admin/customer-order-details/${item.id}`}
                 direction="column" 
                 gap={2} 
                 w="10rem" 

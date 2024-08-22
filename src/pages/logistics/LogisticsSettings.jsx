@@ -13,7 +13,6 @@ import {
     Input,
     HStack,
     Button,
-    Avatar,
     FormControl,
     FormLabel,
     InputRightElement,
@@ -24,27 +23,19 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState, useRef } from "react";
 import { BiSearchAlt2, BiLinkExternal } from "react-icons/bi";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
 import { MdDateRange } from "react-icons/md";
-import { FaShippingFast, FaCalendar } from "react-icons/fa";
+import { FaShippingFast } from "react-icons/fa";
 import { TbWeight } from "react-icons/tb";
 import { FaPlus } from "react-icons/fa6";
 import { CiWarning } from "react-icons/ci";
-import { FcElectricalThreshold } from "react-icons/fc";
-import { GoDash } from "react-icons/go";
 import { BsCash } from "react-icons/bs";
 import { AiOutlineDeliveredProcedure } from "react-icons/ai";
-import { GiPathDistance, GiWeight } from "react-icons/gi";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation } from 'react-router-dom';
-import { useAuth } from "../../components/AuthCtx.jsx";
+import { GiPathDistance } from "react-icons/gi";
+import { useForm } from "react-hook-form";
+import { Link } from 'react-router-dom';
 import { db } from "../../../api/firebase";
-import { onValue, ref, query, orderByChild, equalTo, set, get } from "firebase/database";
-import { Autocomplete, GoogleMap, InfoWindow, Marker, LoadScript } from "@react-google-maps/api";
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { InputText } from 'primereact/inputtext';
-import { FilterMatchMode } from 'primereact/api';
+import { onValue, ref } from "firebase/database";
+import { Autocomplete, GoogleMap, InfoWindow, Marker } from "@react-google-maps/api";
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
 import { updateSettings, updateShopAddress } from "../../../api/logistics.js";
 
@@ -53,9 +44,6 @@ function LogisticsSettings() {
         handleSubmit,
         register,
         setValue,
-        formState: {
-            errors, isSubmitting
-        }
     } = useForm();
     const [ address, setAddress ] = useState(null);
     const [ settings, setSettings ] = useState(null);

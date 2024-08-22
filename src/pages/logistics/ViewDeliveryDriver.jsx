@@ -8,23 +8,18 @@ import {
     FormHelperText,
     FormLabel,
     IconButton,
-    Image,
     Input,
     InputGroup,
     InputRightElement,
-    Avatar, 
-    Divider,
-    InputLeftElement,
     Text,
     useToast,
-    HStack,
     Select,
 } from '@chakra-ui/react';
 import { db } from "../../../api/firebase";
 import { useEffect, useState } from "react";
 import { IoMdArrowRoundBack, IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { useForm } from "react-hook-form";
-import { onValue, query, ref } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import { useParams } from 'react-router-dom';
 
 function ViewDeliveryDriver() {
@@ -32,7 +27,7 @@ function ViewDeliveryDriver() {
 		handleSubmit,
 		register,
 		formState: {
-			errors, isSubmitting
+			errors
 		}
 	} = useForm();
     const { id } = useParams();

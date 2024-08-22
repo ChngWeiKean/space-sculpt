@@ -3,27 +3,13 @@ import {
     Flex,
     Box,
     Button,
-    Input,
-    InputGroup,
-    InputLeftElement,
-    Tabs,
-    TabList,
-    TabPanels,
-    Tab,
-    TabPanel,
-    TabIndicator,
-    Avatar,
-    Menu,
-    MenuButton,
-    MenuList,
     Divider,
-    Tooltip,
     Badge,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { NavLink } from 'react-router-dom';
 import { db } from "../../../api/firebase";
-import { onValue, query, ref, get, } from "firebase/database";
+import { ref, get, } from "firebase/database";
 import { FaEye } from 'react-icons/fa';
 import { BarChart } from "../../components/charts/BarChart.jsx";
 import { DataTable } from 'primereact/datatable';

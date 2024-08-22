@@ -11,7 +11,7 @@ import {
     Tooltip,
     useToast,
 } from "@chakra-ui/react";
-import {useRef, useState, useEffect, memo, useCallback} from "react";
+import { useState, useEffect } from "react";
 import { FaStar, FaStarHalf } from "react-icons/fa";
 import { GoArrowRight } from "react-icons/go";
 import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
@@ -21,7 +21,7 @@ import { AiOutlineUser } from "react-icons/ai";
 import { BiSearchAlt2 } from "react-icons/bi";
 import { NavLink } from 'react-router-dom';
 import { db } from "../../../api/firebase";
-import { onValue, query, ref } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import { useAuth } from "../../components/AuthCtx";
 import { addToFavourites, addToCart } from "../../../api/customer";
 

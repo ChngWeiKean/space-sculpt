@@ -3,50 +3,25 @@ import {
     Flex,
     Box,
     Button,
-    Avatar,
-    Menu,
-    MenuButton,
     Divider,
-    MenuList,
-    MenuItem,
     Input,
     InputGroup,
     InputLeftElement,
-    InputRightElement,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    useDisclosure,
     Select,
     useToast,
     SimpleGrid,
     Badge,
     Tooltip,
 } from "@chakra-ui/react";
-import {useRef, useState, useEffect, memo, useCallback} from "react";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { GiMoneyStack } from "react-icons/gi";
-import { GrTransaction } from "react-icons/gr";
+import { useState, useEffect } from "react";
+import { IoCartOutline } from "react-icons/io5";
 import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { MdOutlineSell, MdOutlineInventory } from "react-icons/md";
-import { CiWarning } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
-import { RiArrowGoBackFill } from "react-icons/ri";
 import { db } from "../../../api/firebase";
 import {useAuth} from "../../components/AuthCtx.jsx";
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { InputText } from 'primereact/inputtext';
-import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
 import { onValue, query, ref, orderByChild, equalTo, get } from "firebase/database";
-import { FaStar, FaStarHalf, FaUser, FaStethoscope, FaClinicMedical, FaEye, FaTrash } from "react-icons/fa";
+import { FaStar, FaStarHalf } from "react-icons/fa";
 import { BiSearchAlt2 } from "react-icons/bi";
-import { AiOutlineUser, AiOutlineSafetyCertificate } from "react-icons/ai";
 import { NavLink, useParams } from 'react-router-dom';
 import { addToFavourites, addToCart } from "../../../api/customer";
 
