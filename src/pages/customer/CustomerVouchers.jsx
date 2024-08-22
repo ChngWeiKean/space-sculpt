@@ -6,68 +6,20 @@ import {
     Input,
     FormControl,
     FormLabel,
-    FormErrorMessage,
-    InputLeftAddon,
-    InputRightAddon,
-    Textarea,
-    useToast,
-    Divider,
     InputGroup,
-    Spinner,
-    Select,
-    Badge,
-    Alert,
-    AlertIcon,
-    Tabs,
-    TabList,
-    TabPanels,
-    Tab,
-    TabPanel,
-    TabIndicator,
-    HStack,
-    useDisclosure,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    Tooltip,
     Accordion,
     AccordionItem,
     AccordionButton,
     AccordionPanel,
     AccordionIcon,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill, BsPinMap, BsCart3 } from "react-icons/bs";
+import { useState, useEffect } from "react";
+import { BsCart3 } from "react-icons/bs";
 import { LiaShippingFastSolid } from "react-icons/lia";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
-import { BiLinkExternal } from "react-icons/bi";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning, CiCreditCard1, CiDeliveryTruck } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
-import { BsCash } from "react-icons/bs";
-import { SiCashapp } from "react-icons/si";
-import { RiCoupon3Line, RiCoupon2Fill } from "react-icons/ri";
-import { GrThreeD } from "react-icons/gr";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
-import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
-import { FaRegUser } from "react-icons/fa";
-import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { InputText } from 'primereact/inputtext';
-import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import { redeemVoucher } from "../../../api/customer.js";
 
 function CustomerVouchers() {

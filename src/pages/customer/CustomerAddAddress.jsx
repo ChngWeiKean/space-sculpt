@@ -4,68 +4,30 @@ import {
     Box,
     Button,
     Input,
-    FormControl,
-    FormLabel,
-    FormErrorMessage,
-    InputLeftAddon,
-    InputRightElement,
     InputLeftElement,
-    IconButton,
-    InputRightAddon,
-    Textarea,
     useToast,
-    Divider,
     InputGroup,
-    Spinner,
-    Select,
-    Badge,
-    Alert,
-    AlertIcon,
-    AlertTitle,
-    AlertDescription,
     HStack,
-    Switch,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill, BsPinMap } from "react-icons/bs";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
-import { GrThreeD } from "react-icons/gr";
+import { useRef, useState, useEffect } from "react";
+import { IoMdArrowRoundBack } from "react-icons/io";
 import { BiLinkExternal, BiSearchAlt2 } from "react-icons/bi";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
-import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
-import { FaRegUser } from "react-icons/fa";
-import { IoMdEye, IoMdEyeOff } from "react-icons/io";
-import { TbPasswordFingerprint } from "react-icons/tb";
-import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail, MdDateRange } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation } from 'react-router-dom';
+import { useForm } from "react-hook-form";
+import { Link } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
-import { db } from "../../../api/firebase";
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
 import { Autocomplete, GoogleMap, InfoWindow, Marker, LoadScript } from "@react-google-maps/api";
 import { addAddress } from "../../../api/customer.js";
 
 function CustomerAddAddress() {
     const {
         handleSubmit,
-        register,
-        formState: {
-            errors, isSubmitting
-        }
     } = useForm();
     const { user } = useAuth();
     const [ place, setPlace ] = useState(null);
-    const [ isDefault, setDefault ] = useState(false);
     const mapStyle = {
 		height: '590px',
 		width: '100%',
 	};
-	const libs = ["places"];
 	const [mapRef, setMapRef] = useState(null);
 	const [center, setCenter] = useState({
 		lat: 5.4164,

@@ -6,18 +6,10 @@ import {
     Input,
     FormControl,
     FormLabel,
-    FormErrorMessage,
-    InputLeftAddon,
-    InputRightAddon,
     Textarea,
     useToast,
     Divider,
-    InputGroup,
-    Spinner,
-    Select,
     Badge,
-    Alert,
-    AlertIcon,
     useDisclosure,
     Modal,
     ModalBody,
@@ -26,7 +18,6 @@ import {
     ModalFooter,
     ModalHeader,
     ModalOverlay,
-    Tooltip,
     Step,
     StepDescription,
     StepIcon,
@@ -37,42 +28,15 @@ import {
     StepTitle,
     Stepper,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill, BsPinMap, BsCart3 } from "react-icons/bs";
-import { LiaShippingFastSolid } from "react-icons/lia";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
-import { BiLinkExternal } from "react-icons/bi";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning, CiCreditCard1, CiDeliveryTruck } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
-import { TbTruckDelivery } from "react-icons/tb";
-import { GoDotFill } from "react-icons/go";
-import { BsCash, BsCalendar2Date } from "react-icons/bs";
-import { TbMoneybag } from "react-icons/tb";
-import { CiDiscount1 } from "react-icons/ci";
-import { CiCreditCard2 } from "react-icons/ci";
-import { FaBoxOpen, FaTruck, FaHome } from 'react-icons/fa';
-import { IoTimeOutline } from "react-icons/io5";
-import { SiCashapp } from "react-icons/si";
-import { GrThreeD } from "react-icons/gr";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
-import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
-import { FaRegUser } from "react-icons/fa";
-import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from "../../components/AuthCtx.jsx";
+import { useState, useEffect } from "react";
+import { IoMdArrowRoundBack } from "react-icons/io";
+import { useParams } from 'react-router-dom';
 import { db } from "../../../api/firebase";
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
-import Slider from 'react-slick';
+import { onValue, ref } from "firebase/database";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { InputText } from 'primereact/inputtext';
-import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
 import { resolveReport } from "../../../api/admin.js";
 
@@ -584,7 +548,7 @@ function AdminOrderDetails() {
                                                             <Flex direction="row" gap={2} alignItems="center">
                                                                 <Flex direction="row" gap={2} alignItems="center">
                                                                     <Text fontWeight={600} color={"green"} flexShrink={0}>RM</Text>
-                                                                    <Text flexShrink={1}>{discountedPrice} x {item.quantity}</Text>
+                                                                    <Text flexShrink={1}>{Number(item.price) - (Number(item.price) * Number(item.discount) / 100)} x {item.quantity}</Text>
                                                                 </Flex>
                                                                 <Text fontWeight={600} color={"red"} textDecoration="line-through" flexShrink={0}>
                                                                     {item.price}

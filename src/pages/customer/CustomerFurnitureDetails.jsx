@@ -13,33 +13,26 @@ import {
     useDisclosure,
     useToast,
     Divider,
-    InputGroup,
     Spinner,
-    Select,
     Badge,
     Tooltip,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill } from "react-icons/bs";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
+import { useRef, useState, useEffect } from "react";
 import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
+import { IoCartOutline } from "react-icons/io5";
 import { CiWarning } from "react-icons/ci";
 import { GoSmiley } from "react-icons/go";
 import { GrThreeD } from "react-icons/gr";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
-import { FaPlus, FaTrash, FaStar, FaStarHalf } from "react-icons/fa6";
-import { MdOutlineInventory, MdOutlineTexture, MdLightbulbOutline } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams } from 'react-router-dom';
+import { FaRegFileImage } from "react-icons/fa6";
+import { FaStar, FaStarHalf } from "react-icons/fa6";
+import { MdLightbulbOutline } from "react-icons/md";
+import { useParams } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import { addToFavourites, addToCart } from "../../../api/customer.js";
 
 function CustomerFurnitureDetails() {

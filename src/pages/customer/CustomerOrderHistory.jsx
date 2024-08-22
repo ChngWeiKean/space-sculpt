@@ -1,73 +1,26 @@
 import {
 	Text,
     Flex,
-    Box,
     Button,
-    Input,
-    FormControl,
-    FormLabel,
-    FormErrorMessage,
-    InputLeftAddon,
-    InputRightAddon,
-    Textarea,
-    useToast,
     Divider,
-    InputGroup,
-    Spinner,
-    Select,
-    Badge,
-    Alert,
-    AlertIcon,
     Tabs,
     TabList,
     TabPanels,
     Tab,
     TabPanel,
     TabIndicator,
-    HStack,
-    useDisclosure,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    Tooltip,
-    Accordion,
-    AccordionItem,
-    AccordionButton,
-    AccordionPanel,
-    AccordionIcon,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill, BsPinMap, BsCart3 } from "react-icons/bs";
-import { LiaShippingFastSolid } from "react-icons/lia";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
-import { BiLinkExternal } from "react-icons/bi";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning, CiCreditCard1, CiDeliveryTruck } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
+import {  useState, useEffect } from "react";
 import { TbTruckDelivery } from "react-icons/tb";
-import { GoDotFill } from "react-icons/go";
-import { BsCash, BsCalendar2Date } from "react-icons/bs";
+import { BsCalendar2Date } from "react-icons/bs";
 import { TbMoneybag } from "react-icons/tb";
 import { CiDiscount1 } from "react-icons/ci";
 import { CiCreditCard2 } from "react-icons/ci";
 import { IoTimeOutline } from "react-icons/io5";
-import { SiCashapp } from "react-icons/si";
-import { GrThreeD } from "react-icons/gr";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
-import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
-import { FaRegUser } from "react-icons/fa";
-import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";

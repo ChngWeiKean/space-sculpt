@@ -10,12 +10,9 @@ import {
     InputLeftAddon,
     InputRightElement,
     IconButton,
-    InputRightAddon,
-    Textarea,
     useToast,
     Divider,
     InputGroup,
-    Spinner,
     Select,
     Badge,
     Alert,
@@ -23,36 +20,21 @@ import {
     Avatar,
     InputLeftElement,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { BsFillCloudArrowDownFill, BsPinMap } from "react-icons/bs";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
-import { GrThreeD } from "react-icons/gr";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
+import { IoMdArrowRoundBack } from "react-icons/io";
 import { CiCreditCard1 } from "react-icons/ci";
-import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
 import { FaRegUser, FaGenderless } from "react-icons/fa";
 import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { TbPasswordFingerprint, TbGenderMale, TbGenderFemale } from "react-icons/tb";
-import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail, MdDateRange } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation } from 'react-router-dom';
+import { MdOutlineAlternateEmail, MdDateRange } from "react-icons/md";
+import { useForm } from "react-hook-form";
+import { NavLink } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
-import { db } from "../../../api/firebase";
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { InputText } from 'primereact/inputtext';
-import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
 import { updateProfile } from "../../../api/customer.js";
 import Cards from 'react-credit-cards-2';
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
-import { encrypt, decrypt } from 'n-krypta'
 import { fetchAndActivate, getValue } from "firebase/remote-config";
 import { remoteConfig } from "../../../api/firebase.js";
 import CryptoJS from 'crypto-js';

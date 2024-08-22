@@ -23,7 +23,7 @@ import {useEffect, useState} from "react";
 import {db} from "../../../api/firebase.js";
 import {equalTo, onValue, orderByChild, query, ref} from "firebase/database";
 import {BiSearchAlt2} from 'react-icons/bi';
-import {FaEye, FaHospitalUser, FaStethoscope, FaTrash, FaUser, FaUserShield, FaCar } from 'react-icons/fa';
+import {FaEye, FaTrash, FaUser, FaUserShield, FaCar } from 'react-icons/fa';
 import { FaTruck } from "react-icons/fa6";
 import {DataTable} from 'primereact/datatable';
 import {Column} from 'primereact/column';

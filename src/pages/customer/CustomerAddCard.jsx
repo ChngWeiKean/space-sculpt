@@ -6,49 +6,23 @@ import {
     Input,
     FormControl,
     FormLabel,
-    FormErrorMessage,
-    FormHelperText,
     InputLeftAddon,
-    InputRightElement,
-    IconButton,
-    InputRightAddon,
     Textarea,
     useToast,
-    Divider,
     InputGroup,
-    Spinner,
-    Select,
-    Badge,
-    Alert,
-    AlertIcon,
-    Avatar,
-    InputLeftElement,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill, BsPinMap } from "react-icons/bs";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
-import { GrThreeD } from "react-icons/gr";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
+import { useState, useEffect } from "react";
+import { IoMdArrowRoundBack } from "react-icons/io";
 import { CiCreditCard1 } from "react-icons/ci";
-import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
-import { FaRegUser, FaGenderless } from "react-icons/fa";
-import { IoMdEye, IoMdEyeOff } from "react-icons/io";
-import { TbPasswordFingerprint, TbGenderMale, TbGenderFemale } from "react-icons/tb";
-import { MdOutlineInventory, MdOutlineTexture, MdOutlineAlternateEmail, MdDateRange, MdOutlineSecurity } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useLocation } from 'react-router-dom';
+import { FaRegUser } from "react-icons/fa";
+import { MdDateRange, MdOutlineSecurity } from "react-icons/md";
+import { useForm } from "react-hook-form";
 import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
 import Cards from 'react-credit-cards-2';
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import { addCard } from "../../../api/customer.js";
-import { encrypt, decrypt } from 'n-krypta'
 import {fetchAndActivate, getValue} from "firebase/remote-config";
 import {remoteConfig} from "../../../api/firebase.js";
 import CryptoJS from 'crypto-js';
@@ -58,10 +32,6 @@ function CustomerAddCard() {
     const {
         handleSubmit,
         register,
-        setValue,
-        formState: {
-            errors, isSubmitting
-        }
     } = useForm();
 
     const [state, setState] = useState({

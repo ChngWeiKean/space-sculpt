@@ -26,24 +26,21 @@ import {
     AlertIcon,
     Alert,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import { BsFillCloudArrowDownFill } from "react-icons/bs";
-import { RxCross1, RxHeight, RxWidth, RxSize } from "react-icons/rx";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
+import { RxHeight, RxWidth, RxSize } from "react-icons/rx";
+import { IoIosHeart, IoMdArrowRoundBack } from "react-icons/io";
 import { IoBedOutline, IoColorPaletteOutline } from "react-icons/io5";
-import { AiOutlineDash } from "react-icons/ai";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import { FaPlus, FaTrash, FaStar, FaStarHalf } from "react-icons/fa6";
 import { MdOutlineInventory, MdOutlineTexture } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams } from 'react-router-dom';
+import { useForm } from "react-hook-form";
+import { useParams } from 'react-router-dom';
 import { db } from "../../../api/firebase";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
-import JSZip from 'jszip';
+import { onValue, ref } from "firebase/database";
 import { updateFurniture } from "../../../api/admin";
 
 function EditFurniture() {
@@ -60,7 +57,7 @@ function EditFurniture() {
         register,
         setValue,
         formState: {
-            errors, isSubmitting
+            errors
         }
     } = useForm();
 

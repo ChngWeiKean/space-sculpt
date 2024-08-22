@@ -3,44 +3,22 @@ import {
     Flex,
     Box,
     Button,
-    Input,
-    FormControl,
-    FormLabel,
-    FormErrorMessage,
-    InputLeftAddon,
-    InputRightAddon,
-    Textarea,
     useToast,
     Divider,
-    InputGroup,
-    Spinner,
-    Select,
     Badge,
     Alert,
     AlertIcon,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
-import { BsFillCloudArrowDownFill } from "react-icons/bs";
-import { RxCross1, RxHeight, RxWidth, RxSize, RxDimensions } from "react-icons/rx";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
-import { IoBedOutline, IoCartOutline } from "react-icons/io5";
-import { CiWarning } from "react-icons/ci";
-import { GoSmiley } from "react-icons/go";
-import { GrThreeD } from "react-icons/gr";
-import { FaImage, FaRegFileImage } from "react-icons/fa6";
-import { AiOutlineDash } from "react-icons/ai";
-import { FaPlus, FaTrash, FaStar, FaStarHalf, FaMinus } from "react-icons/fa6";
-import { MdOutlineInventory, MdOutlineTexture } from "react-icons/md";
-import { Form, useForm } from "react-hook-form";
-import { NavLink, useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { IoMdArrowRoundBack } from "react-icons/io";
+import { FaPlus, FaTrash, FaMinus } from "react-icons/fa6";
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
 import { db } from "../../../api/firebase";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { InputText } from 'primereact/inputtext';
-import { FilterMatchMode } from 'primereact/api';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import { removeFromCart, updateCart } from "../../../api/customer.js";
 
 function CustomerCart() {

@@ -10,21 +10,21 @@ import {
     useToast,
     Divider,
 } from "@chakra-ui/react";
-import { useRef, useState, useEffect, memo, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import { BsFillCloudArrowDownFill } from "react-icons/bs";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { FaPlus, FaTrash  } from "react-icons/fa6";
 import { useForm } from "react-hook-form";
 import { createCategoryAndSubcategories } from "../../../api/admin";
 import { db } from "../../../api/firebase";
-import { onValue, ref, query, orderByChild, equalTo, set } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 
 function AddCategory() {
     const {
         handleSubmit,
         register,
         formState: {
-            errors, isSubmitting
+            errors
         }
     } = useForm();
 
