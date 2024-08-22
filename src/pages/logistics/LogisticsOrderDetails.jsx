@@ -6,18 +6,10 @@ import {
     Input,
     FormControl,
     FormLabel,
-    FormErrorMessage,
-    InputLeftAddon,
-    InputRightAddon,
-    Textarea,
     useToast,
     Divider,
-    InputGroup,
-    Spinner,
     Select,
     Badge,
-    Alert,
-    AlertIcon,
     useDisclosure,
     Modal,
     ModalBody,
@@ -26,7 +18,6 @@ import {
     ModalFooter,
     ModalHeader,
     ModalOverlay,
-    Tooltip,
     Step,
     StepDescription,
     StepIcon,
@@ -36,8 +27,6 @@ import {
     StepStatus,
     StepTitle,
     Stepper,
-    useSteps,
-    Checkbox,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect, memo, useCallback } from "react";
 import { BsFillCloudArrowDownFill, BsPinMap, BsCart3 } from "react-icons/bs";
@@ -80,11 +69,15 @@ import { assignOrderToDriver, updateOrderStatus } from "../../../api/logistics.j
 
 function LogisticsOrderDetails() {
     const { id } = useParams();
+    const toast = useToast();
     const [ order, setOrder ] = useState(null);
     const [ activeStep, setActiveStep ] = useState(0);
     const [ selectedDriver, setSelectedDriver ] = useState('');
     const [ deliveryDrivers, setDeliveryDrivers ] = useState([]);
     const [ availableDrivers, setAvailableDrivers ] = useState([]);
+    const [ reportResolveDescription, setReportResolveDescription ] = useState('');
+    const [ report, setReport ] = useState(null);
+    const { isOpen, onOpen, onClose } = useDisclosure();
     const [steps, setSteps] = useState([]);
 
     const formatTimestamp = (timestamp) => {
@@ -112,8 +105,11 @@ function LogisticsOrderDetails() {
             case 'Arrived':
                 setActiveStep(4);
                 break;
-            case 'Completed':
+            case 'Resolved':
                 setActiveStep(5);
+                break;
+            case 'Completed':
+                setActiveStep(6);
                 break;
             case 'OnHold':
                 setActiveStep(5);
@@ -129,46 +125,51 @@ function LogisticsOrderDetails() {
             'ReadyForShipping': 'Ready For Shipping',
             'Shipping': 'Shipped',
             'Arrived': 'Delivered',
+            'Resolved': 'Resolved',
             'Completed': 'Completed',
             'OnHold': 'On Hold'
         };
     
-        const defaultSteps = [
+        // Define the base steps without 'Resolved' and 'On Hold'
+        let steps = [
             { title: 'Order Placed', description: 'The order has been placed' },
             { title: 'Ready For Shipping', description: 'The order is ready for shipping' },
             { title: 'Shipped', description: 'The order is on the way' },
             { title: 'Delivered', description: 'The order has been delivered' },
-            { title: 'Completed', description: 'The order has been completed' }
         ];
     
-        let stepsWithTimestamps = defaultSteps.map((step) => {
+        // If 'Resolved' exists, add it as a step before 'Completed'
+        if (completionStatus.Resolved) {
+            steps.push({ title: 'Resolved', description: 'The order issue has been resolved' });
+        }
+    
+        // If 'OnHold' exists, replace the 'Completed' step with 'On Hold'
+        if (completionStatus.OnHold) {
+            steps.push({
+                title: 'On Hold',
+                description: 'The order is currently on hold',
+                timestamp: formatTimestamp(completionStatus.OnHold),
+                isOnHold: true,
+            });
+        } else {
+            // Add 'Completed' as the final step if 'OnHold' does not exist
+            steps.push({ title: 'Completed', description: 'The order has been completed' });
+        }
+    
+        // Add timestamps to the steps where applicable
+        const stepsWithTimestamps = steps.map((step) => {
             const statusKey = Object.keys(completionStatus).find(key => statusMapping[key] === step.title);
             if (statusKey && completionStatus[statusKey]) {
                 return {
                     ...step,
-                    timestamp: formatTimestamp(completionStatus[statusKey])
+                    timestamp: formatTimestamp(completionStatus[statusKey]),
                 };
             }
             return step;
         });
     
-        // Replace "Completed" step with "On Hold" if status is "OnHold"
-        if (completionStatus.OnHold) {
-            stepsWithTimestamps = stepsWithTimestamps.map((step, index) => {
-                if (step.title === 'Completed') {
-                    return {
-                        title: 'On Hold',
-                        description: 'The order is currently on hold',
-                        timestamp: formatTimestamp(completionStatus.OnHold),
-                        isOnHold: true
-                    };
-                }
-                return step;
-            });
-        }
-    
         setSteps(stepsWithTimestamps);
-    };    
+    };
     
     useEffect(() => {
         const orderRef = ref(db, `orders/${id}`);
@@ -246,6 +247,25 @@ function LogisticsOrderDetails() {
         setAvailableDrivers(filterAvailableDrivers(deliveryDrivers, order));
     }, [deliveryDrivers, order]);
 
+    useEffect(() => {
+        const reportRef = ref(db, `reports`);
+        onValue(reportRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const reports = Object.keys(data).map((key) => ({
+                    ...data[key],
+                    id: key, 
+                }));
+    
+                // Find the report with the matching order_id
+                const orderReport = reports.find((report) => report.order_id === id);
+                if (orderReport) {
+                    setReport(orderReport);
+                }
+            }
+        });
+    }, [id]);
+
     const filterAvailableDrivers = (drivers, orderToAssign) => {
         return drivers?.filter((driver) => {
             if (!driver.pending_orders_details || driver.pending_orders_details.length === 0) {
@@ -270,6 +290,36 @@ function LogisticsOrderDetails() {
             });
         });
     };
+
+    const reportType = {
+        'damaged': 'Damaged Product',
+        'missing': 'Missing Item'
+    }
+
+    const manageReport = async () => {
+        if (!reportResolveDescription) {
+            toast({
+                title: 'Resolve Description Required',
+                description: 'Please provide a description to resolve the report',
+                status: 'error',
+                position: 'top',
+                duration: 5000,
+                isClosable: true
+            });
+            return;
+        }
+        
+        await resolveReport(report.id, reportResolveDescription);
+
+        toast({
+            title: 'Report Resolved',
+            description: 'The report has been resolved successfully',
+            status: 'success',
+            position: 'top',
+            duration: 5000,
+            isClosable: true
+        });
+    }
     
     const convertTo24Hour = (time) => {
         const [timePart, modifier] = time.split(' ');
@@ -365,9 +415,26 @@ function LogisticsOrderDetails() {
 
     const renderHeader = () => {
         return (
-            <Flex w="full" gap={3} alignItems="center">
-                <IoMdArrowRoundBack size="40px"  onClick={() => window.history.back()}/>
-                <Text fontSize="lg" fontWeight="700" color="#d69511">Ordered Items</Text>
+            <Flex w="full" justifyContent="space-between">
+                <Flex w="full" gap={3} alignItems="center">
+                    <IoMdArrowRoundBack size="40px"  onClick={() => window.history.back()}/>
+                    <Text fontSize="lg" fontWeight="700" color="#d69511">Ordered Items Checklist</Text>
+                </Flex>
+                {
+                    order?.completion_status?.OnHold && (
+                        <Flex gap={3} alignItems="center">
+                            <Button
+                                w="15rem"
+                                colorScheme="blue"
+                                size="md"
+                                style={{ outline:'none' }}
+                                onClick={() => onOpen()}
+                            >
+                                Resolve Report
+                            </Button>
+                        </Flex>
+                    )
+                }
             </Flex>
         );
     }
@@ -392,8 +459,6 @@ function LogisticsOrderDetails() {
     const handleCloseConfirmAssignDriverModal = () => {
         onCloseConfirmAssignDriverModal();
     };
-
-    const toast = useToast();
 
     const handleSetReadyForDelivery = async () => {
         try {
@@ -780,6 +845,127 @@ function LogisticsOrderDetails() {
                                 )
                             }
                         </Flex>
+                        <Modal size='3xl' isOpen={isOpen} onClose={onClose}>
+                            <ModalOverlay bg='blackAlpha.300' />
+                            <ModalContent>
+                                <ModalHeader>
+                                    <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">Report Incomplete Delivery / Damaged Products</Text>
+                                </ModalHeader>
+                                <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                                <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                                <ModalBody>
+                                    <Flex w="full" gap={1} direction="column">
+                                        <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">Please check the items that are damaged or not delivered</Text>
+                                        <Divider my={2} borderWidth='1px' borderColor="gray.300" />
+                                        {
+                                            report?.items.map((item, index) => (
+                                                <Flex w="full" direction="row" key={index} gap={5} alignItems="center" flexWrap="wrap">
+                                                    <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide" flexShrink={0}>
+                                                        {item.name}
+                                                    </Text>
+                                                    <Divider h="1rem" border={"1px"} orientation="vertical" borderColor="gray.300" />
+                                                    <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide" flexShrink={0}>
+                                                        {item.color}
+                                                    </Text>
+                                                    <Divider h="1rem" border={"1px"} orientation="vertical" borderColor="gray.300" />
+                                                    {
+                                                        Number(item.discount) > 0 ? (
+                                                            <Flex w="full" direction="column" flexGrow={1}>
+                                                                <Flex direction="row" gap={2} alignItems="center">
+                                                                    <Flex direction="row" gap={2} alignItems="center">
+                                                                        <Text fontWeight={600} color={"green"} flexShrink={0}>RM</Text>
+                                                                        <Text flexShrink={1}>{discountedPrice} x {item.quantity}</Text>
+                                                                    </Flex>
+                                                                    <Text fontWeight={600} color={"red"} textDecoration="line-through" flexShrink={0}>
+                                                                        {item.price}
+                                                                    </Text>
+                                                                </Flex>
+                                                                <Text fontSize="sm" color="#d69511">-{item.discount}% Discount</Text>
+                                                            </Flex>
+                                                        ) : (
+                                                            <Flex direction="row" gap={2} alignItems="center" flexGrow={1}>
+                                                                <Text fontWeight={600} color={"green"} flexShrink={0}>RM</Text>
+                                                                <Text flexShrink={1}>{item.price}</Text>
+                                                                <Text fontWeight={700} fontSize={'sm'} color={"gray.600"} flexShrink={0}>x {item.quantity}</Text>
+                                                            </Flex>
+                                                        )
+                                                    }
+                                                    <FormControl w="auto">
+                                                        <Input
+                                                            variant="unstyled"
+                                                            type="text"
+                                                            defaultValue={reportType[item.reportType]}
+                                                            placeholder="Enter report here..."
+                                                            readOnly
+                                                            rounded="md"
+                                                            borderWidth="1px"
+                                                            borderColor="gray.300"
+                                                            color="gray.900"
+                                                            size="md"
+                                                            w="full"
+                                                            p={2.5}
+                                                        />
+                                                    </FormControl>
+                                                </Flex>
+                                            ))
+                                        }
+                                        <Divider my={2} borderWidth='1px' borderColor="gray.300" />
+                                        <FormControl>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Report Description
+                                            </FormLabel>        
+                                            <Textarea
+                                                variant="unstyled"
+                                                type="text"
+                                                id="description"
+                                                defaultValue={report?.description}
+                                                placeholder="Enter report description here..."
+                                                readOnly
+                                                rounded="md"
+                                                h={"150px"}
+                                                borderWidth="1px"
+                                                borderColor="gray.300"
+                                                color="gray.900"
+                                                size="md"
+                                                w="full"
+                                                p={2.5}
+                                            />
+                                        </FormControl>   
+                                        <FormControl>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Resolve Description
+                                            </FormLabel>
+                                            <Textarea   
+                                                variant="unstyled"
+                                                type="text"
+                                                id="resolveDescription"
+                                                placeholder="Enter resolve description here..."
+                                                value={reportResolveDescription}
+                                                onChange={(e) => setReportResolveDescription(e.target.value)}
+                                                rounded="md"
+                                                h={"150px"}
+                                                borderWidth="1px"
+                                                borderColor="gray.300"
+                                                color="gray.900"
+                                                size="md"
+                                                w="full"
+                                                p={2.5}
+                                            />
+                                        </FormControl>
+                                    </Flex>
+                                    <ModalFooter>
+                                        <Flex w="full" direction="row" gap={3} alignItems="center" justifyContent="flex-end">
+                                            <Button colorScheme="red" onClick={manageReport}>
+                                                Resolve
+                                            </Button>                                            
+                                            <Button colorScheme="blue" onClick={onClose}>
+                                                Close
+                                            </Button>
+                                        </Flex>
+                                    </ModalFooter>
+                                </ModalBody>
+                            </ModalContent>
+                        </Modal>
                     </Flex>
                     <Flex w="full" direction="column" bg="white" boxShadow="md">
                         <Text px={5} py={3} fontSize="lg" fontWeight="700">Order Status</Text>

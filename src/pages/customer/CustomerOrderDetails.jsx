@@ -93,8 +93,11 @@ function CustomerOrderDetails() {
             case 'Arrived':
                 setActiveStep(4);
                 break;
-            case 'Completed':
+            case 'Resolved':
                 setActiveStep(5);
+                break;
+            case 'Completed':
+                setActiveStep(6);
                 break;
             case 'OnHold':
                 setActiveStep(5);
@@ -110,51 +113,63 @@ function CustomerOrderDetails() {
             'ReadyForShipping': 'Ready For Shipping',
             'Shipping': 'Shipped',
             'Arrived': 'Delivered',
+            'Resolved': 'Resolved',
             'Completed': 'Completed',
             'OnHold': 'On Hold'
         };
     
-        const defaultSteps = [
+        // Define the base steps without 'Resolved' and 'On Hold'
+        let steps = [
             { title: 'Order Placed', description: 'Your order has been placed' },
             { title: 'Ready For Shipping', description: 'Your order is ready for shipping' },
             { title: 'Shipped', description: 'Your order is on the way' },
             { title: 'Delivered', description: 'Your order has been delivered' },
-            { title: 'Completed', description: 'Your order has been completed' }
         ];
     
-        let stepsWithTimestamps = defaultSteps.map((step) => {
+        // If 'Resolved' exists, add it as a step before 'Completed'
+        if (completionStatus.Resolved) {
+            steps.push({ title: 'Resolved', description: 'Your issue has been resolved' });
+        }
+    
+        // If 'OnHold' exists, replace the 'Completed' step with 'On Hold'
+        if (completionStatus.OnHold) {
+            steps.push({
+                title: 'On Hold',
+                description: 'Your order is currently on hold',
+                timestamp: formatTimestamp(completionStatus.OnHold),
+                isOnHold: true,
+            });
+        } else {
+            // Add 'Completed' as the final step if 'OnHold' does not exist
+            steps.push({ title: 'Completed', description: 'Your order has been completed' });
+        }
+    
+        // Add timestamps to the steps where applicable
+        const stepsWithTimestamps = steps.map((step) => {
             const statusKey = Object.keys(completionStatus).find(key => statusMapping[key] === step.title);
             if (statusKey && completionStatus[statusKey]) {
                 return {
                     ...step,
-                    timestamp: formatTimestamp(completionStatus[statusKey])
+                    timestamp: formatTimestamp(completionStatus[statusKey]),
                 };
             }
             return step;
         });
     
-        // Replace "Completed" step with "On Hold" if status is "OnHold"
-        if (completionStatus.OnHold) {
-            stepsWithTimestamps = stepsWithTimestamps.map((step, index) => {
-                if (step.title === 'Completed') {
-                    return {
-                        title: 'On Hold',
-                        description: 'Your order is currently on hold',
-                        timestamp: formatTimestamp(completionStatus.OnHold),
-                        isOnHold: true
-                    };
-                }
-                return step;
-            });
-        }
-    
         setSteps(stepsWithTimestamps);
-    };    
+    };
     
     useEffect(() => {
         const orderRef = ref(db, `orders/${id}`);
         onValue(orderRef, (snapshot) => {
             const data = snapshot.val();
+
+            // Calculate hour difference
+            const createdOn = new Date(data.created_on);
+            const now = new Date();
+            const difference = now - createdOn;
+            const hours = Math.floor(difference / 1000 / 60 / 60);
+            setHoursDifference(hours);
     
             // Format the created_on date
             data.created_on = new Date(data.created_on).toLocaleString('en-GB', {
@@ -426,15 +441,19 @@ function CustomerOrderDetails() {
                             >
                                 Order Completed
                             </Button>
-                            <Button
-                                w="15rem"
-                                colorScheme="red"
-                                size="md"
-                                style={{ outline:'none' }}
-                                onClick={() => onOpen()}
-                            >
-                                Report Delivery
-                            </Button>
+                            {
+                                !order.completion_status?.Resolved && (
+                                    <Button
+                                        w="15rem"
+                                        colorScheme="red"
+                                        size="md"
+                                        style={{ outline:'none' }}
+                                        onClick={() => onOpen()}
+                                    >
+                                        Report Delivery
+                                    </Button>                                    
+                                )
+                            }
                         </Flex>
                     )
                 }

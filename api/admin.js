@@ -649,3 +649,36 @@ export const restoreVoucher = async (id) => {
         throw error;
     }
 }
+
+export const resolveReport = async (id, reportResolveDescription) => {
+    try {
+        const reportRef = ref(db, `reports/${id}`);
+        // Get report data
+        const reportSnapshot = await get(reportRef);
+        const report = reportSnapshot.val();
+        await update(reportRef, {
+            resolved: true,
+            resolved_description: reportResolveDescription,
+            resolved_on: new Date(),
+            resolved_by: auth.currentUser.uid,
+        });
+
+        const orderRef = ref(db, `orders/${report?.order_id}`);
+        // Get order data
+        const orderSnapshot = await get(orderRef);
+        const order = orderSnapshot.val();
+        // update completion_status
+        update(orderRef, {
+            completion_status: {
+                ...order?.completion_status,
+                OnHold: null,
+                Resolved: new Date().toISOString(),
+            },
+            reports: id
+        });
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}
