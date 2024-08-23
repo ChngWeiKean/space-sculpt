@@ -27,10 +27,11 @@ import {
     StepStatus,
     StepTitle,
     Stepper,
+    Image,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { IoMdArrowRoundBack } from "react-icons/io";
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { db } from "../../../api/firebase";
 import { onValue, ref } from "firebase/database";
 import "slick-carousel/slick/slick.css";
@@ -48,7 +49,8 @@ function AdminOrderDetails() {
     const [ deliveryDriver, setDeliveryDriver ] = useState(null);
     const [ report, setReport ] = useState(null);
     const [ reportResolveDescription, setReportResolveDescription ] = useState('');
-    const { isOpen, onOpen, onClose } = useDisclosure()
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isOpenProof, onOpen: onOpenProof, onClose: onCloseProof } = useDisclosure();
     const [steps, setSteps] = useState([]);
 
     const formatTimestamp = (timestamp) => {
@@ -106,7 +108,15 @@ function AdminOrderDetails() {
             { title: 'Order Placed', description: 'The order has been placed' },
             { title: 'Ready For Shipping', description: 'The order is ready for shipping' },
             { title: 'Shipped', description: 'The order is on the way' },
-            { title: 'Delivered', description: 'The order has been delivered' },
+            { 
+                title: 'Delivered', 
+                description: (
+                    <>
+                        <Text>The order has been delivered</Text>
+                        <Link color="blue.500" onClick={onOpenProof}>View Proof of Delivery</Link>
+                    </>
+                )
+            },
         ];
     
         // If 'Resolved' exists, add it as a step before 'Completed'
@@ -637,6 +647,27 @@ function AdminOrderDetails() {
                                         </Button>
                                     </Flex>
                                 </ModalFooter>
+                            </ModalBody>
+                        </ModalContent>
+                    </Modal>
+                    <Modal size='xl' isOpen={isOpenProof} onClose={onCloseProof}>
+                        <ModalOverlay bg='blackAlpha.300' />
+                        <ModalContent>
+                            <ModalHeader>
+                                <Text fontSize="lg" fontWeight="700" color="gray.600" letterSpacing="wide">Proof of Delivery</Text>
+                            </ModalHeader>
+                            <ModalCloseButton _focus={{ boxShadow: 'none', outline: 'none' }} />
+                            <Divider mb={2} borderWidth='1px' borderColor="blackAlpha.300" />
+                            <ModalBody>
+                                <Flex w="full" gap={1} direction="column" justifyContent="center" alignItems="center">
+                                    {
+                                        order?.proof_of_delivery && (
+                                            order?.proof_of_delivery.map((proof, index) => (
+                                                <Image key={index} src={proof} alt={`Proof of Delivery ${index}`} width={300} objectFit={"contain"} />
+                                            ))
+                                        )
+                                    }
+                                </Flex>
                             </ModalBody>
                         </ModalContent>
                     </Modal>
