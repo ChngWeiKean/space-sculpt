@@ -459,7 +459,7 @@ export const restoreFurniture = async (id) => {
 }
 
 export const delete_user = async (data) => {
-	const {email, password, clinic, role} = data;
+	const {email, password} = data;
 
 	return await signInWithEmailAndPassword(secondaryAuth, email, password)
 		.then((userCredential) => {
@@ -470,14 +470,6 @@ export const delete_user = async (data) => {
 						deleted: true,
 						deleted_by: auth.currentUser.uid
 					})
-				})
-				.then(() => {
-					if (clinic === null) {
-						return {success: true};
-					} else {
-						const node = role === "Doctor" ? "doctors" : "admins";
-						return update(ref(db, `clinics/${clinic}/${node}/${userCredential.user.uid}`), null)
-					}
 				})
 				.then(() => {
 					return {success: true};
@@ -491,6 +483,84 @@ export const delete_user = async (data) => {
 			}).catch((error) => {
 				return {error: error};
 			});
+}
+
+export const updateUserProfile = async (userId, data) => {
+    const { name, email, contact, role, password } = data;
+    console.log(data);
+
+    try {
+        const userRef = ref(db, `users/${userId}`);
+        const userSnap = await get(userRef);
+        const user = userSnap.val();
+
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        const updateData = {
+            name: name,
+            role: role,
+            contact: contact,
+        };
+
+        if (password !== user.password) {
+            updatePassword(user, password);
+        }
+
+        if (email !== user.email) {
+            updateEmail(user, email);
+        }
+        console.log(updateData);
+        await update(userRef, updateData);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        throw error;
+    }
+}
+
+export const update_email = async (data, new_email) => {
+	const {uid, email, password} = data;
+	
+	return await signInWithEmailAndPassword(secondaryAuth, email, password)
+		.then((userCredential) => {
+			return updateEmail(userCredential.user, new_email).then(() => {
+				return update(ref(db, `users/${uid}`), {
+					email: new_email
+				}).then(() => {
+					return {success: true};
+				}).catch((error) => {
+					throw {error: error};
+				});
+			}).catch((error) => {
+				throw {error: error};
+			})
+		.catch((error) => {
+			throw {error: error};
+		});
+	}).catch((error) => {
+		throw {error: error};
+	});
+}
+
+export const update_password = async (data, new_password) => {
+	const {uid, email, password} = data;
+	
+	return await signInWithEmailAndPassword(secondaryAuth, email, password)
+		.then((userCredential) => {
+			return updatePassword(userCredential.user, new_password).then(() => {
+                return {success: true};
+			}).catch((error) => {
+				throw {error: error};
+			})
+		.catch((error) => {
+			throw {error: error};
+		});
+	}).catch((error) => {
+		throw {error: error};
+	});
 }
 
 export const addVoucher = async (data) => {

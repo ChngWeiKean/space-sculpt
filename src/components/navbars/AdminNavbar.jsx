@@ -87,7 +87,7 @@ const AdminNavbar = () => {
 					</MenuButton>
 					
 					<MenuList>
-						<MenuItem as={NavLink} to="/profile" _focus={{ boxShadow: "none" }}>
+						<MenuItem as={NavLink} to={`/admin/users/${user.uid}/view`} _focus={{ boxShadow: "none" }}>
 							Profile
 						</MenuItem>
 						<MenuDivider />

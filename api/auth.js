@@ -5,7 +5,7 @@ import {
 	signOut
 } from "firebase/auth";
 import {auth, db, secondaryAuth, storage} from "./firebase.js";
-import {ref, set} from "firebase/database";
+import {ref, set, update} from "firebase/database";
 import {getDownloadURL, ref as sRef, uploadBytes} from "firebase/storage";
 
 export const register = async (data, asAdmin=false) => {
@@ -19,7 +19,6 @@ export const register = async (data, asAdmin=false) => {
 				created_on: new Date().toISOString(),
 				created_by: asAdmin ? auth.currentUser.uid : newUser.user.uid,
 				email: newUser.user.email,
-				password: password,
 				role: role,
 				name: name,
 				contact: contact,
@@ -52,7 +51,6 @@ export const registerNewUser = async (data) => {
             created_on: new Date().toISOString(),
             created_by: newUserCredential.user.uid,
             email: newUserCredential.user.email,
-            password: password,
             contact: contact,
             role: role,
             name: name

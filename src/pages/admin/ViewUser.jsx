@@ -32,6 +32,7 @@ import { useParams, Link } from "react-router-dom";
 import { db } from "../../../api/firebase";
 import {onValue, query, ref} from "firebase/database";
 import {GoogleMap, InfoWindow, Marker} from '@react-google-maps/api';
+import { updateUserProfile } from '../../../api/admin.js';
 
 function ViewUser() {
     const {
@@ -148,7 +149,35 @@ function ViewUser() {
     const toast = useToast();
 
     const onSubmit = async (data) => {
-        console.log(data);
+        const userData = {
+            name: data.name,
+            email: data.email,
+            contact: data.contact,
+            role: data.role,
+            password: data.password,
+        }
+
+        try {
+            await updateUserProfile(id, userData);
+            toast({
+                title: "Profile updated successfully.",
+                description: "User profile has been updated successfully.",
+                status: "success",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            toast({
+                title: "Profile update failed.",
+                description: "An error occurred while updating user profile. Please try again later.",
+                status: "error",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
     };
 
     return (
@@ -436,7 +465,7 @@ function ViewUser() {
                                                         type="text"
                                                         id="role"
                                                         placeholder="Select Role"
-                                                        defaultValue={user?.role || ""} // Set default value to the role from user.role
+                                                        defaultValue={user?.role || ""}
                                                         rounded="md"
                                                         {...register("role", {
                                                             required: "Role is required"
