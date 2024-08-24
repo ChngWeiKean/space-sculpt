@@ -263,22 +263,22 @@ function CustomerCheckout() {
         const calculateWeightFee = () => {
             return new Promise((resolve) => {
                 const weight = Object.values(furniture.state).reduce((acc, item) => {
-                    return acc + Number(item.weight);
+                    return acc + (Number(item.weight) * item.quantity);
                 }, 0);
-            
+    
                 let weightCharges = 0;
                 if (weight > settings?.maximum_weight_load) {
                     weightCharges = ((weight - Number(settings?.maximum_weight_load)) * Number(settings?.extra_weight_fee_per_kilogram)).toFixed(2);
-                    console.log("WEIGHT CHARGES",weightCharges);
+                    console.log("WEIGHT CHARGES", weightCharges);
                     setWeightFee(weightCharges);
                 } else {
                     weightCharges = 0;
-                    setWeightFee(0); 
+                    setWeightFee(0);
                 }
                 resolve(weightCharges);
             });
         };
-
+    
         const calculateVoucherDiscount = () => {
             return new Promise((resolve) => {
                 let discount = 0;
@@ -302,7 +302,7 @@ function CustomerCheckout() {
                 resolve(discount);
             });
         };
-
+    
         Promise.all([
             calculateSubtotal(),
             calculateWeightFee(),
@@ -314,7 +314,7 @@ function CustomerCheckout() {
                 setLoading(false);
             });
         });
-    }, [furniture.state, distanceFromShop, selectedVoucher]);
+    }, [furniture.state, distanceFromShop, selectedVoucher]);    
 
     const handleVoucherUsageValidation = (voucher) => {
         if (voucher) {

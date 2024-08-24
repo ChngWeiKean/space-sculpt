@@ -205,7 +205,7 @@ function LogisticsDashboard() {
 
     const actionBodyTemplate = (rowData) => {
         return (
-            <Button bg='transparent' as={NavLink} to={`/view-driver/${rowData.uid}`}><FaEye color='#0078ff'/></Button>
+            <Button bg='transparent' as={NavLink} to={`/view/${rowData.uid}`}><FaEye color='#0078ff'/></Button>
         );
     }
 

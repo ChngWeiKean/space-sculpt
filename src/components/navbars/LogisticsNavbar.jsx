@@ -80,7 +80,7 @@ const LogisticsNavbar = () => {
 					</MenuButton>
 					
 					<MenuList>
-						<MenuItem as={NavLink} to="/profile" _focus={{ boxShadow: "none" }}>
+						<MenuItem as={NavLink} to={`/view/${user.uid}`} _focus={{ boxShadow: "none" }}>
 							Profile
 						</MenuItem>
 						<MenuDivider />

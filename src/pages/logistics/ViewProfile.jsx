@@ -21,8 +21,9 @@ import { IoMdArrowRoundBack, IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { useForm } from "react-hook-form";
 import { onValue, ref } from "firebase/database";
 import { useParams } from 'react-router-dom';
+import { updateUserProfile } from '../../../api/admin.js';
 
-function ViewDeliveryDriver() {
+function ViewProfile() {
     const {
 		handleSubmit,
 		register,
@@ -51,7 +52,35 @@ function ViewDeliveryDriver() {
     const toast = useToast();
 
     const onSubmit = async (data) => {
-        console.log(data);
+        const userData = {
+            name: data.name,
+            email: data.email,
+            contact: data.contact,
+            role: data.role,
+            password: data.password,
+        }
+
+        try {
+            await updateUserProfile(id, userData);
+            toast({
+                title: "Profile updated successfully.",
+                description: "User profile has been updated successfully.",
+                status: "success",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            toast({
+                title: "Profile update failed.",
+                description: "An error occurred while updating user profile. Please try again later.",
+                status: "error",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+        }
     };
 
     return (
@@ -268,4 +297,4 @@ function ViewDeliveryDriver() {
     );
 }
 
-export default ViewDeliveryDriver;
+export default ViewProfile;

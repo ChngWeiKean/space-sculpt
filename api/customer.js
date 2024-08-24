@@ -325,13 +325,7 @@ export const update_password = async (data, new_password) => {
 	return await signInWithEmailAndPassword(auth, email, password)
 		.then((userCredential) => {
 			return updatePassword(userCredential.user, new_password).then(() => {
-				return update(ref(db, `users/${uid}`), {
-					password: new_password
-				}).then(() => {
-					return {success: true};
-				}).catch((error) => {
-					throw {error: error};
-				});
+                return {success: true};
 			}).catch((error) => {
 				throw {error: error};
 			})
@@ -600,7 +594,7 @@ export const placeOrder = async (data) => {
             return acc;
         }, {});
 
-        // Store order details in furniture/orders
+        // Store order details in furniture/orders and update inventory
         try {
             for (const itemId of Object.keys(groupedItems)) {
                 const item = groupedItems[itemId];
@@ -620,9 +614,21 @@ export const placeOrder = async (data) => {
                     price: item.price
                 });
                 await set(furnitureOrderRef, furnitureOrders);
+
+                // Deduct from inventory for each selected variant
+                for (const variantId of item.selected_variants) {
+                    const variantInventoryRef = ref(db, `furniture/${itemId}/variants/${variantId}/inventory`);
+                    const variantInventorySnapshot = await get(variantInventoryRef);
+
+                    if (variantInventorySnapshot.exists()) {
+                        const currentInventory = variantInventorySnapshot.val();
+                        const newInventory = Math.max(0, currentInventory - item.quantity); // Prevent negative inventory
+                        await set(variantInventoryRef, newInventory);
+                    }
+                }
             }
         } catch (error) {
-            console.error("Error adding order to furniture:", error);
+            console.error("Error adding order to furniture or updating inventory:", error);
         }
 
         try {

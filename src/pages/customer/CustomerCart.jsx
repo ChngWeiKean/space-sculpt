@@ -174,6 +174,19 @@ function CustomerCart() {
     const handleIncrement = async (rowData) => {
         const updatedQuantity = rowData.quantity + 1;
         rowData.quantity = updatedQuantity;
+
+        if (updatedQuantity > rowData.inventory) {
+            toast({
+                title: "Out of Stock",
+                description: "You have reached the maximum quantity available for this item.",
+                status: "error",
+                position: "top",
+                duration: 5000,
+                isClosable: true,
+            });
+            return;
+        }
+
         await updateCart(rowData.id, user.uid, updatedQuantity, rowData.cartId);
     };
     
