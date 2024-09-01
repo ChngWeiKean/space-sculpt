@@ -3,7 +3,7 @@ import {
     Flex,
     Box,
     Button,
-    Avatar,
+    Image,
     Divider,
     Input,
     InputGroup,
@@ -195,19 +195,29 @@ function CategoryDetails() {
 
     const nameBodyTemplate = (rowData) => {
         const variant = rowData?.variants ? Object.values(rowData.variants)[0] : null;
-
+    
         return (
-            <Flex w="full" direction="row" alignItems="center" gap={4}>
-                <Avatar size="md" name={rowData?.name} src={variant?.image}/>
+            <Flex w="full" direction="row" alignItems="center" gap={3}>
+                <Image
+                    boxSize="50px" 
+                    src={variant?.image}
+                    alt={rowData?.name}
+                    objectFit="contain" 
+                />
                 <Text>{rowData?.name}</Text>
             </Flex>
         );
     };
-
+    
     const typeBodyTemplate = (rowData) => {
         return (
-            <Flex w="full" direction="row" alignItems="center" gap={4}>
-                <Avatar size="md" name={rowData.type} src={rowData.subcategoryImage}/>
+            <Flex w="full" direction="row" alignItems="center" gap={3}>
+                <Image
+                    boxSize="50px" 
+                    src={rowData.subcategoryImage}
+                    alt={rowData.type}
+                    objectFit="contain" 
+                />
                 <Text>{rowData.type}</Text>
             </Flex>
         );

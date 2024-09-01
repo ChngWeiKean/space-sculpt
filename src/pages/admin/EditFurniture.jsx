@@ -250,6 +250,18 @@ function EditFurniture() {
             renderer.setSize(containerRef.current.offsetWidth, containerRef.current.offsetHeight);
             containerRef.current.appendChild(renderer.domElement);
     
+            // Add lighting to the scene
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // soft white light
+            scene.add(ambientLight);
+    
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // strong white light
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+    
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5); // softer white light from the opposite side
+            directionalLight2.position.set(-5, -5, -5);
+            scene.add(directionalLight2);
+    
             let loader = new GLTFLoader();
     
             loader.load(
@@ -273,55 +285,47 @@ function EditFurniture() {
                 renderer.render(scene, camera);
             };
             animate();
-
-            function sceneTraverse (obj, fn) {
-                if (!obj) return
     
-                    fn(obj)
-    
+            function sceneTraverse(obj, fn) {
+                if (!obj) return;
+                fn(obj);
                 if (obj.children && obj.children.length > 0) {
                     obj.children.forEach(o => {
-                        sceneTraverse(o, fn)
-                    })
+                        sceneTraverse(o, fn);
+                    });
                 }
             }
     
-            function dispose (e) {
-                // dispose geometries and materials in scene
+            function dispose() {
+                // Dispose of geometries and materials in the scene
                 sceneTraverse(scene, o => {
-    
                     if (o.geometry) {
-                        o.geometry.dispose()					                 
+                        o.geometry.dispose();
                     }
-    
                     if (o.material) {
-                        if (o.material.length) {
-                            for (let i = 0; i < o.material.length; ++i) {
-                                o.material[i].dispose()							
-                            }
-                        }
-                        else {
-                            o.material.dispose()						
+                        if (Array.isArray(o.material)) {
+                            o.material.forEach(mat => mat.dispose());
+                        } else {
+                            o.material.dispose();
                         }
                     }
-                })	
-                renderer && renderer.renderLists.dispose()
-                renderer && renderer.dispose() 
+                });
+                renderer && renderer.renderLists.dispose();
+                renderer && renderer.dispose();
                 controls.dispose();
-                renderer.domElement.parentElement.removeChild(renderer.domElement)			
-                scene = null
-                camera = null
-                renderer = null  
+                renderer.domElement.parentElement.removeChild(renderer.domElement);
+                scene = null;
+                camera = null;
+                renderer = null;
             }
-
+    
             return () => {
-                if  (requestAnimationId) {
+                if (requestAnimationId) {
                     cancelAnimationFrame(requestAnimationId);
                 }
                 requestAnimationId = null;
                 dispose();
             };
-            
         }, [model]);
     
         return (
@@ -341,7 +345,7 @@ function EditFurniture() {
                 )}
             </Box>
         );
-    };
+    };    
     
     useEffect(() => {
         const furnitureRef = ref(db, `furniture/${id}`);

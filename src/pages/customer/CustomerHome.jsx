@@ -220,7 +220,6 @@ function CustomerHome() {
                         <Button colorScheme="yellow" variant="solid" rightIcon={<GoArrowRight />} _focus={{ outline: "none" }} as="a" onClick={() => smoothScrollTo('trending-products')}>
                             <Text fontSize="lg" fontWeight="600" color="black">Shop Now</Text>
                         </Button>
-                        <Text fontSize="md" color="gray.400" fontWeight="500">Used by 100,00 people globally.</Text>
                     </Flex>
                 </Flex>
             </Flex>
