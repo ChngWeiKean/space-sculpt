@@ -446,6 +446,9 @@ function EditFurniture() {
             isDeleted: variant.isDeleted
         }));
 
+        console.log(furnitureData);
+        console.log(furnitureVariants);
+
         if (furnitureData.height < 0 || furnitureData.width < 0 || furnitureData.length < 0 || furnitureData.price < 0 || furnitureData.weight < 0 || furnitureData.cost < 0) {
             toast({
                 title: "Error creating furniture",
@@ -488,7 +491,7 @@ function EditFurniture() {
         }
 
         for (let i = 0; i < furnitureVariants.length; i++) {
-            if (furnitureVariants[i].color === '' || furnitureVariants[i].inventory === 0 || furnitureVariants[i].image === '' || furnitureVariants[i].model === '') {
+            if (furnitureVariants[i].color === '' || furnitureVariants[i].image === '' || furnitureVariants[i].model === '') {
                 toast({
                     title: "Error creating furniture",
                     description: "Please make sure that all variant fields are filled",

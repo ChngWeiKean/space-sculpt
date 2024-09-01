@@ -343,10 +343,15 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
                     });
                 }
 
-                const imageUrl = variant.image;
-                const modelUrl = variant.model;
+                const imageUrl = variantSnapshot.val().image;
+                const modelUrl = variantSnapshot.val().model;
 
-                if (variant?.image !== imageUrl) {
+                console.log("Image URL", imageUrl);
+                console.log("Image", image);
+                console.log("Model URL", modelUrl);
+                console.log("Model", model);
+
+                if (image !== imageUrl) {
                     const imageRef = sRef(storage, `furniture/${id}/variants/${variant.id}/image`);
                     await uploadBytes(imageRef, image);
                     const imageUrl = await getDownloadURL(imageRef);
@@ -355,7 +360,7 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
                     });
                 }
 
-                if (variant?.model !== modelUrl) {
+                if (model !== modelUrl) {
                     const modelRef = sRef(storage, `furniture/${id}/variants/${variant.id}/model`);
                     await uploadBytes(modelRef, model);
                     const modelUrl = await getDownloadURL(modelRef);
