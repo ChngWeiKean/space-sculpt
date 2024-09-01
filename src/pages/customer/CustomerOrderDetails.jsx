@@ -473,7 +473,7 @@ function CustomerOrderDetails() {
                                 Order Completed
                             </Button>
                             {
-                                !order.completion_status?.Resolved || !order.completion_status?.Resolved && order.completion_status.OnHold && (
+                                !order.completion_status?.Resolved && order.completion_status.Arrived && (
                                     <Button
                                         w="15rem"
                                         colorScheme="red"
