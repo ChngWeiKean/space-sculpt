@@ -477,7 +477,8 @@ export const placeOrder = async (data) => {
         voucher,
         total,
         shipping_date,
-        shipping_time
+        shipping_time,
+        remarks,
     } = data;
     
     try {
@@ -519,6 +520,7 @@ export const placeOrder = async (data) => {
             total: total,
             shipping_date: shipping_date,
             shipping_time: shipping_time,
+            remarks: remarks,
             completion_status: {
                 Pending: new Date().toISOString(),
                 ReadyForShipping: null,

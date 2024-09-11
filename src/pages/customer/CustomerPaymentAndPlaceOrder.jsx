@@ -178,10 +178,26 @@ function CustomerPaymentAndPlaceOrder() {
         );
     };
 
+    const calculateMinDate = (offset) => {
+        if (settings) {
+            console.log(offset);
+            // Get today's date
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Add the offset in days
+            const deliveryDate = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
+        
+            // Format the date as yyyy-mm-dd for the min attribute
+            return deliveryDate.toISOString().split("T")[0];            
+        }
+    };
+
     const placeNewOrder = async () => {
         // validate shipping date and time
         const shipping_date = watch("shipping_date");
         const shipping_time = watch("shipping_time");
+        const remarks = watch("remarks");
         if (!shipping_date || !shipping_time) {
             toast({
                 title: "Please fill in the shipping date and time",
@@ -233,6 +249,7 @@ function CustomerPaymentAndPlaceOrder() {
             total: order.total,
             shipping_date: shipping_date,
             shipping_time: shipping_time,
+            remarks: remarks,
         };
         console.log(data);
         
@@ -245,7 +262,7 @@ function CustomerPaymentAndPlaceOrder() {
                 duration: 3000,
                 isClosable: true,
             });
-            // window.location.href = "/";
+            window.location.href = "/";
         } catch (error) {
             console.error(error);
             toast({
@@ -363,7 +380,27 @@ function CustomerPaymentAndPlaceOrder() {
                                         </Flex>
                                     </Flex>      
                                     <Flex w="full" direction="column" gap={2}>
-                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">3. Shipping Date & Time</Text>
+                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">3. Remarks (Optional)</Text>
+                                        <Flex w="full" direction="row" gap={4}>
+                                            <FormControl id="remarks">
+                                                <Textarea 
+                                                    variant="outline"
+                                                    rounded="md"
+                                                    borderWidth="1px"
+                                                    borderColor="gray.300"
+                                                    color="gray.900"
+                                                    size="md"
+                                                    focusBorderColor="blue.500"
+                                                    w="full"
+                                                    p={2.5}
+                                                />
+                                            </FormControl>
+                                        </Flex>
+                                    </Flex>                              
+                                </Flex>
+                                <Flex w="full" direction="row" gap={5}>
+                                    <Flex w="full" direction="column" gap={2}>
+                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">4. Shipping Date & Time</Text>
                                         <Flex w="full" direction="row" gap={4}>
                                             <FormControl id="shipping_date">
                                                 <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Shipping Date</FormLabel>
@@ -377,6 +414,7 @@ function CustomerPaymentAndPlaceOrder() {
                                                         })
                                                     }
                                                     rounded="md"
+                                                    min={calculateMinDate(settings?.delivery_offset)}
                                                     borderWidth="1px"
                                                     borderColor="gray.300"
                                                     color="gray.900"
@@ -411,12 +449,9 @@ function CustomerPaymentAndPlaceOrder() {
                                                 </Select>
                                             </FormControl>
                                         </Flex>
-                                    </Flex>                              
-                                </Flex>
-
-                                <Flex w="full" direction="row">
+                                    </Flex>    
                                     <Flex w="full" direction="column">
-                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">4. Vouchers</Text>
+                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">5. Vouchers</Text>
                                         <Flex w="full" h={order.voucher ? "13rem" : "3rem"} direction="row">
                                             {
                                                 order.voucher ? (
@@ -550,7 +585,7 @@ function CustomerPaymentAndPlaceOrder() {
                                         </Flex>
                                     </Flex>    
                                     <Flex w="full" direction="column">
-                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">5. Payment Method</Text>
+                                        <Text fontSize="lg" fontWeight="600" color="gray.600" letterSpacing="wide">6. Payment Method</Text>
                                         <Flex w="full" h="13rem" direction="row" gap={5}>
                                             <Flex 
                                                 w="full" 
