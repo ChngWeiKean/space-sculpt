@@ -680,6 +680,20 @@ function LogisticsOrderDetails() {
                                 </FormControl>
                             </Flex>
                         </Flex>
+                        <Flex w="full" direction="row" gap={3} px={5}>
+                            <FormControl>
+                                <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Remarks</FormLabel>
+                                <Textarea
+                                    variant="outline"
+                                    defaultValue={order?.remarks}
+                                    size="md"
+                                    focusBorderColor="blue.500"
+                                    w="full"
+                                    isReadOnly
+                                    p={2.5}
+                                />
+                            </FormControl>
+                        </Flex>
                     </Flex>
                 </Flex>
                 <Flex w="20%" direction="column" gap={5}>
