@@ -29,14 +29,12 @@ import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-const FurnitureCategoryDoughnutChart = memo(() => {
-    console.log('FurnitureCategoryDoughnutChart');
-
+const FurnitureCategoryDoughnutChart = memo((data) => {
     const chartData = {
-        labels: ['Sofa', 'Table', 'Chair', 'Bed', 'Cabinet', 'Shelf'],
+        labels: Object.keys(data),
         datasets: [
             {
-                data: [300, 50, 100, 40, 120, 80],
+                data: Object.values(data),
                 backgroundColor: [
                     '#FF6384',
                     '#36A2EB',
@@ -70,19 +68,17 @@ const FurnitureCategoryDoughnutChart = memo(() => {
     return <DoughnutChart data={chartData} options={chartOptions} />;
 });
 
-const MonthlyRevenueBarChart = memo(() => {
-    console.log('MonthlyRevenueBarChart');
-
+const MonthlyProfitBarChart = memo((data) => {
     const chartData = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        labels: Object.keys(data),
         datasets: [
             {
-                label: 'Revenue',
+                label: 'Profit',
                 barPercentage: 0.5,
                 barThickness: 24,
                 maxBarThickness: 48,
                 minBarLength: 2,
-                data: [6000, 7263, 10222, 3834, 1202, 485, 9373, 8483, 5844, 5838, 737, 4884],
+                data: Object.values(data),
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.2)',
                     'rgba(54, 162, 235, 0.2)',
@@ -134,7 +130,24 @@ function AdminDashboard() {
     const [ topFurniture, setTopFurniture ] = useState([]);
     const [ userCount, setUserCount ] = useState(0);
     const [ furnitureCount, setFurnitureCount ] = useState(0);
+    const [ categoriesSold, setCategoriesSold ] = useState([]);
+    const [ subcategoryIds, setSubcategoryIds ] = useState([]);
     const [ orderCount, setOrderCount ] = useState(0);
+    const [ profitByMonth, setProfitByMonth ] = useState([
+        { month: 'January', profit: 0 },
+        { month: 'February', profit: 0 },
+        { month: 'March', profit: 0 },
+        { month: 'April', profit: 0 },
+        { month: 'May', profit: 0 },
+        { month: 'June', profit: 0 },
+        { month: 'July', profit: 0 },
+        { month: 'August', profit: 0 },
+        { month: 'September', profit: 0 },
+        { month: 'October', profit: 0 },
+        { month: 'November', profit: 0 },
+        { month: 'December', profit: 0 },
+    ]);
+    const [ profit, setProfit ] = useState(0);
     const [ searchQuery, setSearchQuery ] = useState('');
 
     const settings = {
@@ -150,13 +163,18 @@ function AdminDashboard() {
         const categoryRef = ref(db, 'categories');
         onValue(categoryRef, (snapshot) => {
             const categories = [];
+            let subcategories = [];
             snapshot.forEach((childSnapshot) => {
                 const data = {
                 id: childSnapshot.key,
                     ...childSnapshot.val(),
                 };
                 categories.push(data);
+                for (const subcategory of data.subcategories) {
+                    subcategories.push(subcategory);
+                }
             });
+            setSubcategoryIds(subcategories);
             setCategories(categories);
         });
 
@@ -200,7 +218,21 @@ function AdminDashboard() {
         const fetchOrdersWithUserDetails = async () => {
             const orderRef = ref(db, 'orders');
             onValue(orderRef, async (snapshot) => {
-                const orders = [];
+                let profitByMonths = {
+                    January: 0,
+                    February: 0,
+                    March: 0,
+                    April: 0,
+                    May: 0,
+                    June: 0,
+                    July: 0,
+                    August: 0,
+                    September: 0,
+                    October: 0,
+                    November: 0,
+                    December: 0,
+                };
+                let profit = 0;
                 let count = 0;
     
                 const fetchUserDetails = async (userId) => {
@@ -225,6 +257,19 @@ function AdminDashboard() {
                         hour12: true
                     }).replace(',', '');
                     data.id = childSnapshot.key;
+                    // Get profit by month
+                    const month = new Date(data.ordered_on).toLocaleString('en-GB', { month: 'long' });
+                    // Add the total revenue to the monthly profit after deducting the total cost of all items (including their quantity)
+                    if (profitByMonths[month]) {
+                        // Add the total revenue to the profit for this month after subtracting the total cost (cost * quantity)
+                        profitByMonths[month] += (Number(data.total) - data.items.reduce((sum, item) => sum + (Number(item.cost) * Number(item.quantity)), 0));
+                    } else {
+                        // Initialize profit for the month
+                        profitByMonths[month] = (Number(data.total) - data.items.reduce((sum, item) => sum + (Number(item.cost) * Number(item.quantity)), 0));
+                    }
+                    
+                    // Update the overall profit after accounting for the item costs and quantities
+                    profit += (Number(data.total) - data.items.reduce((sum, item) => sum + (Number(item.cost) * Number(item.quantity)), 0));
                     count++;
     
                     const orderPromise = fetchUserDetails(data.user_id).then(userData => {
@@ -240,12 +285,59 @@ function AdminDashboard() {
                 ordersWithUserDetails.sort((a, b) => new Date(b.ordered_on) - new Date(a.ordered_on));
                 console.log(ordersWithUserDetails);
                 setOrderCount(count);
+                setProfit(profit);
+                setProfitByMonth(profitByMonths);
                 setOrders(ordersWithUserDetails);
             });
         };
     
         fetchOrdersWithUserDetails();
     }, []);
+
+    useEffect(() => {
+        const fetchFurnitureSoldByCategory = async () => {
+            const categorySoldCount = {};
+    
+            for (const category of categories) {
+                categorySoldCount[category.name] = 0;
+    
+                for (const subcategoryId of category.subcategories) {
+                    const subcategoryRef = ref(db, `subcategories/${subcategoryId}`);
+                    const subcategorySnapshot = await get(subcategoryRef);
+    
+                    if (subcategorySnapshot.exists()) {
+                        const subcategoryData = subcategorySnapshot.val();
+                        const furnitureIds = subcategoryData.furniture || [];
+    
+                        for (const furnitureId of furnitureIds) {
+                            const furnitureRef = ref(db, `furniture/${furnitureId}`);
+                            const furnitureSnapshot = await get(furnitureRef);
+    
+                            if (furnitureSnapshot.exists()) {
+                                const furnitureData = furnitureSnapshot.val();
+                                const orderLength = furnitureData.orders
+                                    ? furnitureData.orders.length
+                                    : 0;
+                                
+                                // Get the total number of items sold for this category
+                                let quantity = 0;
+                                for (const order of furnitureData.orders) {
+                                    quantity += order.quantity;
+                                }
+
+                                categorySoldCount[category.name] += quantity;
+                            }
+                        }
+                    }
+                }
+            }
+    
+            console.log("Furniture sold by category:", categorySoldCount);
+            setCategoriesSold(categorySoldCount);
+        };
+    
+        fetchFurnitureSoldByCategory();
+    }, [categories, subcategoryIds]);
 
     useEffect(() => {
         if (furniture) {
@@ -402,10 +494,10 @@ function AdminDashboard() {
                 <Flex w="70%" direction="column" gap={6}>
                     <Flex w="full" bg='white' boxShadow='md' direction="column" gap={2}>
                         <Text fontSize='md' fontWeight='semibold' letterSpacing='wide' mt={3} mx={3} textAlign='center'>
-                            Monthly Revenue (RM)
+                            Monthly Profit (RM)
                         </Text>
                         <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
-                        <MonthlyRevenueBarChart />                        
+                        <MonthlyProfitBarChart {...profitByMonth} />                        
                     </Flex>
                     <Flex w="full" direction="column">
                         <Flex w="full" direction="row" justifyContent="space-between">
@@ -601,9 +693,9 @@ function AdminDashboard() {
                                     <GiMoneyStack size={45} color='#d69511'/>
                                     <Box ml={3} justifyContent='center'>
                                         <Text fontWeight='medium' fontSize='sm' color='gray.600'>
-                                            Total Revenue
+                                            Total Profit
                                         </Text>            
-                                        <Text fontWeight='semibold'>RM 100000</Text>                                
+                                        <Text fontWeight='semibold'>RM {profit.toFixed(2) || 0}</Text>                                
                                     </Box>
                                 </Flex>
                             </Box>
@@ -624,7 +716,7 @@ function AdminDashboard() {
                                 Furniture Categories Sold
                             </Text>
                             <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
-                            <FurnitureCategoryDoughnutChart />                        
+                            <FurnitureCategoryDoughnutChart {...categoriesSold} />                        
                         </Flex>
                     </Flex>
 

@@ -50,6 +50,7 @@ function CategoryDetails() {
     const [inventory, setInventory] = useState(0);
     const [furnitureSales, setFurnitureSales] = useState(0);
     const [furnitureRevenue, setFurnitureRevenue] = useState(0);
+    const [furnitureProfit, setFurnitureProfit] = useState(0);
 
     useEffect(() => {
         const categoryRef = ref(db, `categories/${id}`);
@@ -93,6 +94,7 @@ function CategoryDetails() {
             let totalInventory = 0;
             let totalSales = 0;
             let totalRevenue = 0;
+            let totalProfit = 0;
             snapshot.forEach((furnitureSnapshot) => {
                 const furnitureData = furnitureSnapshot.val();
                 if (furnitureData.subcategory && subcategories.some(subcategory => subcategory.id === furnitureData.subcategory)) {
@@ -105,7 +107,6 @@ function CategoryDetails() {
                         subcategoryImage: subcategoryImage,
                         ...furnitureData
                     };
-                    furniture.push(furnitureItem);
                     if (furnitureData.variants) {
                         Object.keys(furnitureData.variants).forEach(variantId => {
                             const variant = furnitureData.variants[variantId];
@@ -114,19 +115,26 @@ function CategoryDetails() {
                     }
                     if (furnitureData.orders) {
                         let totalQuantitySold = 0;
+                        let profitForEachFurniture = 0;
                         Object.values(furnitureData.orders).forEach(order => {
                             totalQuantitySold += order.quantity;
+                            profitForEachFurniture += (order.quantity * (furnitureData.price - (furnitureData.price * furnitureData.discount / 100)) - order.quantity * Number(furnitureData.cost));
                         });
                         furnitureItem.quantity_sold = totalQuantitySold;
+                        furnitureItem.profit = profitForEachFurniture;
                         totalSales += totalQuantitySold;
                         totalRevenue += totalQuantitySold * furnitureData.price;
+                        // find profit by deducting cost and discounted price and multiply by quantity sold
+                        totalProfit += (totalQuantitySold * (furnitureData.price - (furnitureData.price * furnitureData.discount / 100)) - totalQuantitySold * Number(furnitureData.cost));
                     }
+                    furniture.push(furnitureItem);
                 }
             });
             setFurniture(furniture);
             setInventory(totalInventory);
             setFurnitureSales(totalSales);
             setFurnitureRevenue(totalRevenue);
+            setFurnitureProfit(totalProfit);
             console.log(furniture);
         });
     }, [furnitureIds, subcategories]);
@@ -239,6 +247,7 @@ function CategoryDetails() {
                 <Flex w="full" direction="column">
                     <Text>Sold: {rowData.quantity_sold || 0}</Text>
                     <Text>Revenue: RM {rowData.quantity_sold * rowData.price || 0}</Text>
+                    <Text>Profit: RM {(rowData.profit).toFixed(2) || 0}</Text>
                 </Flex>
             </Flex>
         );
@@ -656,6 +665,15 @@ function CategoryDetails() {
                             <Box ml={4}>
                                 <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>Total Revenue</Text>
                                 <Text fontSize='md'>RM {furnitureRevenue}</Text>                                
+                            </Box>
+                        </Flex>
+                    </Box>
+                    <Box bg="white" boxShadow="md" p={4}>
+                        <Flex justifyContent='center' alignItems='center'>
+                            <GiMoneyStack color='#d69511' size='40'/>
+                            <Box ml={4}>
+                                <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>Total Profit</Text>
+                                <Text fontSize='md'>RM {furnitureProfit.toFixed(2)}</Text>                                
                             </Box>
                         </Flex>
                     </Box>
