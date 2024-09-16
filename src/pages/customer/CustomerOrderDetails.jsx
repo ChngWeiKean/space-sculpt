@@ -714,7 +714,7 @@ function CustomerOrderDetails() {
                             )}
                         </Flex>
                         <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/> 
-                        <Flex w="full" direction="row" gap={3} px={5} pb={3}>
+                        <Flex w="full" direction="row" gap={3} px={5}>
                             <Flex w="full" direction="column" gap={3}>
                                 <FormControl>
                                     <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Order ID</FormLabel>
@@ -835,7 +835,7 @@ function CustomerOrderDetails() {
                                 </FormControl>
                             </Flex>
                         </Flex>
-                        <Flex w="full" direction="row" gap={3} px={5}>
+                        <Flex w="full" direction="row" gap={3} px={5} pb={3}>
                             <FormControl>
                                 <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Remarks</FormLabel>
                                 <Textarea

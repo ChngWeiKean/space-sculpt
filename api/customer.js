@@ -726,3 +726,59 @@ export const updateShipping = async (order_id, data) => {
         throw error;
     }
 }
+
+export const submitReview = async (data) => {
+    const { orderId, itemId, rating, review } = data;
+    try {
+        const orderRef = ref(db, `orders/${orderId}`);
+        const orderSnapshot = await get(orderRef);
+        const orderData = orderSnapshot.val();
+
+        if (!orderData) {
+            throw new Error("Order not found");
+        }
+
+        const { items } = orderData;
+        const item = items.find(item => item.id === itemId);
+        item.reviewed = true;
+        await update(orderRef, {
+            items: items
+        });
+
+        if (!item) {
+            throw new Error("Item not found in order");
+        }
+
+        const userRef = ref(db, `users/${orderData.user_id}`);
+        const userSnapshot = await get(userRef);
+        const userData = userSnapshot.val();
+
+        const reviewRef = ref(db, `furniture/${itemId}/reviews`);
+        const newReviewRef = push(reviewRef);
+        await set(newReviewRef, {
+            order_id: orderId,
+            user: {
+                id: orderData.user_id,
+                name: userData.name,
+                profile_picture: userData.profile_picture
+            },
+            rating: rating,
+            review: review,
+            created_on: new Date().toISOString()
+        });
+
+        const userReviewRef = ref(db, `users/${orderData.user_id}/reviews`);
+        const userReviewSnapshot = await get(userReviewRef);
+        let userReviews = [];
+        if (userReviewSnapshot.exists()) {
+            userReviews = userReviewSnapshot.val();
+        }
+
+        userReviews.push(newReviewRef.key);
+        await set(userReviewRef, userReviews);
+
+        return { success: true };
+    } catch (error) {
+        throw error;
+    }
+}

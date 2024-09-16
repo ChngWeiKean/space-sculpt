@@ -16,9 +16,12 @@ import {
     Spinner,
     Badge,
     Tooltip,
+    Avatar,
+    Textarea,
+    IconButton,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect } from "react";
-import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack } from "react-icons/io";
+import { IoIosHeart, IoIosHeartEmpty, IoMdArrowRoundBack, IoMdSend } from "react-icons/io";
 import { IoCartOutline } from "react-icons/io5";
 import { CiWarning } from "react-icons/ci";
 import { GoSmiley } from "react-icons/go";
@@ -42,6 +45,7 @@ function CustomerFurnitureDetails() {
     const [subcategory, setSubcategory] = useState(null);
     const [cart, setCart] = useState([]);
     const [displayMode, setDisplayMode] = useState('image');
+    const [rating, setRating] = useState(0);
     const { isOpen, onOpen, onClose } = useDisclosure()
 
     const handleImageClick = () => {
@@ -542,8 +546,42 @@ function CustomerFurnitureDetails() {
                 <Divider w={"full"} border={"1px"} orientation="horizontal"  borderColor="gray.300"/>  
             </Flex>
             
-            <Flex w="full" direction="row" gap={4}>
-
+            <Flex w="full" direction="column" alignItems="center" justifyContent="center" pb={7}>
+                <Flex w="60%" direction="column" gap={4}>
+                    <Flex w="full" direction="column" gap={2}>
+                        {
+                            furniture?.reviews && Object.keys(furniture?.reviews).map((review, index) => (
+                                <Flex w="full" direction="column" gap={2} key={index}>
+                                    <Flex w="full" direction="row" justifyContent="space-between">
+                                        <Flex gap={4}>
+                                            <Avatar name={furniture?.reviews[review].user.name} src={furniture?.reviews[review].user.profile_picture} size="md" />
+                                            <Flex direction="row" alignItems='center'>
+                                                <Text fontSize="md" fontWeight="600" color="gray.600" mr={3}>{furniture?.reviews[review].user.name}</Text>
+                                                {
+                                                    Array(5)
+                                                    .fill('')
+                                                    .map((_, i) => (
+                                                        <FaStar
+                                                            size={"20px"}
+                                                            key={i}
+                                                            color={i < furniture?.reviews[review].rating ? '#d69511' : 'gray'}
+                                                        />
+                                                    ))
+                                                }
+                                            </Flex>
+                                        </Flex>                           
+                                    </Flex>
+                                    <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">{furniture?.reviews[review].review}</Text>
+                                </Flex>
+                            ))
+                        }
+                    </Flex>
+                </Flex>
+                {
+                    !furniture?.reviews && (
+                        <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide">No reviews yet.</Text>
+                    )
+                }                
             </Flex>
         </Flex>
     )
