@@ -9,6 +9,9 @@ import {
     Tab,
     TabPanel,
     TabIndicator,
+    Textarea,
+    IconButton,
+    useToast,
 } from "@chakra-ui/react";
 import {  useState, useEffect } from "react";
 import { TbTruckDelivery } from "react-icons/tb";
@@ -19,17 +22,23 @@ import { CiCreditCard2 } from "react-icons/ci";
 import { IoTimeOutline } from "react-icons/io5";
 import { NavLink } from 'react-router-dom';
 import { useAuth } from "../../components/AuthCtx.jsx";
+import { FaStar } from "react-icons/fa6";
+import { IoMdSend } from "react-icons/io";
 import { db } from "../../../api/firebase";
 import { onValue, ref } from "firebase/database";
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { submitReview } from "../../../api/customer.js";
 
 function CustomerOrderHistory() {
     const { user } = useAuth();
     const [ pendingOrders, setPendingOrders ] = useState([]);
     const [ orderHistory, setOrderHistory ] = useState([]);
+    const [ toReviews, setToReviews ] = useState([]);
+    const [ reviews, setReviews ] = useState({});
     const [ reports, setReports ] = useState([]);
+    const [ratings, setRatings] = useState({});
 
     const settings = {
         dots: true,
@@ -40,11 +49,26 @@ function CustomerOrderHistory() {
         arrows: false
     };
 
+    const handleReviewChange = (itemIndex, value) => {
+        setReviews(prevReviews => ({
+            ...prevReviews,
+            [itemIndex]: value
+        }));
+    };
+
+    const handleRatingChange = (itemIndex, ratingValue) => {
+        setRatings(prevRatings => ({
+            ...prevRatings,
+            [itemIndex]: ratingValue
+        }));
+    };
+
     useEffect(() => {
         if (user) {
             let orderIds = user.orders;
             let newPendingOrders = [];
             let newOrderHistory = [];
+            let newToReviews = [];
             let newReports = [];
             if (!orderIds) return;
             orderIds.forEach(orderId => {
@@ -69,6 +93,14 @@ function CustomerOrderHistory() {
                         } else {
                             newOrderHistory.push(order);
                             setOrderHistory([...newOrderHistory]);
+                            for (let i = 0; i < order.items.length; i++) {
+                                // Check if any item in the order has not been reviewed
+                                if (!order.items[i].reviewed) {
+                                    newToReviews.push(order);
+                                    setToReviews([...newToReviews]);
+                                    break;
+                                }
+                            }
                         }
                     }
                 });
@@ -84,6 +116,44 @@ function CustomerOrderHistory() {
         }
         return status;
     };    
+
+    const toast = useToast();
+
+    const submitRating = async (orderId, itemId, rating, review) => {
+        if (!rating) {
+            rating = 1;
+        } else if (!review) {
+            review = "";
+        }
+
+        const reviewData = {
+            orderId: orderId,
+            itemId: itemId,
+            rating: rating,
+            review: review
+        };
+
+        try {
+            await submitReview(reviewData);
+            toast({
+                title: "Review submitted successfully",
+                status: "success",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+            // Refresh the page
+            window.location.reload();
+        } catch (error) {
+            toast({
+                title: "Failed to submit review",
+                status: "error",
+                position: "top",
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+    }
     
     return (
         <Flex w="full" bg="#f4f4f4" direction="column" alignItems="center" p={3}>
@@ -92,6 +162,7 @@ function CustomerOrderHistory() {
                     <TabList>
                         <Tab style={{ outline: "none" }}>Pending Orders</Tab>
                         <Tab style={{ outline: "none" }}>Order History</Tab>
+                        <Tab style={{ outline: "none" }}>To Review</Tab>
                         <Tab style={{ outline: "none" }}>Reports</Tab>
                     </TabList>
                     <TabIndicator mt='-1.5px' height='2px' bg='blue.500' borderRadius='1px' />
@@ -327,6 +398,84 @@ function CustomerOrderHistory() {
                                             </Flex>                                            
                                         </NavLink>
                                     ))
+                                )}
+                            </Flex>
+                        </TabPanel>
+                        <TabPanel>
+                            <Flex w="full" direction="column">
+                                {toReviews.length === 0 ? (
+                                    <Flex w="full" direction="column" alignItems="center" gap={4}>
+                                        <Text fontSize="xl" fontWeight="700">No items to review</Text>
+                                        <Button colorScheme="blue" size="lg" as={NavLink} to={'/'}>Start Shopping</Button>
+                                    </Flex>
+                                ) : (
+                                    <Flex w="full" direction="column" justifyContent="center" gap={2}>
+                                        {
+                                            toReviews.map((order, index) => (
+                                                <Flex w="60%" direction="column" p={3} bg="white" boxShadow="lg" my={2} key={index}>
+                                                    <Text fontSize="lg" fontWeight="semibold" color="gray.700">Order ID: {order.order_id}</Text>
+                                                    {
+                                                        order.items.map((item, itemIndex) => (
+                                                            !item.reviewed && (
+                                                                <Flex key={itemIndex} w="full" direction="row" justifyContent="space-between" alignItems="center">
+                                                                    <Flex w="full" direction="row" gap={5} p={3}>
+                                                                        <img src={item.image} alt={item.color} style={{ width: "8rem", height: "8rem", objectFit: "contain", border:"none" }} />
+                                                                        <Flex w="full" direction="column" gap={2}>
+                                                                            <Flex w="full" direction="row" justifyContent="space-between" alignItems="center">
+                                                                                <Flex w="full" gap={2} alignItems="center">
+                                                                                    <Text fontSize="md" fontWeight="semibold" color="gray.500">{item.name}</Text> |
+                                                                                    <Text fontSize="md" fontWeight="semibold" color="blue.500">RM {item.price}</Text> |
+                                                                                    <Text fontSize="md" fontWeight="semibold" color="gray.500">{item.color}</Text> |
+                                                                                    {
+                                                                                        Array(5)
+                                                                                        .fill('')
+                                                                                        .map((_, i) => (
+                                                                                            <FaStar
+                                                                                                size={"20px"}
+                                                                                                key={i}
+                                                                                                color={i < (ratings[itemIndex] || 1) ? '#d69511' : 'gray'}
+                                                                                                onClick={() => handleRatingChange(itemIndex, i + 1)}
+                                                                                                style={{ cursor: 'pointer' }}
+                                                                                            />
+                                                                                        ))
+                                                                                    }                                                                                       
+                                                                                </Flex>
+                                                                                <IconButton
+                                                                                    colorScheme="blue"
+                                                                                    aria-label="Send"
+                                                                                    icon={<IoMdSend />}
+                                                                                    style={{ outline: "none" }}
+                                                                                    onClick={() => submitRating(order.id, item.id, ratings[itemIndex], reviews[itemIndex])}
+                                                                                />  
+                                                                            </Flex>
+                                                                            <Textarea
+                                                                                placeholder="Write a review..."
+                                                                                value={reviews[itemIndex] || ''}
+                                                                                onChange={(e) => handleReviewChange(itemIndex, e.target.value)}
+                                                                                size="sm"
+                                                                                variant="unstyled"
+                                                                                padding={3}
+                                                                                borderRadius="md"
+                                                                                rounded="md"
+                                                                                borderWidth="1px"
+                                                                                borderColor="gray.300"
+                                                                                color="gray.900"
+                                                                                focusBorderColor="blue.500"
+                                                                                w="full"
+                                                                            />
+                                                                        </Flex>
+                                                                    </Flex>
+                                                                </Flex>
+                                                            )
+                                                        ))
+                                                    }
+                                                    <Flex w="full" direction="row" gap={3}>
+
+                                                    </Flex>
+                                                </Flex>
+                                            ))                                            
+                                        }
+                                    </Flex>
                                 )}
                             </Flex>
                         </TabPanel>
