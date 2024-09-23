@@ -41,6 +41,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import '../../../node_modules/primereact/resources/themes/lara-light-blue/theme.css';
 import { assignOrderToDriver, updateOrderStatus } from "../../../api/logistics.js";
+import { resolveReport } from "../../../api/admin.js";
 
 function LogisticsOrderDetails() {
     const { id } = useParams();
@@ -124,7 +125,7 @@ function LogisticsOrderDetails() {
     
         // If 'Resolved' exists, add it as a step before 'Completed'
         if (completionStatus.Resolved) {
-            steps.push({ title: 'Resolved', description: 'The order issue has been resolved' });
+            steps.push({ title: 'Resolved', description: 'The issue has been resolved' });
         }
     
         // If 'OnHold' exists, replace the 'Completed' step with 'On Hold'

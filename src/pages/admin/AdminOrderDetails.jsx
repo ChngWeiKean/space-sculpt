@@ -121,7 +121,7 @@ function AdminOrderDetails() {
     
         // If 'Resolved' exists, add it as a step before 'Completed'
         if (completionStatus.Resolved) {
-            steps.push({ title: 'Resolved', description: 'The order issue has been resolved' });
+            steps.push({ title: 'Resolved', description: 'The issue has been resolved' });
         }
     
         // If 'OnHold' exists, replace the 'Completed' step with 'On Hold'

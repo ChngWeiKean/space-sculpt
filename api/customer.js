@@ -741,9 +741,6 @@ export const submitReview = async (data) => {
         const { items } = orderData;
         const item = items.find(item => item.id === itemId);
         item.reviewed = true;
-        await update(orderRef, {
-            items: items
-        });
 
         if (!item) {
             throw new Error("Item not found in order");
@@ -752,6 +749,20 @@ export const submitReview = async (data) => {
         const userRef = ref(db, `users/${orderData.user_id}`);
         const userSnapshot = await get(userRef);
         const userData = userSnapshot.val();
+
+        item.review = {
+            user: {
+                id: orderData.user_id,
+                name: userData.name,
+                profile_picture: userData.profile_picture
+            },
+            rating: rating,
+            review: review,
+            created_on: new Date().toISOString()
+        }
+        await update(orderRef, {
+            items: items
+        });
 
         const reviewRef = ref(db, `furniture/${itemId}/reviews`);
         const newReviewRef = push(reviewRef);
