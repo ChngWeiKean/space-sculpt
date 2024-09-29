@@ -16,6 +16,7 @@ import { BiChevronDown } from "react-icons/bi";
 import { logout } from "../../../api/auth.js";
 import { useAuth } from "../AuthCtx.jsx";
 import { RiCoupon2Line } from "react-icons/ri";
+import { BiCustomize } from "react-icons/bi";
 import { IoHomeOutline, IoCartOutline, IoDocumentTextOutline } from "react-icons/io5";
 
 const CustomerNavbar = () => {
@@ -77,6 +78,11 @@ const CustomerNavbar = () => {
 				<Link as={NavLink} color="gray.500" to="/vouchers" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
 					<Flex alignItems="center" gap={1}>
 						<RiCoupon2Line/> Vouchers
+					</Flex>
+				</Link>
+				<Link as={NavLink} color="gray.500" to="/customize-your-space" marginRight={6} _activeLink={{ color: "#d69511" }} _focus={{ boxShadow: "none" }} _hover={{  textDecoration: "none" }}>
+					<Flex alignItems="center" gap={1}>
+						<BiCustomize/> Customize Your Space
 					</Flex>
 				</Link>
 				<Menu marginRight={6}>

@@ -45,6 +45,8 @@ import AdminOrderHistory from './pages/admin/AdminOrderHistory.jsx'
 import AdminOrderDetails from './pages/admin/AdminOrderDetails.jsx'
 import CustomerVouchers from './pages/customer/CustomerVouchers.jsx'
 import ViewProfile from './pages/logistics/ViewProfile.jsx'
+import LayoutCustomization from './pages/customer/LayoutCustomization.jsx'
+import FloorPlanPersonalization from './pages/customer/FloorPlanPersonalization.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -80,6 +82,8 @@ const router = createBrowserRouter(
 				<Route path="orders" element={<CustomerOrderHistory/>}/>
 				<Route path="orders/:id" element={<CustomerOrderDetails/>}/>
 				<Route path="vouchers" element={<CustomerVouchers/>}/>
+				<Route path="customize-your-space" element={<LayoutCustomization/>}/>
+				<Route path="personalize-your-floorplan" element={<FloorPlanPersonalization/>}/>
 			</Route>
 			<Route element={<LogisticsLayout/>}>
 				<Route path="manage-orders" element={<LogisticsOrderHistory/>}/>

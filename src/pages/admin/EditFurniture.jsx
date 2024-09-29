@@ -89,7 +89,7 @@ function EditFurniture() {
     const [variants, setVariants] = useState([]);
 
     const handleAddVariant = () => {
-        setVariants([...variants, { color: '', inventory: 0, image: '', imageSrc: '', model: '', modelSrc: '', isDraggingImage: false, isDraggingModel: false }]);
+        setVariants([...variants, { color: '', inventory: 0, image: '', imageSrc: '', model: '', modelSrc: '', icon: '', iconSrc: '', isDraggingImage: false, isDraggingModel: false, isDraggingIcon: false }]);
     };
 
     const handleRemoveVariant = (indexToRemove) => {
@@ -161,6 +161,50 @@ function EditFurniture() {
         }
         const updatedVariant = [...variants];
         updatedVariant[index].isDraggingImage = false;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantIconInputChange = (index, event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                handleChangeVariant(index, 'iconSrc', reader.result);
+                handleChangeVariant(index, 'icon', file);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleVariantIconDragEnter = (index) => {
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingIcon = true;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantIconDragOver = (event) => {
+        event.preventDefault();
+    };
+
+    const handleVariantIconDragLeave = (index) => {
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingIcon = false;
+        setVariants(updatedVariant);
+    };
+
+    const handleVariantIconDrop = (index, event) => {
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                handleChangeVariant(index, 'iconSrc', reader.result);
+                handleChangeVariant(index, 'icon', file);
+            };
+            reader.readAsDataURL(file);
+        }
+        const updatedVariant = [...variants];
+        updatedVariant[index].isDraggingIcon = false;
         setVariants(updatedVariant);
     };
 
@@ -350,7 +394,18 @@ function EditFurniture() {
     useEffect(() => {
         const furnitureRef = ref(db, `furniture/${id}`);
         onValue(furnitureRef, (furnitureSnapshot) => {
-            setFurniture(furnitureSnapshot.val());
+            let ratings = 0;
+            if (furnitureSnapshot.val().reviews) {
+                ratings = Object.values(furnitureSnapshot.val().reviews).reduce((acc, review) => acc + review.rating, 0) / Object.values(furnitureSnapshot.val().reviews).length;
+            } else {
+                ratings = 0;
+            }
+            let data = {
+                id: furnitureSnapshot.key,
+                ratings: ratings,
+                ...furnitureSnapshot.val()
+            }
+            setFurniture(data);
             const variantsArray = Object.entries(furnitureSnapshot.val().variants).map(([key, value]) => ({
                 id: key,
                 isDeleted: value.deleted,
@@ -446,6 +501,7 @@ function EditFurniture() {
             color: variant.color,
             inventory: variant.inventory,
             image: variant.image,
+            icon: variant.icon,
             model: variant.model,
             isDeleted: variant.isDeleted
         }));
@@ -495,7 +551,7 @@ function EditFurniture() {
         }
 
         for (let i = 0; i < furnitureVariants.length; i++) {
-            if (furnitureVariants[i].color === '' || furnitureVariants[i].image === '' || furnitureVariants[i].model === '') {
+            if (furnitureVariants[i].color === '' || furnitureVariants[i].image === '' || furnitureVariants[i].model === '' || furnitureVariants[i].icon === '') {
                 toast({
                     title: "Error creating furniture",
                     description: "Please make sure that all variant fields are filled",
@@ -583,7 +639,7 @@ function EditFurniture() {
                                         ))
                                 }
                                 <Box as='span' ml='2' color='gray.600' fontSize='sm'>
-                                    {furniture?.ratings || 0} ratings
+                                    { furniture?.reviews ? Object.values(furniture?.reviews).length : 0 } ratings
                                 </Box>
                             </Flex>   
                             <Divider h={"2rem"} orientation="vertical" borderWidth="1px" borderColor="gray.300"/>    
@@ -1121,7 +1177,7 @@ function EditFurniture() {
                                                     </FormControl>   
                                                     <FormControl>
                                                         <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                                            Furniture Variant Image <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                            Variant Image <Text as="span" color="red.500" fontWeight="bold">*</Text>
                                                         </FormLabel>
                                                         <Box
                                                             onDragEnter = {() => handleVariantImageDragEnter(index)}
@@ -1201,7 +1257,7 @@ function EditFurniture() {
 
                                                     <FormControl>
                                                         <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
-                                                            Furniture Variant 3D Model
+                                                            Variant 3D Model
                                                         </FormLabel>
                                                         <Box
                                                                 onDragEnter = {() => handleVariantModelDragEnter(index)}
@@ -1251,6 +1307,59 @@ function EditFurniture() {
                                                             </Box>
                                                     </FormControl>                                                
                                                 </Flex>
+                                                <Flex w="full" direction="column" gap={6}>
+                                                    <FormControl>
+                                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                            Variant Icon Image
+                                                        </FormLabel>
+                                                        <Box
+                                                                onDragEnter = {() => handleVariantIconDragEnter(index)}
+                                                                onDragOver={handleVariantIconDragOver}
+                                                                onDragLeave={() => handleVariantIconDragLeave(index)}
+                                                                onDrop={(e) => handleVariantIconDrop(index, e)}
+                                                                rounded="lg"
+                                                                borderWidth="2px"
+                                                                border={"dashed"}
+                                                                borderColor={variant.isDraggingIcon ? "blue.500" : "gray.300"}
+                                                                p={4}
+                                                                textAlign="center"
+                                                                position={"relative"}
+                                                                cursor="pointer"
+                                                            >
+                                                                <Input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    opacity={0}
+                                                                    width="100%"
+                                                                    height="100%"
+                                                                    id="icon_image"
+                                                                    position="absolute"
+                                                                    top={0}
+                                                                    left={0}
+                                                                    zIndex={1}
+                                                                    cursor="pointer"
+                                                                    isRequired
+                                                                    onChange={(e) => handleVariantIconInputChange(index, e)}
+                                                                />
+                                                                <Flex direction="column" alignItems="center">
+                                                                    <BsFillCloudArrowDownFill
+                                                                        onDragEnter = {() => handleVariantIconDragEnter(index)}
+                                                                        onDragOver={handleVariantIconDragOver}
+                                                                        onDragLeave={() => handleVariantIconDragLeave(index)}
+                                                                        onDrop={(e) => handleVariantIconDrop(index, e)}
+                                                                        size={32}
+                                                                        color={variant.isDraggingIcon ? "blue" : "gray"}
+                                                                    />
+                                                                    <Text mb={2} fontSize="sm" fontWeight="semibold">
+                                                                        {variant.isDraggingIcon ? "Drop the file here" : "Drag & Drop or Click to upload"}
+                                                                    </Text>
+                                                                    <Text fontSize="xs" color="gray.500">
+                                                                    (SVG, PNG, JPG, or JPEG)
+                                                                    </Text>
+                                                                </Flex>
+                                                            </Box>
+                                                    </FormControl>       
+                                                </Flex>
                                                 <Box
                                                     w="full"
                                                     h="245px"
@@ -1276,6 +1385,31 @@ function EditFurniture() {
                                                         }}
                                                     />
                                                 </Box>      
+                                                <Box
+                                                    w="full"
+                                                    h="245px"
+                                                    id={`preview-icon-container-${index}`}
+                                                    bg={!variant?.icon && !variant?.iconSrc ? "gray.200" : "transparent"}
+                                                    rounded="lg"
+                                                    display="flex"
+                                                    flexDir="column"
+                                                    alignItems="center"
+                                                    justifyContent="center"
+                                                    mt={4}
+                                                    overflow="hidden" 
+                                                >
+                                                    <img
+                                                        id={`preview-icon-${index}`}
+                                                        src={variant?.iconSrc || variant?.icon || ""}
+                                                        alt={variant?.iconSrc || variant?.icon ? "Preview" : ""}
+                                                        display={variant?.iconSrc || variant?.icon ? "block" : "none"}
+                                                        style={{
+                                                            height: "100%", 
+                                                            objectFit: "contain", 
+                                                            objectPosition: "center" 
+                                                        }}
+                                                    />
+                                                </Box>  
                                                 <Box
                                                     w="full"
                                                     h="245px"

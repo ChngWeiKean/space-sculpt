@@ -65,6 +65,12 @@ function CustomerFurnitureDetails() {
             const firstVariantId = furnitureVariants.length > 0 ? Object.keys(snapshot.val().variants).find((key) => snapshot.val().variants[key].inventory > 0) : null;
             const firstVariantColor = furnitureVariants.length > 0 ? furnitureVariants.find((variant) => variant.inventory > 0).color : null;
             const firstVariantInventory = furnitureVariants.length > 0 ? furnitureVariants.find((variant) => variant.inventory > 0).inventory : null;
+            let ratings = 0;
+            if (snapshot.val().reviews) {
+                ratings = Object.values(snapshot.val().reviews).reduce((acc, review) => acc + review.rating, 0) / Object.values(snapshot.val().reviews).length;
+            } else {
+                ratings = 0;
+            }
             let data = {
                 id: snapshot.key,
                 mainImage: firstVariantImage,
@@ -72,6 +78,7 @@ function CustomerFurnitureDetails() {
                 model: firstVariantModel,
                 selectedColor: firstVariantColor,
                 inventory: firstVariantInventory,
+                ratings: ratings,
                 ...snapshot.val()
             }
             setFurniture(data);
@@ -439,7 +446,9 @@ function CustomerFurnitureDetails() {
                                     ))
                             }
                             <Box as='span' ml='2' color='gray.600' fontSize='md'>
-                                {furniture?.ratings || 0} ratings
+                                <Text fontSize="md" fontWeight="500" color="gray.500">
+                                    { furniture?.reviews ? Object.values(furniture?.reviews).length : 0 } ratings
+                                </Text>
                             </Box>
                         </Box>              
                         <Divider h="1rem" borderWidth="1px" variant="solid" orientation="vertical" borderColor="gray.500"/>

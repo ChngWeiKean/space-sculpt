@@ -247,14 +247,19 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
 
         const variantsRef = ref(db, `furniture/${newFurnitureRef.key}/variants`);
         const variantPromises = furnitureVariants.map(async (variant) => {
-            const { color, image, model, inventory } = variant;
+            const { color, image, icon, model, inventory } = variant;
             const variantRef = push(variantsRef);
             let variantImageUrl;
+            let variantIconUrl;
             let variantModelUrl;
 
             const imageRef = sRef(storage, `furniture/${newFurnitureRef.key}/variants/${variantRef.key}/image`);
             await uploadBytes(imageRef, image);
             variantImageUrl = await getDownloadURL(imageRef);
+
+            const iconRef = sRef(storage, `furniture/${newFurnitureRef.key}/variants/${variantRef.key}/icon`);
+            await uploadBytes(iconRef, icon);
+            variantIconUrl = await getDownloadURL(iconRef);
 
             const modelRef = sRef(storage, `furniture/${newFurnitureRef.key}/variants/${variantRef.key}/model`);
             await uploadBytes(modelRef, model);
@@ -263,6 +268,7 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
             await set(variantRef, {
                 color: color,
                 image: variantImageUrl,
+                icon: variantIconUrl,
                 model: variantModelUrl,
                 inventory: inventory
             });
@@ -329,7 +335,7 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
             if (variant?.id) {
                 const variantRef = ref(db, `furniture/${id}/variants/${variant.id}`);
                 const variantSnapshot = await get(variantRef);
-                const { color, image, model, inventory } = variant;
+                const { color, image, icon, model, inventory } = variant;
 
                 if (variantSnapshot.val().color !== color) {
                     await update(variantRef, {
@@ -343,11 +349,14 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
                     });
                 }
 
-                const imageUrl = variantSnapshot.val().image;
-                const modelUrl = variantSnapshot.val().model;
+                const imageUrl = variantSnapshot.val()?.image;
+                const iconUrl = variantSnapshot.val()?.icon;
+                const modelUrl = variantSnapshot.val()?.model;
 
                 console.log("Image URL", imageUrl);
                 console.log("Image", image);
+                console.log("Icon URL", iconUrl);
+                console.log("Icon", icon);
                 console.log("Model URL", modelUrl);
                 console.log("Model", model);
 
@@ -357,6 +366,15 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
                     const imageUrl = await getDownloadURL(imageRef);
                     await update(variantRef, {
                         image: imageUrl
+                    });
+                }
+
+                if (icon !== iconUrl) {
+                    const iconRef = sRef(storage, `furniture/${id}/variants/${variant.id}/icon`);
+                    await uploadBytes(iconRef, icon);
+                    const iconUrl = await getDownloadURL(iconRef);
+                    await update(variantRef, {
+                        icon: iconUrl
                     });
                 }
 
@@ -390,12 +408,16 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
                 const imageRef = sRef(storage, `furniture/${id}/variants/${variantRef.key}/image`);
                 await uploadBytes(imageRef, image);
                 const imageUrl = await getDownloadURL(imageRef);
+                const iconRef = sRef(storage, `furniture/${id}/variants/${variantRef.key}/icon`);
+                await uploadBytes(iconRef, image);
+                const iconUrl = await getDownloadURL(iconRef);
                 const modelRef = sRef(storage, `furniture/${id}/variants/${variantRef.key}/model`);
                 await uploadBytes(modelRef, model);
                 const modelUrl = await getDownloadURL(modelRef);
                 await set(variantRef, {
                     color: color,
                     image: imageUrl,
+                    icon: iconUrl,
                     model: modelUrl,
                     inventory: inventory
                 });

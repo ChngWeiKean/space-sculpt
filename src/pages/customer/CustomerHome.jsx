@@ -75,6 +75,16 @@ function CustomerHome() {
                     order_length = 0;
                 }
                 data.order_length = order_length;
+                data.ratings = 0;
+                if (childSnapshot.val().reviews) {
+                    data.ratings = Object.values(childSnapshot.val().reviews).reduce((acc, review) => acc + review.rating, 0) / Object.values(childSnapshot.val().reviews).length;
+                } else {
+                    data.ratings = 0;
+                }
+                const subcategoryRef = ref(db, `subcategories/${data.subcategory}`);
+                onValue(subcategoryRef, (snapshot) => {
+                    data.subcategoryName = snapshot.val().name;
+                });   
                 furniture.push(data);
             });
             setFurniture(furniture);
@@ -368,7 +378,7 @@ function CustomerHome() {
                                                     ))
                                             }
                                             <Box as='span' ml='2' color='gray.600' fontSize='sm'>
-                                                {furniture?.ratings || 0} ratings
+                                                { furniture?.reviews ? Object.values(furniture?.reviews).length : 0 } ratings
                                             </Box>
                                         </Box>              
                                         <Flex gap={2} alignItems="center" color='red' onClick={(e) => {e.preventDefault(); toggleLike(furniture?.id);}} transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }}>

@@ -108,12 +108,19 @@ function CustomerCategoryDetails() {
                             const firstVariantImage = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).image : null;
                             const firstVariantId = variants.length > 0 ? Object.keys(furnitureSnapshot.val().variants).find((variant) => furnitureSnapshot.val().variants[variant].inventory > 0) : null;
                             const firstVariantColor = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).color : null;
+                            let ratings = 0;
+                            if (furnitureSnapshot.val().reviews) {
+                                ratings = Object.values(furnitureSnapshot.val().reviews).reduce((acc, review) => acc + review.rating, 0) / Object.values(furnitureSnapshot.val().reviews).length;
+                            } else {
+                                ratings = 0;
+                            }
                             furniture.push({
                                 id: furnitureSnapshot.key,
                                 subcategoryName: subcategory,
                                 mainImage: firstVariantImage,
                                 selectedVariant: firstVariantId,
                                 selectedColor: firstVariantColor,
+                                ratings: ratings,
                                 ...furnitureSnapshot.val()
                             });
                             if (!materials.includes(furnitureSnapshot.val().material)) {
@@ -482,7 +489,7 @@ function CustomerCategoryDetails() {
                                             ))
                                     }
                                     <Box as='span' ml='2' color='gray.600' fontSize='sm'>
-                                        {furniture?.ratings || 0} ratings
+                                        { furniture?.reviews ? Object.values(furniture?.reviews).length : 0 } ratings
                                     </Box>
                                 </Box>              
                                 <Flex gap={2} alignItems="center" color='red' onClick={(e) => {e.preventDefault(); toggleLike(furniture?.id);}} transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }}>
