@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@chakra-ui/react": "^2.8.2",
+    "@dnd-kit/core": "^6.1.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@react-google-maps/api": "^2.19.3",
@@ -24,6 +25,8 @@
     "primereact": "^10.6.2",
     "react": "^18.2.0",
     "react-credit-cards-2": "^1.0.2",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.51.2",
     "react-icons": "^5.0.1",

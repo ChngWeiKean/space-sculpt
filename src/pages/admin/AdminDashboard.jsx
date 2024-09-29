@@ -199,7 +199,6 @@ function AdminDashboard() {
                     id: childSnapshot.key,
                     ...childSnapshot.val(),
                 };
-                // get the first variant image as the main image
                 const variants = Object.values(data.variants);
                 data.mainImage = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).image : null;
                 if (data.orders) {
@@ -208,6 +207,12 @@ function AdminDashboard() {
                     order_length = 0;
                 }
                 count++;
+                data.ratings = 0;
+                if (childSnapshot.val().reviews) {
+                    data.ratings = Object.values(childSnapshot.val().reviews).reduce((acc, review) => acc + review.rating, 0) / Object.values(childSnapshot.val().reviews).length;
+                } else {
+                    data.ratings = 0;
+                }
                 data.order_length = order_length;
                 furniture.push(data);
             });
@@ -602,7 +607,7 @@ function AdminDashboard() {
                                                         ))
                                                 }
                                                 <Box as='span' ml='2' color='gray.600' fontSize='sm'>
-                                                    {furniture?.ratings || 0} ratings
+                                                    { furniture?.reviews ? Object.values(furniture?.reviews).length : 0 } ratings
                                                 </Box>
                                             </Box>              
                                             <Flex gap={2} alignItems="center" color='red' onClick={(e) => {e.preventDefault(); toggleLike(furniture?.id);}} transition="transform 0.2s" _hover={{ transform: 'scale(1.2)' }}>
