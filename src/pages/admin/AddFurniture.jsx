@@ -357,6 +357,7 @@ function AddFurniture() {
         const furnitureVariants = variants.map((variant) => ({
             color: variant.color,
             inventory: variant.inventory,
+            icon: variant.icon,
             image: variant.image,
             model: variant.model,
         }));

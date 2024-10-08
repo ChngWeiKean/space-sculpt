@@ -6,14 +6,14 @@ import {
     Image, 
     FormControl, 
     FormLabel, 
-    Flex, 
-    Heading, 
+    Flex,
     Text, 
     Icon, 
-    HStack 
+    HStack, 
+    useToast
 } from '@chakra-ui/react';
 import { BsFillCloudArrowDownFill } from 'react-icons/bs';
-import { FaPaintBrush, FaCheckCircle } from 'react-icons/fa';
+import { FaPaintBrush } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 const LayoutCustomization = () => {
@@ -21,13 +21,40 @@ const LayoutCustomization = () => {
     const [croppedImageUrl, setCroppedImageUrl] = useState(null);
     const [width, setWidth] = useState('');
     const [length, setLength] = useState('');
+    const [rooms, setRooms] = useState([]);
+    const [walls, setWalls] = useState([]);
     const [isDraggingImage, setIsDraggingImage] = useState(false);
-    const navigate = useNavigate();  // for navigation
+    const navigate = useNavigate();
+
+    const toast = useToast();
 
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
         if (file) {
-            setUploadedFile(file);
+            const img = document.createElement('img');
+            const objectUrl = URL.createObjectURL(file);
+    
+            img.onload = function () {
+                const minWidth = 800;
+                const minHeight = 600;
+    
+                if (img.width >= minWidth && img.height >= minHeight) {
+                    setUploadedFile(file);
+                    console.log("Image resolution is valid");
+                } else {
+                    toast({
+                        title: "Image Resolution Error",
+                        description: `Image resolution is too low. Minimum resolution is ${minWidth}x${minHeight} pixels.`,
+                        status: "error",
+                        duration: 3000,
+                        position: "top",
+                        isClosable: true,
+                    });
+                }
+                URL.revokeObjectURL(objectUrl);
+            };
+    
+            img.src = objectUrl;
         }
     };
 
@@ -45,33 +72,57 @@ const LayoutCustomization = () => {
 
     const handleUpload = async () => {
         if (!uploadedFile || !width || !length) {
-            alert('Please upload a file and provide layout dimensions.');
+            toast({
+                title: "Invalid Input",
+                description: "Please upload a file and enter the width and length of the floor plan.",
+                status: "error",
+                duration: 3000,
+                position: "top",
+                isClosable: true,
+            });
             return;
         }
-
+    
         const formData = new FormData();
         formData.append('file', uploadedFile);
         formData.append('width', width);
         formData.append('length', length);
-
+    
         try {
             const response = await fetch('http://localhost:5000/crop-floorplan', {
                 method: 'POST',
                 body: formData,
             });
-
+    
             if (response.ok) {
-                console.log('Image cropped successfully');
-                const blob = await response.blob();
+                const jsonResponse = await response.json();
+    
+                const imageData = jsonResponse.image;
+                const blob = await fetch(`data:image/png;base64,${imageData}`).then(res => res.blob());
                 const imageUrl = URL.createObjectURL(blob);
                 setCroppedImageUrl(imageUrl);
+    
+                const rooms = jsonResponse.rooms;
+                const walls = jsonResponse.walls;
+                setRooms(rooms);
+                setWalls(walls);
+                
+                // Save the data in localStorage
+                localStorage.setItem('croppedImageUrl', imageUrl);
+                localStorage.setItem('width', width);
+                localStorage.setItem('length', length);
+                localStorage.setItem('rooms', JSON.stringify(rooms));
+                localStorage.setItem('walls', JSON.stringify(walls));
+    
+                console.log('Detected rooms:', rooms);
+                console.log('Detected walls:', walls);
             } else {
-                console.error('Failed to crop the image');
+                console.error('Failed to crop and detect rooms in the image');
             }
         } catch (error) {
             console.error('Error uploading image:', error);
         }
-    };
+    };    
 
     // Stepper component
     const Stepper = () => (
@@ -168,7 +219,7 @@ const LayoutCustomization = () => {
                                 </FormControl>
                             </Flex>
 
-                            <Button colorScheme="blue" onClick={handleUpload} mt={4} isFullWidth style={{ outline:'none' }}>
+                            <Button colorScheme="blue" onClick={handleUpload} mt={4} style={{ outline:'none' }}>
                                 Upload and Crop
                             </Button>
                         </Flex>                        
@@ -190,13 +241,25 @@ const LayoutCustomization = () => {
                                 colorScheme="green"
                                 mt={6}
                                 style={{ outline:'none' }}
-                                isFullWidth
-                                onClick={() => navigate('/personalize-your-floorplan', {
-                                    state: { croppedImageUrl, width, length }
-                                })}
+                                disabled={!width || !length || !croppedImageUrl}
+                                onClick={() => {
+                                    if (width && length) {
+                                        navigate('/personalize-your-floorplan');
+                                    } else {
+                                        toast({
+                                            title: "Invalid Input",
+                                            description: "Please enter valid width and length values before proceeding.",
+                                            status: "error",
+                                            duration: 3000,
+                                            position: "top",
+                                            isClosable: true,
+                                        });
+                                    }
+                                }}
                             >
                                 Satisfied? Proceed With Customization
                             </Button>
+
                         </Flex>
                     )}
                 </Flex>
