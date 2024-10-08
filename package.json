@@ -20,6 +20,7 @@
     "encrypt-rsa": "^2.1.5",
     "firebase": "^10.10.0",
     "framer-motion": "^11.0.25",
+    "html-to-image": "^1.11.11",
     "jszip": "^3.10.1",
     "n-krypta": "^1.0.6",
     "primereact": "^10.6.2",

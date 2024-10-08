@@ -1,18 +1,45 @@
-import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import React, { useState } from 'react';
 
-export function Droppable({ children, id, cellWidth, cellHeight }) {
-    const { setNodeRef, isOver } = useDroppable({ id });
+export const Droppable = ({ children, id, cellWidth, cellHeight, onDrop, onHover, isOverlapping }) => {
+    const [isOver, setIsOver] = useState(false);
+
+    const handleDragEnter = () => {
+        setIsOver(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsOver(false);
+    };
+
+    const handleDrop = (event) => {
+        event.preventDefault();
+        onDrop();
+        setIsOver(false);
+    };
+
+    const handleDragOver = (event) => {
+        event.preventDefault();
+        onHover(id);
+    };
+
     const style = {
-        border: isOver ? '2px dashed green' : 'none',
-        width: `${cellWidth}px`, // Set the width to cellWidth
-        height: `${cellHeight}px`, // Set the height to cellHeight
-        pointerEvents: 'auto', // Allow pointer events for dropping
+        border: isOverlapping ? '2px solid red' : isOver ? '2px solid green' : 'none',
+        background: isOverlapping ? 'rgba(255, 0, 0, 0.2)' : isOver ? 'rgba(0, 255, 0, 0.2)' : 'none',
+        width: `${cellWidth}px`,
+        height: `${cellHeight}px`,
+        pointerEvents: 'auto',
+        position: 'relative',
     };
 
     return (
-        <div ref={setNodeRef} style={style}>
+        <div
+            style={style}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+        >
             {children}
         </div>
     );
-}
+};

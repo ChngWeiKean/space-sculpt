@@ -245,9 +245,9 @@ function CategoryDetails() {
         return (
             <Flex w="full" direction="row" alignItems="center" gap={4}>
                 <Flex w="full" direction="column">
-                    <Text>Sold: {rowData.quantity_sold || 0}</Text>
-                    <Text>Revenue: RM {rowData.quantity_sold * rowData.price || 0}</Text>
-                    <Text>Profit: RM {(rowData.profit).toFixed(2) || 0}</Text>
+                    <Text>Sold: {rowData?.quantity_sold || 0}</Text>
+                    <Text>Revenue: RM {rowData?.quantity_sold * rowData?.price || 0}</Text>
+                    <Text>Profit: RM {(rowData?.profit)?.toFixed(2) || 0}</Text>
                 </Flex>
             </Flex>
         );
