@@ -14,6 +14,7 @@ import {
     Divider,
     InputGroup,
     Spinner,
+    Select,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect } from "react";
 import { BsFillCloudArrowDownFill } from "react-icons/bs";
@@ -30,11 +31,13 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { onValue, ref } from "firebase/database";
 import { addFurniture } from "../../../api/admin";
+import { MultiSelect } from "../../components/MultiSelect.jsx"
 
 function AddFurniture() {
     const { id } = useParams();
     const [ subcategory, setSubcategory ] = useState(null);
     const [ category, setCategory ] = useState(null);
+    const [selectedTags, setSelectedTags] = useState([]);
     const {
         handleSubmit,
         register,
@@ -43,7 +46,16 @@ function AddFurniture() {
         }
     } = useForm();
 
-    const initialVariant = { color: '', inventory: 0, image: '', imageSrc: '', model: '', modelSrc: '', icon: '', iconSrc: '', isDraggingImage: false, isDraggingModel: false, isDraggingIcon: false };
+    const tagOptions = [
+        "Bedroom", "Living Room", "Dining Room", "Kitchen", "Bathroom",
+        "Outdoor", "Indoor", "Office", "Study", "Library",
+        "Sustainable", "Ergonomic", "Compact", "Convertible", "Durable", "Eco-Friendly", "Foldable", 
+        "Luxury", "Pet-Friendly", "Kid-Friendly", "Space-Saving", "Lightweight", 
+        "Heavy-Duty", "Waterproof", "Fireproof", "Stain-Resistant", "UV-Resistant",
+        "Recycled Materials", "Easy to Assemble", "Scratch-Resistant"
+    ];
+
+    const initialVariant = { color: '', inventory: 0, hex_code: '', image: '', imageSrc: '', model: '', modelSrc: '', icon: '', iconSrc: '', isDraggingImage: false, isDraggingModel: false, isDraggingIcon: false };
     const [variants, setVariants] = useState([initialVariant]);
 
     const handleAddVariant = () => {
@@ -352,11 +364,13 @@ function AddFurniture() {
         const furnitureData = {
             subcategory: id,
             ...data,
+            tags: selectedTags
         };
 
         const furnitureVariants = variants.map((variant) => ({
             color: variant.color,
             inventory: variant.inventory,
+            hex_code: variant.hex_code,
             icon: variant.icon,
             image: variant.image,
             model: variant.model,
@@ -375,8 +389,21 @@ function AddFurniture() {
             return;
         }
 
+        if (furnitureData.style == '') {
+            toast({
+                title: "Error creating furniture",
+                description: "Please make sure that the style is selected",
+                status: "error",
+                duration: 3000,
+                position: "top",
+                isClosable: true,
+            });
+            setLoading(false);
+            return;
+        }
+
         for (let i = 0; i < furnitureVariants.length; i++) {
-            if (furnitureVariants[i].color === '' || furnitureVariants[i].inventory === 0 || furnitureVariants[i].image === '' || furnitureVariants[i].model === '' || furnitureVariants[i].icon === '') {
+            if (furnitureVariants[i].color === '' || furnitureVariants[i].inventory === 0 || furnitureVariants[i].image === '' || furnitureVariants[i].model === '' || furnitureVariants[i].icon === '' || furnitureVariants[i].hex_code === '') {
                 toast({
                     title: "Error creating furniture",
                     description: "Please make sure that all variant fields are filled",
@@ -405,9 +432,22 @@ function AddFurniture() {
             }
         }
 
+        for (let i = 0; i < furnitureVariants.length; i++) {
+            if (!/^#[0-9A-F]{6}$/i.test(furnitureVariants[i].hex_code)) {
+                toast({
+                    title: "Error creating furniture",
+                    description: "Please make sure that all hex codes are valid",
+                    status: "error",
+                    duration: 3000,
+                    position: "top",
+                    isClosable: true,
+                });
+                setLoading(false);
+                return;
+            }
+        }
+
         try {
-            console.log("Furniture Data: ", furnitureData);
-            console.log("Furniture Variants: ", furnitureVariants);
             await addFurniture(furnitureData, furnitureVariants);
             toast({
                 title: "Furniture created successfully!",
@@ -574,7 +614,43 @@ function AddFurniture() {
                                             <FormErrorMessage>
                                                 {errors.material && errors.material.message}
                                             </FormErrorMessage>
-                                        </FormControl>                                          
+                                        </FormControl>   
+                                        
+                                        <FormControl>
+                                            <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
+                                                Furniture Style
+                                            </FormLabel>
+                                            <Select
+                                                variant="filled"
+                                                type="text"
+                                                id="subcategory"
+                                                rounded="md"
+                                                {
+                                                    ...register("style", {
+                                                        required: "Furniture style is required"
+                                                    })
+                                                }
+                                                borderWidth="1px"
+                                                borderColor="gray.300"
+                                                color="gray.900"
+                                                size="md"
+                                                focusBorderColor="blue.500"
+                                                w="full"
+                                            >
+                                                <option value="" disabled>Select a style</option>
+                                                <option value="modern">Modern</option>
+                                                <option value="contemporary">Contemporary</option>
+                                                <option value="traditional">Traditional</option>
+                                                <option value="rustic">Rustic</option>
+                                                <option value="industrial">Industrial</option>
+                                                <option value="mid-century">Mid-Century Modern</option>
+                                                <option value="scandinavian">Scandinavian</option>
+                                                <option value="bohemian">Bohemian</option>
+                                                <option value="vintage">Vintage</option>
+                                                <option value="minimalist">Minimalist</option>
+                                                <option value="victorian">Victorian</option>
+                                            </Select>
+                                        </FormControl>                                           
                                     </Flex>
 
                                     
@@ -767,7 +843,15 @@ function AddFurniture() {
                                     </Flex>
                                 </Flex>
 
-                                <Flex w="full" direction="column" gap={6}>
+                                <Flex w="full" direction="column" gap={4}>
+                                    <MultiSelect
+                                        label="Tags"
+                                        placeholder="Select tags"
+                                        options={tagOptions}
+                                        selectedOptions={selectedTags}
+                                        setSelectedOptions={setSelectedTags}
+                                    />
+
                                     <FormControl isInvalid={errors.description}>
                                         <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
                                             Description <Text as="span" color="red.500" fontWeight="bold">*</Text>
@@ -996,11 +1080,38 @@ function AddFurniture() {
                                                     </FormControl>                                                
                                                 </Flex>
                                                 <Flex w="full" direction="column" gap={6}>
+                                                    <FormControl isInvalid={errors.variants && errors.variants[index]?.hex_code}>
+                                                        <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900" requiredIndicator>
+                                                            Primary Hex Color Code <Text as="span" color="red.500" fontWeight="bold">*</Text>
+                                                        </FormLabel>
+                                                        <InputGroup>
+                                                            <Input
+                                                                variant="filled"
+                                                                type="text"
+                                                                id={`variant_hex_code_${index}`}
+                                                                value={variant.hex_code}
+                                                                onChange={(e) => handleChangeVariant(index, 'hex_code', e.target.value)}
+                                                                rounded="md"
+                                                                borderWidth="1px"
+                                                                borderColor="gray.300"
+                                                                color="gray.900"
+                                                                size="md"
+                                                                focusBorderColor="blue.500"
+                                                                placeholder="#fff"
+                                                                w="full"
+                                                                p={2.5}
+                                                            />                                            
+                                                        </InputGroup>
+                                                        <FormErrorMessage>
+                                                            {errors.variants && errors.variants[index]?.hex_code && errors.variants[index]?.hex_code.message}
+                                                        </FormErrorMessage>
+                                                    </FormControl>    
+
                                                     <FormControl>
                                                         <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">
                                                             Variant Icon Image
                                                         </FormLabel>
-                                                        <Box
+                                                            <Box
                                                                 onDragEnter = {() => handleVariantIconDragEnter(index)}
                                                                 onDragOver={handleVariantIconDragOver}
                                                                 onDragLeave={() => handleVariantIconDragLeave(index)}
@@ -1042,7 +1153,7 @@ function AddFurniture() {
                                                                         {variant.isDraggingIcon ? "Drop the file here" : "Drag & Drop or Click to upload"}
                                                                     </Text>
                                                                     <Text fontSize="xs" color="gray.500">
-                                                                    (SVG, PNG, JPG, or JPEG)
+                                                                        (SVG, PNG, JPG, or JPEG)
                                                                     </Text>
                                                                 </Flex>
                                                             </Box>

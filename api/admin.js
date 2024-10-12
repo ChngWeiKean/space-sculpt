@@ -216,7 +216,7 @@ export const updateCategoryAndSubcategories = async (id, categoryData, subcatego
 }
 
 export const addFurniture = async (furnitureData, furnitureVariants) => {
-    const { subcategory, name, description, price, height, width, length, material, care_method, weight, cost } = furnitureData;
+    const { subcategory, name, description, price, height, width, length, material, care_method, weight, cost, style, tags } = furnitureData;
 
     try {
         const furnitureRef = ref(db, 'furniture');
@@ -226,6 +226,8 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
             name: name,
             description: description,
             price: price,
+            style: style,
+            tags: tags,
             height: height,
             width: width,
             length: length,
@@ -247,7 +249,7 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
 
         const variantsRef = ref(db, `furniture/${newFurnitureRef.key}/variants`);
         const variantPromises = furnitureVariants.map(async (variant) => {
-            const { color, image, icon, model, inventory } = variant;
+            const { color, image, icon, model, inventory, hex_code } = variant;
             const variantRef = push(variantsRef);
             let variantImageUrl;
             let variantIconUrl;
@@ -268,6 +270,7 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
             await set(variantRef, {
                 color: color,
                 image: variantImageUrl,
+                hex_code: hex_code,
                 icon: variantIconUrl,
                 model: variantModelUrl,
                 inventory: inventory
@@ -283,10 +286,10 @@ export const addFurniture = async (furnitureData, furnitureVariants) => {
 }
 
 export const updateFurniture = async (furnitureData, furnitureVariants) => {
-    const { id, subcategory, name, description, price, height, width, length, material, discount, care_method, weight, cost } = furnitureData;
+    const { id, subcategory, name, description, price, height, width, length, material, discount, care_method, weight, cost, style, tags } = furnitureData;
 
-    console.log("Furniture Data", furnitureData);
-    console.log("Furniture Variants", furnitureVariants);
+    console.log("Furniture Data in back", furnitureData);
+    console.log("Furniture Variants in back", furnitureVariants);
 
     try {
         const furnitureRef = ref(db, `furniture/${id}`);
@@ -298,6 +301,8 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
             description: description,
             price: price,
             height: height,
+            style: style,
+            tags: tags,
             subcategory: subcategory,
             width: width,
             length: length,
@@ -335,7 +340,7 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
             if (variant?.id) {
                 const variantRef = ref(db, `furniture/${id}/variants/${variant.id}`);
                 const variantSnapshot = await get(variantRef);
-                const { color, image, icon, model, inventory } = variant;
+                const { color, image, icon, model, inventory, hex_code } = variant;
 
                 if (variantSnapshot.val().color !== color) {
                     await update(variantRef, {
@@ -349,16 +354,15 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
                     });
                 }
 
+                if (variantSnapshot.val().hex_code !== hex_code) {
+                    await update(variantRef, {
+                        hex_code: hex_code
+                    });
+                }
+
                 const imageUrl = variantSnapshot.val()?.image;
                 const iconUrl = variantSnapshot.val()?.icon;
                 const modelUrl = variantSnapshot.val()?.model;
-
-                console.log("Image URL", imageUrl);
-                console.log("Image", image);
-                console.log("Icon URL", iconUrl);
-                console.log("Icon", icon);
-                console.log("Model URL", modelUrl);
-                console.log("Model", model);
 
                 if (image !== imageUrl) {
                     const imageRef = sRef(storage, `furniture/${id}/variants/${variant.id}/image`);
@@ -403,7 +407,7 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
                     }
                 }
             } else {
-                const { color, image, model, inventory } = variant;
+                const { color, image, model, inventory, hex_code } = variant;
                 const variantRef = push(ref(db, `furniture/${id}/variants`));
                 const imageRef = sRef(storage, `furniture/${id}/variants/${variantRef.key}/image`);
                 await uploadBytes(imageRef, image);
@@ -418,6 +422,7 @@ export const updateFurniture = async (furnitureData, furnitureVariants) => {
                     color: color,
                     image: imageUrl,
                     icon: iconUrl,
+                    hex_code: hex_code,
                     model: modelUrl,
                     inventory: inventory
                 });

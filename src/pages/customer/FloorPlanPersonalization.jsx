@@ -10,24 +10,55 @@ import {
     IconButton,
     Tooltip,
     Input,
+    Tabs,
+    TabList,
+    TabPanels,
+    TabPanel,
+    Tab,
+    TabIndicator,
+    InputGroup,
+    InputLeftElement,
+    useDisclosure,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalHeader,
+    ModalOverlay,
+    ModalCloseButton,
+    ModalFooter,
+    Select,
+    FormControl,
+    FormLabel,
+    InputLeftAddon,
+    useToast,
 } from '@chakra-ui/react';
-import { IoMdArrowRoundBack } from "react-icons/io";
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { IoMdArrowRoundBack, IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
+import { IoTrashOutline } from "react-icons/io5";
 import { AiOutlineExport } from "react-icons/ai";
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { db } from "../../../api/firebase";
+import { useAuth } from "../../components/AuthCtx.jsx";
 import { Droppable } from '../../components/Droppable';
 import { onValue, ref, get } from "firebase/database";
-import { FaArrowRotateLeft, FaArrowRotateRight, FaTrash } from "react-icons/fa6";
+import { FaArrowRotateLeft, FaArrowRotateRight } from "react-icons/fa6";
+import { PiStarFourLight } from "react-icons/pi";
+import { BiSearchAlt2 } from "react-icons/bi";
+import { CiFilter } from "react-icons/ci";
 import { toPng } from 'html-to-image';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { MultiSelect } from "../../components/MultiSelect.jsx";
 
 const FloorPlanPersonalization = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const croppedImageUrl = localStorage.getItem('croppedImageUrl');
     const width = localStorage.getItem('width');
     const length = localStorage.getItem('length');
     const rooms = JSON.parse(localStorage.getItem('rooms'));
     const walls = JSON.parse(localStorage.getItem('walls'));
 
+    const [ isLoading, setIsLoading ] = useState(false);
     const [ gridSize, setGridSize ] = useState({ rows: 0, cols: 0 });
     const [ imageDimensions, setImageDimensions ] = useState({ width: 0, height: 0 });
     const [ furniturePositions, setFurniturePositions ] = useState([]);
@@ -35,13 +66,46 @@ const FloorPlanPersonalization = () => {
     const [ currentPosition, setCurrentPosition ] = useState({ x: 0, y: 0 });
     const [ draggedItem, setDraggedItem ] = useState(null);
     const [ hoveredItem, setHoveredItem ] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [ dragOffset, setDragOffset ] = useState({ x: 0, y: 0 });
+    const { isOpen: isOpenFilterModal, onOpen: onOpenFilterModal, onClose: onCloseFilterModal } = useDisclosure();
+    const { isOpen: isOpenPreferenceModal, onOpen: onOpenPreferenceModal, onClose: onClosePreferenceModal } = useDisclosure();
+    const [ searchFurnitureQuery, setSearchFurnitureQuery ] = useState('');
+    const [ searchFurniturePriceQuery, setSearchFurniturePriceQuery ] = useState('');
+    const [ searchFurnitureMaterialQuery, setSearchFurnitureMaterialQuery ] = useState('');
+    const [ searchFurnitureColorQuery, setSearchFurnitureColorQuery ] = useState('');
+    const [ filterByFavourites, setFilterByFavourites ] = useState(false);
+    const [ materialFilters, setMaterialFilters ] = useState([]);
+    const [ colorFilters, setColorFilters ] = useState([]);
+    const [ budget, setBudget] = useState(0);
+    const [ selectedMaterials, setSelectedMaterials ] = useState([]);
+    const [ selectedStyles, setSelectedStyles ] = useState([]);
+    const [ selectedPalette, setSelectedPalette ] = useState([]);
+    const [ selectedRoomType, setSelectedRoomType ] = useState('');
+    const [ categories, setCategories ] = useState([]);
+    const [ overlappingCells, setOverlappingCells ] = useState([]);
+    const [ recommendations, setRecommendations ] = useState([]);
+    const [ selectedTags, setSelectedTags ] = useState([]);
+    const priceRangeFilter = {
+        "0-199": { min: 0, max: 199 },
+        "200-399": { min: 200, max: 399 },
+        "400-599": { min: 400, max: 599 },
+        "600-799": { min: 600, max: 799 },
+        "800+": { min: 800, max: 999999 }
+    }
+    const tagOptions = [
+        "Bedroom", "Living Room", "Dining Room", "Kitchen", "Bathroom",
+        "Outdoor", "Indoor", "Office", "Study", "Library",
+        "Sustainable", "Ergonomic", "Compact", "Convertible", "Durable", "Eco-Friendly", "Foldable", 
+        "Luxury", "Pet-Friendly", "Kid-Friendly", "Space-Saving", "Lightweight", 
+        "Heavy-Duty", "Waterproof", "Fireproof", "Stain-Resistant", "UV-Resistant",
+        "Recycled Materials", "Easy to Assemble", "Scratch-Resistant"
+    ];
+    const styleOptions = [
+        "Modern", "Rustic", "Minimalist", "Vintage", "Scandinavian", "Industrial", 
+        "Mid-Century Modern", "Contemporary", "Traditional", "Bohemian", "Victorian"
+    ]
     const imageRef = useRef(null);
     const sidebarRef = useRef(null);
     const canvasRef = useRef(null);
-    const [ categories, setCategories ] = useState([]);
-    const [overlappingCells, setOverlappingCells] = useState([]);
 
     useEffect(() => {
         if (width && length) {
@@ -58,6 +122,8 @@ const FloorPlanPersonalization = () => {
         
             onValue(categoryRef, async (categorySnapshot) => {
                 const categoryPromises = [];
+                const materials = [];
+                const colors = [];
         
                 categorySnapshot.forEach((categoryChildSnapshot) => {
                 const categoryData = {
@@ -86,6 +152,15 @@ const FloorPlanPersonalization = () => {
                                     ...furnitureSnapshot.val(),
                                     subcategoryName: subcategoryData.name,
                                 };
+                                if (!materials.includes(furnitureSnapshot.val().material)) {
+                                    materials.push(furnitureSnapshot.val().material);
+                                }
+                                Object.values(furnitureSnapshot.val().variants).forEach((variant) => {
+                                    const trimmedColor = variant.color.trim();
+                                    if (!colors.includes(trimmedColor)) {
+                                        colors.push(trimmedColor);
+                                    }
+                                });
                                 furnitureByCategory[categoryData.id].furniture.push(furnitureData);
                             }
                         });
@@ -100,11 +175,15 @@ const FloorPlanPersonalization = () => {
                 });
                 await Promise.all(categoryPromises);
                 setCategories(Object.values(furnitureByCategory));
+                setMaterialFilters(materials);
+                setColorFilters(colors);
             });
         };
       
         fetchCategoriesAndFurniture();
     }, []);
+
+    console.log("Categories", categories);
 
     const handleImageLoad = (event) => {
         const img = event.target;
@@ -481,7 +560,6 @@ const FloorPlanPersonalization = () => {
                 return;
             }
     
-            // Update furniture positions and set new furniture placement
             setFurniturePositions((prev) => {
                 const existingFurniture = prev.find(f => f.id === draggedItem);
                 if (existingFurniture) {
@@ -605,10 +683,122 @@ const FloorPlanPersonalization = () => {
                 console.error('Error exporting canvas to PNG:', error);
             });
     };
+
+    const toast = useToast();
+
+    const handleSubmitPreferences = async () => {
+        try {
+            onClosePreferenceModal();
+            setIsLoading(true);
     
+            const preferences = {
+                selectedStyles: selectedStyles,
+                selectedMaterials: selectedMaterials,
+                selectedRoomType: selectedRoomType,
+                selectedPalette: selectedPalette,
+                selectedTags: selectedTags
+            };
+    
+            const furnitureData = categories;
+            console.log("Furniture Data", furnitureData);
+            console.log("Preferences", preferences);
+    
+            const prompt = `
+                Based on the following preferences:
+                - Preferred Styles: ${preferences.selectedStyles}
+                - Preferred Materials: ${preferences.selectedMaterials}
+                - Room Type: ${preferences.selectedRoomType}
+                - Palette Preference: ${preferences.selectedPalette}
+                - Tags: ${preferences.selectedTags}
+            
+                Recommend the best matching furniture from the available furniture data, following these rules:
+                1. Recommend only items that match the user's preferred styles, materials, and tags. If some preferences are not specified, prioritize the ones that are.
+                2. For the selected room type, recommend furniture that fits this use case.
+                3. If a color palette preference is specified, recommend furniture with variants that closely match the user's palette choice using the "hex_code" fields. Discard items that don't match.
+                4. Ensure each recommendation includes the category, furniture name, price, style, material, and matching palette.
+                5. If no perfect match exists, recommend the closest match.
+                6. Return a valid JSON array of the recommended furniture in the same structure as the provided furnitureData.
+                7. Exclude any furniture variants that do not match the specified preferences (styles, materials, color palettes, tags).
+                8. Please ensure the response is in the correct format, and it follows the given structure of furnitureData, make sure there is category.furniture data.
+            
+                Furniture Data:
+                ${JSON.stringify(furnitureData, null, 2)}
+            `;
+    
+            const genAI = new GoogleGenerativeAI("AIzaSyAU1hBH4hAJ-oscggH1dweHw3GbLJQUvCw");
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: {"response_mime_type": "application/json"} });
+            const result = await model.generateContent(prompt);
+    
+            const aiResponse = result.response.text();
+            console.log("AI Response (raw):", aiResponse);
+
+            try {
+                const recommendations = JSON.parse(aiResponse);
+                console.log("Recommendations", recommendations);
+                setRecommendations(recommendations);
+            } catch (parseError) {
+                console.error("Failed to parse AI response:", parseError);
+                console.log("Cleaned Response:", aiResponse);
+            }
+        } catch (error) {
+            console.error("Error generating recommendations:", error);
+        } finally {
+            toast({
+                title: "Check the recommendations tab!",
+                description: "Your furniture recommendations have been successfully generated.",
+                status: "success",
+                duration: 3000,
+                position: "top",
+                isClosable: true,
+            });
+            setIsLoading(false);
+        }
+    };    
 
     return (
         <Grid templateRows="auto 1fr" w="100%" h="100%"  bg="gray.50" overflow="hidden">
+            <Modal isOpen={isLoading} onClose={() => {}} size="md" isCentered>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalBody display="flex" flexDirection="column" justifyContent="center" alignItems="center">
+                        <DotLottieReact
+                            src='src\assets\animations\gemini_loading_animation.lottie'
+                            loop
+                            autoplay
+                        />
+                        <Text
+                            my={2}
+                            fontSize="xl"
+                            fontWeight="700"
+                            style={{
+                                background: 'linear-gradient(270deg, #FF007C, #590FB7, #00FF7F)',
+                                backgroundSize: '400% 400%',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                animation: 'gradient 2s ease infinite'
+                            }}
+                        >
+                            Curating your preferences
+                        </Text>
+                    </ModalBody>
+                </ModalContent>
+            </Modal>
+
+            <style>
+                {`
+                    @keyframes gradient {
+                        0% {
+                            background-position: 0% 50%;
+                        }
+                        50% {
+                            background-position: 100% 50%;
+                        }
+                        100% {
+                            background-position: 0% 50%;
+                        }
+                    }
+                `}
+            </style>
             <Flex 
                 direction="row" 
                 w="full" 
@@ -622,113 +812,229 @@ const FloorPlanPersonalization = () => {
                 }}
             >
                 <Flex
-                    w="20%"
+                    w="25%"
                     h="full"
-                    id='sidebar'
+                    id="sidebar"
                     boxShadow="lg"
                     display="flex"
                     flexDirection="column"
                     justifyContent="flex-start"
-                    alignItems="center"
                     style={{
                         background: 'rgba(255, 255, 255, 0.15)',
                         backdropFilter: 'blur(8px)',
-                        backgroundImage: 'radial-gradient(circle, rgba(255, 182, 193, 0.5) 0%, rgba(255, 192, 203, 0.5) 25%, rgba(255, 240, 245, 0.5) 50%, rgba(255, 182, 193, 0.5) 75%)', // Shades of pastel pink
+                        backgroundImage: 'radial-gradient(circle, rgba(255, 182, 193, 0.5) 0%, rgba(255, 192, 203, 0.5) 25%, rgba(255, 240, 245, 0.5) 50%, rgba(255, 182, 193, 0.5) 75%)',
                         backgroundSize: '300% 300%',
                         animation: 'gradientShift 8s ease infinite',
                         boxShadow: '0 3px 12px rgba(0, 0, 0, 0.05)',
-                    }}              
+                    }}
                     direction="column"
                     overflowX="hidden"
                     overflowY="auto"
                     sx={{
                         '&::-webkit-scrollbar': {
-                        width: '7px',
+                            width: '7px',
                         },
                         '&::-webkit-scrollbar-thumb': {
-                        backgroundColor: '#092654',
-                        borderRadius: '4px',
+                            backgroundColor: '#092654',
+                            borderRadius: '4px',
                         },
                         '&::-webkit-scrollbar-track': {
-                        backgroundColor: '#f1f1f1',
+                            backgroundColor: '#f1f1f1',
                         },
                     }}
-                    ref={sidebarRef}
                 >
-                    <Flex
-                        w="full"
-                        p={4}
-                    >
-                        <Input
-                            placeholder="Search for furniture..."
-                            variant="flushed"
-                            size="sm"
-                            focusBorderColor="blue.500"
-                        />
-                    </Flex>
-                    {imageDimensions && categories.map((category) => (
-                        <Flex
-                            key={category.id}
-                            flexDirection="column"
-                            w="full"
-                            mb={4}
-                            overflow="hidden"
-                            p={2}
-                        >
-                            <Text fontSize="sm" fontWeight="500" mb={2} color={"gray.700"}>
-                                {category.name}
-                            </Text>
+                    <Tabs align='end' isFitted variant='unstyled'>
+                        <TabList>
+                            <Tab style={{ outline: 'none' }}>Furniture</Tab>
+                            <Tab style={{ outline: 'none' }}>Recommendations</Tab>
+                        </TabList>
+                        <TabIndicator mt='-1.5px' height='2px' bg='blue.500' borderRadius='1px' />
+                        <TabPanels>
+                            <TabPanel>
+                                <Flex w="full" px={2} pb={2} gap={3}>
+                                    <Flex w="90%">
+                                        <InputGroup>
+                                            <InputLeftElement
+                                                pointerEvents="none"
+                                                children={<BiSearchAlt2 color="gray.300" />}
+                                            />
+                                            <Input
+                                                placeholder="Search for furniture..."
+                                                variant="flushed"
+                                                size="md"
+                                                border="2px black"
+                                                focusBorderColor="blue.500"
+                                                value={searchFurnitureQuery}
+                                                onChange={(e) => setSearchFurnitureQuery(e.target.value)}
+                                            />                                        
+                                        </InputGroup>
 
-                            <Grid templateColumns={`repeat(4, 1fr)`} gap={2}>
-                                {category.furniture.map((furnitureItem) => {
-                                    let gridCellWidth = imageDimensions.width / gridSize.cols;
-                                    let gridCellHeight = imageDimensions.height / gridSize.rows;
+                                    </Flex>
+                                    <Flex w="10%" justifyContent="flex-end">
+                                        <IconButton
+                                            aria-label="Filter"
+                                            icon={<CiFilter />}
+                                            style={{ outline: 'none' }}
+                                            size="sm"
+                                            colorScheme="blue"
+                                            onClick={onOpenFilterModal}
+                                        />
+                                    </Flex>
+                                </Flex>
 
-                                    return Object.entries(furnitureItem.variants).map(([variantId, variant], index) => {
-                                        const furnitureWidthInPixels = (furnitureItem.width / 100) * gridCellWidth;
-                                        const furnitureLengthInPixels = (furnitureItem.length / 100) * gridCellHeight;
+                                {imageDimensions && categories.map((category) => (
+                                    <Flex
+                                        key={category.id}
+                                        flexDirection="column"
+                                        justifyContent="flex-start"
+                                        alignItems="flex-start"
+                                        w="full"
+                                        mb={4}
+                                        overflow="hidden"
+                                        p={2}
+                                    >
+                                        <Text fontSize="sm" fontWeight="500" mb={2} color={"gray.700"}>
+                                            {category.name}
+                                        </Text>
 
-                                        return (
-                                            <Flex key={variantId} direction="column" gap={1} alignItems="center">
-                                                <Box
-                                                    w={`${furnitureWidthInPixels}px`}
-                                                    h={`${furnitureLengthInPixels}px`}
-                                                    draggable
-                                                    onDragStart={(e) => {
-                                                        setIsDragging(true);
-                                                        setDraggedItem(variantId);
-                                                    }}
-                                                    onDrag={(e) => {
-                                                        if (isDragging && draggedItem) {
-                                                            const mouseX = e.clientX;
-                                                            const mouseY = e.clientY;
-                                                            setCurrentPosition({ x: mouseX, y: mouseY });
-                                                        }
-                                                    }}
-                                                    onDragEnd={(e) => {
-                                                        setIsDragging(false);
-                                                        setDraggedItem(null);
-                                                    }}
-                                                >
-                                                    <Image
-                                                        src={variant.icon}
-                                                        alt={`${furnitureItem.name} - Variant ${index + 1}`}
-                                                        objectFit="contain"
-                                                        boxSize="100%"
-                                                    />
-                                                </Box>
-                                                <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"}>
-                                                    {furnitureItem.name} <Text color={"gray.800"}>{variant.color}</Text>
+                                        <Grid templateColumns={`repeat(5, 1fr)`} gap={2}>
+                                            {category.furniture
+                                                .filter((furniture) => furniture.name.toLowerCase().includes(searchFurnitureQuery.toLowerCase()))
+                                                .filter((furniture) => filterByFavourites ? user?.favourites?.includes(furniture.id) : true)
+                                                .filter((furniture) => {
+                                                    const price = Number(furniture.price);
+                                                    const priceRange = priceRangeFilter[searchFurniturePriceQuery];
+                                                    return priceRange ? price >= priceRange.min && price <= priceRange.max : true;
+                                                })
+                                                .filter((furniture) => searchFurnitureMaterialQuery === "" ? true : furniture.material === searchFurnitureMaterialQuery)
+                                                .filter((furniture) =>
+                                                    searchFurnitureColorQuery === "" ? true : Object.values(furniture.variants).some((variant) => variant.color === searchFurnitureColorQuery)
+                                                )
+                                                .map((furnitureItem) => {
+                                                let gridCellWidth = imageDimensions.width / gridSize.cols;
+                                                let gridCellHeight = imageDimensions.height / gridSize.rows;
+
+                                                return Object.entries(furnitureItem.variants).map(([variantId, variant], index) => {
+                                                    const furnitureWidthInPixels = (furnitureItem.width / 100) * gridCellWidth;
+                                                    const furnitureLengthInPixels = (furnitureItem.length / 100) * gridCellHeight;
+
+                                                    return (
+                                                        <Flex key={variantId} direction="column" gap={1} alignItems="center">
+                                                            <Box
+                                                                w={`${furnitureWidthInPixels}px`}
+                                                                h={`${furnitureLengthInPixels}px`}
+                                                                draggable
+                                                                onDragStart={(e) => {
+                                                                    setIsDragging(true);
+                                                                    setDraggedItem(variantId);
+                                                                }}
+                                                                onDrag={(e) => {
+                                                                    if (isDragging && draggedItem) {
+                                                                        const mouseX = e.clientX;
+                                                                        const mouseY = e.clientY;
+                                                                        setCurrentPosition({ x: mouseX, y: mouseY });
+                                                                    }
+                                                                }}
+                                                                onDragEnd={(e) => {
+                                                                    setIsDragging(false);
+                                                                    setDraggedItem(null);
+                                                                }}
+                                                            >
+                                                                <Image
+                                                                    src={variant.icon}
+                                                                    alt={`${furnitureItem.name} - Variant ${index + 1}`}
+                                                                    objectFit="contain"
+                                                                    boxSize="100%"
+                                                                />
+                                                            </Box>
+                                                            <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"}>
+                                                                {furnitureItem.name}{' '} <Text color={"gray.800"}>{variant.color}</Text>
+                                                            </Text>
+                                                        </Flex>
+                                                    );
+                                                });
+                                            })}
+                                        </Grid>
+                                    </Flex>
+                                ))}
+                            </TabPanel>
+                            <TabPanel>
+                                {
+                                    recommendations.length > 0 ? (
+                                        recommendations.map((recommendation) => (
+                                            <Flex
+                                                key={recommendation.id}
+                                                flexDirection="column"
+                                                justifyContent="flex-start"
+                                                alignItems="flex-start"
+                                                w="full"
+                                                mb={4}
+                                                overflow="hidden"
+                                                p={2}
+                                            >
+                                                <Text fontSize="sm" fontWeight="500" mb={2} color={"gray.700"}>
+                                                    {recommendation.name}
                                                 </Text>
+        
+                                                <Grid templateColumns={`repeat(5, 1fr)`} gap={2}>
+                                                    {recommendation.furniture
+                                                        .map((furnitureItem) => {
+                                                        let gridCellWidth = imageDimensions.width / gridSize.cols;
+                                                        let gridCellHeight = imageDimensions.height / gridSize.rows;
+        
+                                                        return Object.entries(furnitureItem.variants).map(([variantId, variant], index) => {
+                                                            const furnitureWidthInPixels = (furnitureItem.width / 100) * gridCellWidth;
+                                                            const furnitureLengthInPixels = (furnitureItem.length / 100) * gridCellHeight;
+        
+                                                            return (
+                                                                <Flex key={variantId} direction="column" gap={1} alignItems="center">
+                                                                    <Box
+                                                                        w={`${furnitureWidthInPixels}px`}
+                                                                        h={`${furnitureLengthInPixels}px`}
+                                                                        draggable
+                                                                        onDragStart={(e) => {
+                                                                            setIsDragging(true);
+                                                                            setDraggedItem(variantId);
+                                                                        }}
+                                                                        onDrag={(e) => {
+                                                                            if (isDragging && draggedItem) {
+                                                                                const mouseX = e.clientX;
+                                                                                const mouseY = e.clientY;
+                                                                                setCurrentPosition({ x: mouseX, y: mouseY });
+                                                                            }
+                                                                        }}
+                                                                        onDragEnd={(e) => {
+                                                                            setIsDragging(false);
+                                                                            setDraggedItem(null);
+                                                                        }}
+                                                                    >
+                                                                        <Image
+                                                                            src={variant.icon}
+                                                                            alt={`${furnitureItem.name} - Variant ${index + 1}`}
+                                                                            objectFit="contain"
+                                                                            boxSize="100%"
+                                                                        />
+                                                                    </Box>
+                                                                    <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"}>
+                                                                        {furnitureItem.name}{' '} <Text color={"gray.800"}>{variant.color}</Text>
+                                                                    </Text>
+                                                                </Flex>
+                                                            );
+                                                        });
+                                                    })}
+                                                </Grid>
                                             </Flex>
-                                        );
-                                    });
-                                })}
-                            </Grid>
-                        </Flex>
-                    ))}
+                                        ))
+                                    ) : (
+                                        <Text fontSize="sm" color="gray.500" textAlign="center">
+                                            No recommendations available. Please set your preferences and submit to generate recommendations.
+                                        </Text>
+                                    )
+                                }
+                            </TabPanel>
+                        </TabPanels>
+                    </Tabs>
                 </Flex>
-
                 <Flex 
                     flex={1} 
                     justifyContent="center" 
@@ -745,15 +1051,7 @@ const FloorPlanPersonalization = () => {
                         justifyContent="center"
                         alignItems="center"
                     >
-                        <Image
-                            ref={imageRef}
-                            src={croppedImageUrl}
-                            alt="Floor Plan"
-                            w="100%"
-                            h="100%"
-                            objectFit="contain"
-                            onLoad={handleImageLoad}
-                        />                   
+                        <Image ref={imageRef} src={croppedImageUrl} alt="Floor Plan" w="100%" h="100%" objectFit="contain" onLoad={handleImageLoad} />                   
 
                         {imageDimensions.width && imageDimensions.height && (
                             <Box
@@ -770,12 +1068,9 @@ const FloorPlanPersonalization = () => {
                                 {Array.from({ length: gridSize.rows * gridSize.cols }).map((_, index) => {
                                     const row = Math.floor(index / gridSize.cols);
                                     const col = index % gridSize.cols;
-
                                     const cellWidth = imageDimensions.width / gridSize.cols;
                                     const cellHeight = imageDimensions.height / gridSize.rows;
-
                                     const cellId = `cell-${row}-${col}`;
-
                                     const isOverlapping = overlappingCells.some(cell => cell.row === row && cell.col === col);
 
                                     return (
@@ -820,105 +1115,316 @@ const FloorPlanPersonalization = () => {
 
                             const rotationAngle = furniture.rotation || 0;
 
-                            return (
-                                <Box
-                                    key={furniture.id}
-                                    position="absolute"
-                                    left={`${positionX}px`}
-                                    top={`${positionY}px`}
-                                    transform={`translate(-50%, -50%) rotate(${rotationAngle}deg)`}
-                                    width={`${furnitureWidthInPixels}px`} 
-                                    height={`${furnitureLengthInPixels}px`}
-                                    draggable
-                                    onDragStart={(e) => {
-                                        setIsDragging(true);
-                                        setDraggedItem(furniture.id);
+                            const foundFurniture = categories
+                                .flatMap(category => category.furniture)
+                                .find(item => 
+                                    Object.keys(item.variants).includes(furniture.id)
+                                );
 
-                                        const initialMouseX = e.clientX;
-                                        const initialMouseY = e.clientY;
-                                    
-                                        const offsetX = initialMouseX - furniture.x;
-                                        const offsetY = initialMouseY - furniture.y;
-                                    
-                                        setDragOffset({ x: offsetX, y: offsetY });
-                                    }}
-                                    onDrag={(e) => {
-                                        if (isDragging && draggedItem) {
-                                            const mouseX = e.clientX;
-                                            const mouseY = e.clientY;
-                                            setCurrentPosition({ x: mouseX, y: mouseY });
-                                        }
-                                    }}
-                                    onDragEnd={(e) => {
-                                        setIsDragging(false);
-                                        setDraggedItem(null);
-                                    }}
-                                    onMouseEnter={() => setHoveredItem(furniture.id)}
-                                    onMouseLeave={() => setHoveredItem(null)}
+                            const variant = foundFurniture ? foundFurniture.variants[furniture.id] : null;
+
+                            const discountedPrice = foundFurniture ? foundFurniture.price - (foundFurniture.price * foundFurniture.discount / 100) : 0;
+                        
+                            return (
+                                <Tooltip
+                                    placement='top'
+                                    label={
+                                        variant && foundFurniture ? (
+                                            <Flex w="full" direction="column">
+                                                <Flex w="full" gap={2}>
+                                                    <Image src={variant.image} alt={foundFurniture.name} boxSize="40px" objectFit="contain" />
+                                                    <Flex w="full" direction="column">
+                                                        <Text fontSize="xs" fontWeight="500" color="white">
+                                                            {foundFurniture.name} | {variant.color}
+                                                        </Text>
+                                                        <Text fontSize="xs" color="white">
+                                                            RM {discountedPrice}
+                                                        </Text>
+                                                    </Flex>
+                                                </Flex>
+                                                <Flex w="full">
+                                                    <Text fontSize="xs" color="white">Width: {foundFurniture.width} x Length: {foundFurniture.length} x Height: {foundFurniture.height}</Text>
+                                                </Flex>
+                                            </Flex>
+                                        ) : "No variant data available"
+                                    }
+                                    aria-label={`Tooltip for furniture ${furniture.id}`}
                                 >
-                                    <Image 
-                                        src={furniture.image} 
-                                        alt={`Furniture ${furniture.id}`} 
-                                        objectFit="contain" 
-                                        boxSize="100%" 
-                                    />
-                                    {hoveredItem === furniture.id && (
-                                        <Flex position="absolute" top="0" bottom="0" left="50%" transform="translateX(-50%)" direction="column" alignItems="center" justifyContent="center">
-                                            <IconButton
-                                                onClick={() => handleRotate(furniture.id, 'left')}
-                                                aria-label="Rotate Left"
-                                                icon={<FaArrowRotateLeft />}
-                                                variant="ghost"
-                                                outline="none"
-                                                size="xs"
-                                            />
-                                            <IconButton
-                                                onClick={() => handleRotate(furniture.id, 'right')}
-                                                aria-label="Rotate Right"
-                                                icon={<FaArrowRotateRight />}
-                                                variant="ghost"
-                                                outline="none"
-                                                size="xs"
-                                            />
-                                            <IconButton
-                                                onClick={() => {
-                                                    setFurniturePositions((prevPositions) => prevPositions.filter(f => f.id !== furniture.id));
-                                                }}
-                                                aria-label="Delete"
-                                                icon={<FaTrash />}
-                                                variant="ghost"
-                                                outline="none"
-                                                size="xs"
-                                            />
-                                        </Flex>
-                                    )}
-                                </Box>
+                                    <Box
+                                        key={furniture.id}
+                                        position="absolute"
+                                        left={`${positionX}px`}
+                                        top={`${positionY}px`}
+                                        transform={`translate(-50%, -50%) rotate(${rotationAngle}deg)`}
+                                        width={`${furnitureWidthInPixels}px`} 
+                                        height={`${furnitureLengthInPixels}px`}
+                                        draggable
+                                        onDragStart={(e) => {
+                                            setIsDragging(true);
+                                            setDraggedItem(furniture.id);
+
+                                            const initialMouseX = e.clientX;
+                                            const initialMouseY = e.clientY;
+                                        
+                                            const offsetX = initialMouseX - furniture.x;
+                                            const offsetY = initialMouseY - furniture.y;
+                                        
+                                            setDragOffset({ x: offsetX, y: offsetY });
+                                        }}
+                                        onDrag={(e) => {
+                                            if (isDragging && draggedItem) {
+                                                const mouseX = e.clientX;
+                                                const mouseY = e.clientY;
+                                                setCurrentPosition({ x: mouseX, y: mouseY });
+                                            }
+                                        }}
+                                        onDragEnd={(e) => {
+                                            setIsDragging(false);
+                                            setDraggedItem(null);
+                                        }}
+                                        onMouseEnter={() => setHoveredItem(furniture.id)}
+                                        onMouseLeave={() => setHoveredItem(null)}
+                                    >
+                                        <Image 
+                                            src={furniture.image} 
+                                            alt={`Furniture ${furniture.id}`} 
+                                            objectFit="contain" 
+                                            boxSize="100%" 
+                                        />     
+                                        {hoveredItem === furniture.id && (
+                                            <Flex position="absolute" top="0" bottom="0" left="50%" transform="translateX(-50%)" direction="column" alignItems="center" justifyContent="center">
+                                                <IconButton
+                                                    onClick={() => handleRotate(furniture.id, 'left')}
+                                                    aria-label="Rotate Left"
+                                                    icon={<FaArrowRotateLeft />}
+                                                    variant="ghost"
+                                                    outline="none"
+                                                    size="xs"
+                                                />
+                                                <IconButton
+                                                    onClick={() => handleRotate(furniture.id, 'right')}
+                                                    aria-label="Rotate Right"
+                                                    icon={<FaArrowRotateRight />}
+                                                    variant="ghost"
+                                                    outline="none"
+                                                    size="xs"
+                                                />
+                                                <IconButton
+                                                    onClick={() => { setFurniturePositions((prevPositions) => prevPositions.filter(f => f.id !== furniture.id)); }}
+                                                    aria-label="Delete"
+                                                    icon={<IoTrashOutline />}
+                                                    variant="ghost"
+                                                    outline="none"
+                                                    size="xs"
+                                                />
+                                            </Flex>
+                                        )}
+                                    </Box>                                    
+                                </Tooltip>
                             );
                         })}
                     </Box>
                 </Flex>
-                <Flex w="10%" direction="column" p={3} alignItems="center" gap={3}>
-                    <Flex w="full" gap={3} alignItems="center" justifyContent="center">
-                        <Tooltip label="Go Back" aria-label="Go Back">
+                <Flex w="15%" direction="column" p={3} alignItems="center" gap={3}>
+                    <Flex w="full" gap={3} alignItems="center">
+                        <Tooltip label="Go Back" aria-label="Go Back" placement='top'>
                             <IconButton
                                 icon={<IoMdArrowRoundBack />}
                                 size="md"
                                 colorScheme="blue"
+                                style={{ outline: 'none' }}
                                 onClick={() => window.history.back()}
                             />
                         </Tooltip>
+                        <Text fontSize="md">Go Back</Text>
                     </Flex>           
-                    <Flex>
-                        <Tooltip label="Export to PNG" aria-label="Export to PNG">
+                    <Flex w="full" gap={3} alignItems="center">
+                        <Tooltip label="Export to PNG" aria-label="Export to PNG" placement='top'>
                             <IconButton
                                 icon={<AiOutlineExport />}
                                 size="md"
                                 colorScheme="blue"
+                                style={{ outline: 'none' }}
                                 onClick={handleExportToPNG}
                             />
                         </Tooltip>
+                        <Text fontSize="md">Export To PNG</Text>
+                    </Flex>
+                    <Flex w="full" gap={3} alignItems="center">
+                        <Tooltip label="Generate Preferences" aria-label="Export to PNG" placement='top'>
+                            <IconButton
+                                icon={<PiStarFourLight />}
+                                size="md"
+                                colorScheme="blue"
+                                style={{ outline: 'none' }}
+                                onClick={onOpenPreferenceModal}
+                            />
+                        </Tooltip>
+                        <Text fontSize="md">Preferences</Text>
+                    </Flex>
+                    <Flex w="full" gap={3} alignItems="center">
+                        
                     </Flex>
                 </Flex>
+                <Modal isOpen={isOpenFilterModal} onClose={onCloseFilterModal} size="lg">
+                    <ModalOverlay />
+                    <ModalContent>
+                        <ModalHeader>Filter Furniture</ModalHeader>
+                        <ModalCloseButton style={{ outline: 'none' }} />
+                        <ModalBody>
+                            <Flex>
+                                <Select
+                                    placeholder="Filter by Price Range"
+                                    size="md"
+                                    focusBorderColor="blue.500"
+                                    borderRadius="lg"
+                                    borderColor="gray.300"
+                                    backgroundColor="white"
+                                    color="gray.800"
+                                    onChange={(e) => setSearchFurniturePriceQuery(e.target.value)}
+                                >
+                                    {Object.keys(priceRangeFilter).map((priceRange, index) => (
+                                        <option key={index} value={priceRange}>RM {priceRange}</option>
+                                    ))}
+                                </Select>
+                            </Flex>
+
+                            <Flex mt={4}>
+                                <Select
+                                    placeholder="Filter by Material"
+                                    size="md"
+                                    focusBorderColor="blue.500"
+                                    borderRadius="lg"
+                                    borderColor="gray.300"
+                                    backgroundColor="white"
+                                    color="gray.800"
+                                    onChange={(e) => setSearchFurnitureMaterialQuery(e.target.value)}
+                                >
+                                    {materialFilters.map((material, index) => (
+                                        <option key={index} value={material}>{material}</option>
+                                    ))}
+                                </Select>
+                            </Flex>
+
+                            <Flex mt={4}>
+                                <Select
+                                    placeholder="Filter by Color"
+                                    size="md"
+                                    focusBorderColor="blue.500"
+                                    borderRadius="lg"
+                                    borderColor="gray.300"
+                                    backgroundColor="white"
+                                    color="gray.800"
+                                    onChange={(e) => setSearchFurnitureColorQuery(e.target.value)}
+                                >
+                                    {colorFilters.map((color, index) => (
+                                        <option key={index} value={color}>{color}</option>
+                                    ))}
+                                </Select>
+                            </Flex>
+
+                            <Flex mt={4}>
+                            {
+                                filterByFavourites ?
+                                    <Button colorScheme="red" variant="solid" size="md" leftIcon={<IoIosHeart />} onClick={() => setFilterByFavourites(false)} style={{ outline: 'none' }}>
+                                        Remove Filter
+                                    </Button>
+                                :
+                                    <Button colorScheme="blue" variant="solid" size="md" leftIcon={<IoIosHeartEmpty />} onClick={() => setFilterByFavourites(true)} style={{ outline: 'none' }}>
+                                        Filter by Favourites
+                                    </Button>
+                            }
+                            </Flex>
+                        </ModalBody>
+                        <ModalFooter>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
+                <Modal isOpen={isOpenPreferenceModal} onClose={onClosePreferenceModal} size="lg">
+                    <ModalOverlay />
+                    <ModalContent>
+                        <ModalHeader>Configure Your Preferences!</ModalHeader>
+                        <ModalCloseButton style={{ outline: 'none' }} />
+                        <ModalBody>
+                            <FormControl mb={4}>
+                                <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">Budget</FormLabel>
+                                <InputGroup>
+                                    <InputLeftAddon children="RM" />
+                                    <Input
+                                        type="number"
+                                        placeholder="Enter your budget"
+                                        value={budget}
+                                        onChange={(e) => setBudget(e.target.value)}
+                                    />
+                                </InputGroup>
+                            </FormControl>
+
+                            <MultiSelect
+                                label="Style Preferences"
+                                placeholder="Select preferred styles"
+                                options={styleOptions}
+                                selectedOptions={selectedStyles}
+                                setSelectedOptions={setSelectedStyles}
+                            />
+
+                            <Box mb={4}/>
+
+                            <MultiSelect
+                                label="Material Preferences"
+                                placeholder="Select preferred materials"
+                                options={materialFilters}
+                                selectedOptions={selectedMaterials}
+                                setSelectedOptions={setSelectedMaterials}
+                            />
+
+                            <Box mb={4}/>
+
+                            <FormControl mb={4}>
+                                <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">Room/Space Type</FormLabel>
+                                <Select
+                                    placeholder="Select Room Type"
+                                    value={selectedRoomType}
+                                    onChange={(e) => setSelectedRoomType(e.target.value)}
+                                >
+                                    <option value="Living Room">Living Room</option>
+                                    <option value="Bedroom">Bedroom</option>
+                                    <option value="Dining Room">Dining Room</option>
+                                    <option value="Office">Office</option>
+                                </Select>
+                            </FormControl>
+
+                            <FormControl mb={4}>
+                                <FormLabel mb={2} fontSize="sm" fontWeight="medium" color="gray.900">Palette Preference</FormLabel>
+                                <Select
+                                    placeholder="Select Palette"
+                                    value={selectedPalette}
+                                    onChange={(e) => setSelectedPalette(e.target.value)}
+                                >
+                                    <option value="Neutral">Neutral (Whites, Beiges, Grays)</option>
+                                    <option value="Warm">Warm (Reds, Oranges, Yellows)</option>
+                                    <option value="Cool">Cool (Blues, Greens, Purples)</option>
+                                    <option value="Earthy">Earthy (Browns, Greens, Terracottas)</option>
+                                    <option value="Monochrome">Monochrome (Single-color with various shades)</option>
+                                    <option value="Vibrant">Vibrant (Bright, Bold Colors)</option>
+                                    <option value="Pastel">Pastel (Soft, Muted Colors)</option>
+                                </Select>
+                            </FormControl>
+
+                            <MultiSelect
+                                label="Tags"
+                                placeholder="Select tags"
+                                options={tagOptions}
+                                selectedOptions={selectedTags}
+                                setSelectedOptions={setSelectedTags}
+                            />
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button colorScheme="blue" onClick={handleSubmitPreferences}>
+                                Submit Preferences
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
             </Flex>                
         </Grid>
     );
