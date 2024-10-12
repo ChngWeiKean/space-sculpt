@@ -110,6 +110,9 @@ def crop_floorplan():
             }
             detected_rooms.append(room_data)
 
+            # Draw bounding box on the rooms
+            # cv2.rectangle(cropped_image, (x_room, y_room), (x_room + w_room, y_room + h_room), (0, 255, 0), 2)
+
     # Apply Hough Transform to detect lines
     lines = cv2.HoughLinesP(edges_cropped, 1, np.pi / 180, threshold=100, minLineLength=50, maxLineGap=10)
     print(f"Detected {len(lines)} lines.")
@@ -128,9 +131,6 @@ def crop_floorplan():
             }
             detected_walls.append(wall_data)
 
-            # Highlight the walls by drawing lines on the image
-            # color = (0, 255, 0)  # Green color for walls
-            # cv2.line(cropped_image, (x1, y1), (x2, y2), color, 2)
     else:
         print("No lines detected.")
 
