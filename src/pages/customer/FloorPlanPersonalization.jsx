@@ -57,6 +57,7 @@ const FloorPlanPersonalization = () => {
     const length = localStorage.getItem('length');
     const rooms = JSON.parse(localStorage.getItem('rooms'));
     const walls = JSON.parse(localStorage.getItem('walls'));
+    const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
     const [ isLoading, setIsLoading ] = useState(false);
     const [ gridSize, setGridSize ] = useState({ rows: 0, cols: 0 });
@@ -725,7 +726,7 @@ const FloorPlanPersonalization = () => {
                 ${JSON.stringify(furnitureData, null, 2)}
             `;
     
-            const genAI = new GoogleGenerativeAI("AIzaSyAU1hBH4hAJ-oscggH1dweHw3GbLJQUvCw");
+            const genAI = new GoogleGenerativeAI(geminiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: {"response_mime_type": "application/json"} });
             const result = await model.generateContent(prompt);
     
