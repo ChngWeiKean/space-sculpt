@@ -54,10 +54,14 @@ function CustomerProfile() {
     const [ imageSrc, setImageSrc ] = useState(null);
     const [ isDragActive, setIsDragActive ] = useState(false);
     const [ cards, setCards ] = useState(null);
-    const addresses = user.addresses;
+    const addresses = user?.addresses;
+    let defaultAddress = [];
+    let nonDefaultAddresses = [];
 
-    const defaultAddress = Object.keys(addresses).filter(addressKey => addresses[addressKey].isDefault);
-    const nonDefaultAddresses = Object.keys(addresses).filter(addressKey => !addresses[addressKey].isDefault);
+    if (addresses) {
+        defaultAddress = Object.keys(addresses).filter(addressKey => addresses[addressKey].isDefault);
+        nonDefaultAddresses = Object.keys(addresses).filter(addressKey => !addresses[addressKey].isDefault);        
+    }
 
     const sortedAddresses = [...defaultAddress, ...nonDefaultAddresses];
 

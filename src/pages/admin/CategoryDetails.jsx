@@ -170,8 +170,8 @@ function CategoryDetails() {
             <Box>
                 <Flex justifyContent='space-between' >
                     <Flex direction="row" alignItems="center" gap={4}>
-                        <Text fontSize='2xl' color="#d69511" fontWeight='600'>{category?.name}</Text>
-                        <Text fontSize='lg' color="gray.600" fontWeight='500'>Furniture List</Text>
+                        <Text fontSize='lg' color="#d69511" fontWeight='600'>{category?.name}</Text>
+                        <Text fontSize='md' color="gray.600" fontWeight='500'>Furniture List</Text>
                     </Flex>
                     <Box>
                         <InputGroup>
@@ -194,7 +194,7 @@ function CategoryDetails() {
                         </InputGroup>
                     </Box>           
                 </Flex>          
-                <Divider mt={5} borderColor="blackAlpha.300" borderWidth="1px" />  
+                <Divider mt={2} borderColor="blackAlpha.300" borderWidth="1px" />  
             </Box>
         );
     };
@@ -590,10 +590,10 @@ function CategoryDetails() {
 
     return (
         <Flex w="full" h="auto" p={4} gap={7} bg="#f4f4f4" direction="column">
-            <Flex w="full" h="14rem" direction="row" gap={4}>
+            <Flex w="full" h="11rem" direction="row" gap={4}>
                 <Flex direction="row" gap={4} alignItems="center">
                     <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
-                    <Box direction="column" alignItems="center" minW="200px" minH="200px" maxW="200px" maxH="200px">
+                    <Box direction="column" alignItems="center" w={"150px"} h={"150px"}>
                         <img src={category?.image} alt={category?.name} style={{ width: "100%", height: "80%", objectFit: "contain" }} />
                         <Text mt={1} textAlign="center" fontSize="md" fontWeight="700" color="#d69511">{category?.name}</Text>
                     </Box>                           
@@ -621,57 +621,56 @@ function CategoryDetails() {
                         }}
                     >
                         {subcategories?.map((subcategory, index) => (
-                            <Box as={NavLink} to={`/admin/subcategory/add-furniture/${subcategory.id}`} key={index} direction="column" alignItems="center" minW="200px" minH="200px" maxW="200px" maxH="200px" transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', color: "blue" }}>
+                            <Box as={NavLink} to={`/admin/subcategory/add-furniture/${subcategory.id}`} key={index} direction="column" alignItems="center" w={'150px'} h={'150px'} transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', color: "blue" }}>
                                 <img src={subcategory?.image} alt={subcategory?.name} style={{ width: "100%", height: "80%", objectFit: "contain" }} />
                                 <Text mt={1} textAlign="center" fontSize="md" fontWeight="600" >{subcategory?.name}</Text>
                             </Box>    
                         ))}
                     </Flex>                       
                 </Flex>
-             
             </Flex>
             <Flex w="full" justifyContent="space-between" alignItems="center" direction="row">
                 <Flex gap={6}>
-                    <Box bg="white" boxShadow="md" p={4}>
+                    <Box bg="white" boxShadow="md" p={3}>
                         <Flex justifyContent='center' alignItems='center'>
                             <IoBedOutline color='#d69511' size='35'/>
-                            <Box ml={4}>
+                            <Box ml={2}>
                                 <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>No. Of Furniture</Text>
-                                <Text fontSize='md'>{numOfFurniture}</Text>                                
+                                <Text fontSize='sm'>{numOfFurniture}</Text>                                
                             </Box>
                         </Flex>
                     </Box>
-                    <Box bg="white" boxShadow="md" p={4}>
+                    <Box bg="white" boxShadow="md" p={3}>
                         <Flex justifyContent='center' alignItems='center'>
                             <MdOutlineSell color='#d69511' size='35'/>
-                            <Box ml={4}>
+                            <Box ml={2}>
                                 <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>Furniture Sales</Text>
-                                <Text fontSize='md'>{furnitureSales} sold</Text>                                
+                                <Text fontSize='sm'>{furnitureSales} sold</Text>                                
                             </Box>
                         </Flex>
                     </Box>
-                    <Box bg="white" boxShadow="md" p={4}>
+                    <Box bg="white" boxShadow="md" p={3}>
                         <Flex justifyContent='center' alignItems='center'>
                             <MdOutlineInventory color='#d69511' size='35'/>
-                            <Box ml={4}>
+                            <Box ml={2}>
                                 <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>Furniture Inventory</Text>
-                                <Text fontSize='md'>{inventory} in stock</Text>                                
+                                <Text fontSize='sm'>{inventory} in stock</Text>                                
                             </Box>
                         </Flex>
                     </Box>
-                    <Box bg="white" boxShadow="md" p={4}>
+                    <Box bg="white" boxShadow="md" p={3}>
                         <Flex justifyContent='center' alignItems='center'>
                             <GiMoneyStack color='#d69511' size='40'/>
-                            <Box ml={4}>
+                            <Box ml={2}>
                                 <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>Total Revenue</Text>
-                                <Text fontSize='md'>RM {furnitureRevenue}</Text>                                
+                                <Text fontSize='sm'>RM {furnitureRevenue}</Text>                                
                             </Box>
                         </Flex>
                     </Box>
-                    <Box bg="white" boxShadow="md" p={4}>
+                    <Box bg="white" boxShadow="md" p={3}>
                         <Flex justifyContent='center' alignItems='center'>
                             <GiMoneyStack color='#d69511' size='40'/>
-                            <Box ml={4}>
+                            <Box ml={2}>
                                 <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>Total Profit</Text>
                                 <Text fontSize='md'>RM {furnitureProfit.toFixed(2)}</Text>                                
                             </Box>

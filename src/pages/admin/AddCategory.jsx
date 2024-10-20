@@ -175,12 +175,12 @@ function AddCategory() {
         });
     }, []);
     
-    function checkConflictingNames(type, name, id) {
+    function checkConflictingNames(type, name) {
         name = name.toLowerCase().replace(/\s+/g, '_');
         if (type === 'category') {
-            return categoryNames.some(category => category.name === name && category.id !== id);
+            return categoryNames.some(category => category.name === name);
         } else if (type === 'subcategory') {
-            return subcategoryNames.some(subcategory => subcategory.name === name && subcategory.id !== id);
+            return subcategoryNames.some(subcategory => subcategory.name === name);
         }
     }
 
@@ -195,7 +195,7 @@ function AddCategory() {
             image: subcategory.image,
         }));
 
-        if (checkConflictingNames('category', data.category_name, id)) {
+        if (checkConflictingNames('category', data.category_name)) {
             toast({
                 title: "Category name already exists",
                 description: "Please use a different name",
@@ -273,6 +273,7 @@ function AddCategory() {
                 position: "top",
                 isClosable: true,
             });
+            window.history.back();
         } catch (error) {
             toast({
                 title: "Error creating category and subcategories",

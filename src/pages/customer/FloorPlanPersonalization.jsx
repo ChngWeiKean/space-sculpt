@@ -184,8 +184,6 @@ const FloorPlanPersonalization = () => {
         fetchCategoriesAndFurniture();
     }, []);
 
-    console.log("Categories", categories);
-
     const handleImageLoad = (event) => {
         const img = event.target;
         setImageDimensions({
@@ -194,41 +192,41 @@ const FloorPlanPersonalization = () => {
         });
     };
 
-    const drawWalls = (canvasRef) => {
-        const canvas = canvasRef.current;
-        const canvasBoundingRect = canvas.getBoundingClientRect(); // Get the canvas's bounding box
-        const image = imageRef.current.getBoundingClientRect(); // Get the image's bounding box
+    // const drawWalls = (canvasRef) => {
+    //     const canvas = canvasRef.current;
+    //     const canvasBoundingRect = canvas.getBoundingClientRect(); // Get the canvas's bounding box
+    //     const image = imageRef.current.getBoundingClientRect(); // Get the image's bounding box
         
-        if (canvas && image) {
-            const context = canvas.getContext('2d');
-            context.clearRect(0, 0, canvas.width, canvas.height);  // Clear the canvas for redrawing
-            context.strokeStyle = 'red'; // Color of the walls
-            context.lineWidth = 2; // Thickness of the lines
+    //     if (canvas && image) {
+    //         const context = canvas.getContext('2d');
+    //         context.clearRect(0, 0, canvas.width, canvas.height);  // Clear the canvas for redrawing
+    //         context.strokeStyle = 'red'; // Color of the walls
+    //         context.lineWidth = 2; // Thickness of the lines
     
-            walls.forEach(wall => {
-                // Calculate start and end points for each wall
-                const startX = wall.x;  // Wall's x-coordinate relative to the image's left edge
-                const startY = wall.y;   // Wall's y-coordinate relative to the image's top edge
+    //         walls.forEach(wall => {
+    //             // Calculate start and end points for each wall
+    //             const startX = wall.x;  // Wall's x-coordinate relative to the image's left edge
+    //             const startY = wall.y;   // Wall's y-coordinate relative to the image's top edge
     
-                // Depending on the wall's dimensions (vertical/horizontal), calculate the end points
-                const endX = wall.width > 0 ? startX + wall.width : startX;
-                const endY = wall.height > 0 ? startY + wall.height : startY;
+    //             // Depending on the wall's dimensions (vertical/horizontal), calculate the end points
+    //             const endX = wall.width > 0 ? startX + wall.width : startX;
+    //             const endY = wall.height > 0 ? startY + wall.height : startY;
     
-                // Draw the wall line on the canvas
-                context.beginPath();
-                context.moveTo(startX, startY);
-                context.lineTo(endX, endY);
-                context.stroke();
-                context.closePath();
-            });
-        }
-    };
+    //             // Draw the wall line on the canvas
+    //             context.beginPath();
+    //             context.moveTo(startX, startY);
+    //             context.lineTo(endX, endY);
+    //             context.stroke();
+    //             context.closePath();
+    //         });
+    //     }
+    // };
     
-    useEffect(() => {
-        if (canvasRef.current && imageRef.current && imageDimensions.width && imageDimensions.height) {
-            drawWalls(canvasRef);
-        }
-    }, [canvasRef, imageRef, imageDimensions]);
+    // useEffect(() => {
+    //     if (canvasRef.current && imageRef.current && imageDimensions.width && imageDimensions.height) {
+    //         drawWalls(canvasRef);
+    //     }
+    // }, [canvasRef, imageRef, imageDimensions]);
 
     const wallPositions = useMemo(() => {
         if (imageRef.current && imageDimensions.width && imageDimensions.height) {
@@ -268,8 +266,6 @@ const FloorPlanPersonalization = () => {
 
         const furnitureWidthInPixels = furnitureWidthInMeters * gridCellWidth;
         const furnitureLengthInPixels = furnitureLengthInMeters * gridCellHeight;
-
-        console.log('Furniture', furniture);
     
         // Half dimensions
         const halfWidth = furnitureWidthInPixels / 2;
@@ -297,16 +293,11 @@ const FloorPlanPersonalization = () => {
             };
         };
     
-        // Apply rotation to each corner around the center point (x, y)
         const rotatedCorners = corners.map(corner => rotatePoint(x, y, corner.x, corner.y, rotation));
-        console.log('Rotated corners', rotatedCorners);
-    
         return rotatedCorners;
     };
     
     const isColliding = (furnitureCorners, otherCorners) => {
-        // Check if any of the corners of one furniture item overlap with the other furniture item
-        console.log('Checking for collision');
         return furnitureCorners.some(corner => 
             cornerInsidePolygon(corner, otherCorners)
         );
@@ -326,38 +317,72 @@ const FloorPlanPersonalization = () => {
         }
         return isInside;
     };
+
+    const isCollidingWalls = (furnitureCorners, wallCorners) => {
+        const [fLeft, fRight] = [Math.min(...furnitureCorners.map(c => c.x)), Math.max(...furnitureCorners.map(c => c.x))];
+        const [fTop, fBottom] = [Math.min(...furnitureCorners.map(c => c.y)), Math.max(...furnitureCorners.map(c => c.y))];
+        
+        const [wLeft, wRight] = [Math.min(...wallCorners.map(c => c.x)), Math.max(...wallCorners.map(c => c.x))];
+        const [wTop, wBottom] = [Math.min(...wallCorners.map(c => c.y)), Math.max(...wallCorners.map(c => c.y))];
+        
+        // Check if rectangles overlap
+        return !(fRight < wLeft || 
+                 fLeft > wRight || 
+                 fBottom < wTop || 
+                 fTop > wBottom);
+    };
     
-    const checkForOverlapping = (newPositions, draggedItemId) => {
+    const checkForOverlapping = (draggedItemId, newPositions) => {
         const imageBoundingRect = imageRef.current.getBoundingClientRect();
         
         const mouseX = currentPosition.x - imageBoundingRect.left;
         const mouseY = currentPosition.y - imageBoundingRect.top;
-
+    
+        let draggedFurniturePosition = furniturePositions.find(furniture => furniture.variantId === draggedItemId);
+    
+        if (!draggedFurniturePosition) {
+            const draggedFurniture = categories
+                .flatMap(category => category.furniture)
+                .find(furnitureItem => 
+                    Object.entries(furnitureItem.variants).some(([variantId]) => variantId === draggedItemId.split('|')[0]) // Extract variantId
+                );
+    
+            if (draggedFurniture) {
+                draggedFurniturePosition = {
+                    id: draggedItemId,
+                    variantId: draggedItemId.split('|')[0], // Extract variantId
+                    x: mouseX,
+                    y: mouseY,
+                    image: draggedFurniture.variants[draggedItemId.split('|')[0]].icon, // Use the extracted variantId
+                    width: draggedFurniture.width,
+                    length: draggedFurniture.length,
+                    rotation: 0,
+                };
+            }
+        }
+    
+        if (!draggedFurniturePosition) return false; // If the dragged furniture position is still undefined, exit
+    
+        const furnitureWidthInPixels = (draggedFurniturePosition.width / 100) * (imageDimensions.width / gridSize.cols);
+        const furnitureLengthInPixels = (draggedFurniturePosition.length / 100) * (imageDimensions.height / gridSize.rows);
+    
+        const newDraggedCorners = calculateCornersFromMouse(
+            mouseX, 
+            mouseY, 
+            furnitureWidthInPixels, 
+            furnitureLengthInPixels, 
+            draggedFurniturePosition.rotation
+        );
+    
+        // Check if new dragged corners overlap with existing furniture corners
         return furniturePositions.some(furniture => {
             if (furniture.id !== draggedItemId) {
-                console.log('Checking for overlap with other furniture');
-    
-                // Get the current position and size of the other furniture
                 const otherCorners = getRotatedCorners(furniture);
-    
-                // Calculate new dragged corners using newPositions as center
-                const draggedFurniture = furniturePositions.find(f => f.id === draggedItemId);
-                if (!draggedFurniture) return false;
-    
-                const { width, length, rotation } = draggedFurniture;
-                const furnitureWidthInPixels = (width / 100) * (imageDimensions.width / gridSize.cols);
-                const furnitureLengthInPixels = (length / 100) * (imageDimensions.height / gridSize.rows);
-    
-                const newDraggedCorners = calculateCornersFromMouse(mouseX, mouseY, furnitureWidthInPixels, furnitureLengthInPixels, rotation);
-    
-                console.log('New dragged corners', newDraggedCorners);
-                console.log('Other corners', otherCorners);
-    
                 return isColliding(newDraggedCorners, otherCorners);
             }
             return false;
         });
-    };    
+    };
 
     const calculateCornersFromMouse = (mouseX, mouseY, widthInPixels, lengthInPixels, rotation) => {
         // Calculate the top-left corner based on mouse position
@@ -392,70 +417,69 @@ const FloorPlanPersonalization = () => {
     
         // Apply rotation to each corner around the center point
         const rotatedCorners = corners.map(corner => rotatePoint(centerX, centerY, corner.x, corner.y, rotation));
-        
-        console.log('Rotated corners', rotatedCorners);
     
         return rotatedCorners;
     };
 
     const handleDrop = () => {
         if (isDragging && draggedItem) {
+            console.log('Dropped item:', draggedItem);
+    
             const cellWidth = imageDimensions.width / gridSize.cols;
             const cellHeight = imageDimensions.height / gridSize.rows;
     
             const imageBoundingRect = imageRef.current.getBoundingClientRect();
-
             const mouseX = currentPosition.x - imageBoundingRect.left;
             const mouseY = currentPosition.y - imageBoundingRect.top;
     
+            // Extract the variantId from the draggedItem string
+            const variantId = draggedItem.split('|')[0]; 
+    
+            // Find the dragged furniture variant details
             const draggedFurniture = categories
                 .flatMap(category => category.furniture)
                 .find(furnitureItem => 
-                    Object.entries(furnitureItem.variants).some(([variantId]) => variantId === draggedItem)
+                    Object.entries(furnitureItem.variants).some(([vId]) => vId === variantId)
                 );
     
+            console.log('Dropped Furniture:', draggedFurniture);
+    
+            if (!draggedFurniture) return; 
+    
             const { width, length } = draggedFurniture;
-
-            let draggedFurniturePosition = furniturePositions.find(furniture => furniture.id === draggedItem);
-
+    
+            // Generate a unique ID for each new furniture copy using draggedItem
+            const newId = draggedItem; 
+    
+            let draggedFurniturePosition = furniturePositions.find(furniture => furniture.id === newId);
+    
+            // Update if exists, otherwise create new position
             if (!draggedFurniturePosition) {
-                const newDraggedFurniture = categories
-                    .flatMap(category => category.furniture)
-                    .find(furnitureItem => 
-                        Object.entries(furnitureItem.variants).some(([variantId]) => variantId === draggedItem)
-                    );
-                
-                // Set default position if not found in `furniturePositions`
+                console.log('Creating new furniture position...');
                 draggedFurniturePosition = {
-                    id: draggedItem,
-                    x: mouseX,  // Set the default x position, update it if needed
-                    y: mouseY,  // Set the default y position, update it if needed
-                    image: newDraggedFurniture.variants[draggedItem].icon, // Use furniture's icon
-                    width: newDraggedFurniture.width,  // Use furniture's width
-                    length: newDraggedFurniture.length, // Use furniture's length
-                    rotation: 0, // Default rotation
+                    id: newId,  
+                    variantId: variantId,  
+                    x: mouseX,
+                    y: mouseY,
+                    image: draggedFurniture.variants[variantId].icon, 
+                    width: draggedFurniture.width,
+                    length: draggedFurniture.length,
+                    rotation: 0,
                 };
-                
-                // Add the new furniture position to `furniturePositions`
-                setFurniturePositions(prevPositions => [...prevPositions, draggedFurniturePosition]);
             }
     
-            // Calculate dimensions in pixels before rotation
             const furnitureWidthInPixels = (width / 100) * cellWidth;
             const furnitureLengthInPixels = (length / 100) * cellHeight;
     
-            // Adjust width and length based on rotation angle (90° or 270° => swap width and length)
             const rotatedWidthInPixels = (draggedFurniturePosition.rotation === 90 || draggedFurniturePosition.rotation === 270) ? furnitureLengthInPixels : furnitureWidthInPixels;
             const rotatedLengthInPixels = (draggedFurniturePosition.rotation === 90 || draggedFurniturePosition.rotation === 270) ? furnitureWidthInPixels : furnitureLengthInPixels;
     
             let startGridX = Math.floor(mouseX / cellWidth);
             let startGridY = Math.floor(mouseY / cellHeight);
-            
-            // Calculate grid cells occupied by the rotated furniture
+    
             const widthInGridCells = Math.ceil(rotatedWidthInPixels / cellWidth);
             const lengthInGridCells = Math.ceil(rotatedLengthInPixels / cellHeight);
     
-            // Adjust to fit within grid bounds
             if (startGridX < 0) startGridX = 0;
             if (startGridY < 0) startGridY = 0;
     
@@ -467,12 +491,8 @@ const FloorPlanPersonalization = () => {
                 startGridY = gridSize.rows - lengthInGridCells;
             }
     
-            let snappedX = (startGridX + 0.5) * cellWidth;
-            let snappedY = (startGridY + 0.5) * cellHeight;
-    
             let newPositions = [];
     
-            // Adjust the loop to handle rotated dimensions
             for (let i = 0; i < lengthInGridCells; i++) {
                 for (let j = 0; j < widthInGridCells; j++) {
                     const targetRow = startGridY + i;
@@ -480,130 +500,78 @@ const FloorPlanPersonalization = () => {
     
                     if (targetRow >= 0 && targetRow < gridSize.rows && targetCol >= 0 && targetCol < gridSize.cols) {
                         newPositions.push({ row: targetRow, col: targetCol });
-                        console.log('New position', { row: targetRow, col: targetCol });
                     }
                 }
             }
 
-            // Check if it overlaps with walls (similar logic as before)
-            const isOverlappingWithWalls = newPositions.some(pos => {
-                const cellKey = `${pos.row}-${pos.col}`;
-                if (wallPositions.has(cellKey)) {
-                    const wallsInCell = wallPositions.get(cellKey);
-                    
-                    // Find the closest wall based on distance from current mouseX and mouseY
-                    const closestWall = wallsInCell.reduce((closest, wall) => {
-                        const wallCenterX = wall.x + wall.width / 2;
-                        const wallCenterY = wall.y + wall.height / 2;
-                        const distanceToWall = Math.sqrt(Math.pow(mouseX - wallCenterX, 2) + Math.pow(mouseY - wallCenterY, 2));
-                        
-                        return (!closest || distanceToWall < closest.distance) ? { wall, distance: distanceToWall } : closest;
-                    }, null);
-                
-                    if (closestWall) {
-                        const wall = closestWall.wall;
-                        const orientation = (wall.width > wall.height) ? 'horizontal' : 'vertical';
-                        let furnitureFits = false;
+            const newDraggedCorners = calculateCornersFromMouse(mouseX, mouseY, furnitureWidthInPixels, furnitureLengthInPixels, draggedFurniturePosition.rotation);
     
-                        if (orientation === 'horizontal') {
-                            console.log('Horizontal wall');
-                            if (mouseY > wall.y + wall.height) {
-                                console.log('Snap below the wall');
-                                snappedY = wall.y + wall.height + (furnitureLengthInPixels / 2); // Snap below
-                            } else {
-                                console.log('Snap above the wall');
-                                snappedY = wall.y - (furnitureLengthInPixels / 2); // Snap above
-                            }
-                            furnitureFits = true;
-                        } else {
-                            console.log('Vertical wall');
-                            if (mouseX > wall.x + wall.width) {
-                                console.log('Snap to the right of the wall');
-                                snappedX = wall.x + wall.width + (furnitureWidthInPixels / 2); // Snap to the right
-                            } else {
-                                console.log('Snap to the left of the wall');
-                                snappedX = wall.x - (furnitureWidthInPixels / 2); // Snap to the left
-                            }
-                            furnitureFits = true;
-                        }
-    
-                        return !furnitureFits;
-                    }
-                }
-                return false;
+            const isOverlappingWithWalls = Array.from(wallPositions.values()).some(wallsInCell => {
+                return wallsInCell.some(wall => {
+                    const wallCorners = [
+                        { x: wall.x, y: wall.y },
+                        { x: wall.x + wall.width, y: wall.y },
+                        { x: wall.x + wall.width, y: wall.y + wall.height },
+                        { x: wall.x, y: wall.y + wall.height }
+                    ];
+                    return isCollidingWalls(newDraggedCorners, wallCorners);
+                });
             });
-    
-            if (isOverlappingWithWalls) {
-                return;
-            }            
 
+            if (isOverlappingWithWalls) {
+                console.log('Overlapping with walls, cannot place furniture.');
+                return;
+            }
+    
             const isOverlapping = furniturePositions.some(furniture => {
-                if (furniture.id !== draggedItem) {
-                    console.log('Checking for overlap with other furniture');
-            
-                    // Get the current position and size of the other furniture
+                if (furniture.id !== newId) {  
                     const otherCorners = getRotatedCorners(furniture);
-            
-                    // Calculate new dragged corners using mouse coordinates as the center
-                    const newDraggedCorners = calculateCornersFromMouse(mouseX, mouseY, furnitureWidthInPixels, furnitureLengthInPixels, draggedFurniturePosition.rotation);
-            
-                    console.log('New dragged corners', newDraggedCorners);
-                    console.log('Other corners', otherCorners);
-            
                     return isColliding(newDraggedCorners, otherCorners);
                 }
                 return false;
             });
-        
-            console.log('Is overlapping', isOverlapping);
-
+    
             if (isOverlapping) {
                 return;
             }
     
             setFurniturePositions((prev) => {
-                const existingFurniture = prev.find(f => f.id === draggedItem);
-                if (existingFurniture) {
-                    return prev.map(f => 
-                        f.id === draggedItem ? { ...f, x: mouseX, y: mouseY, positions: newPositions } : f
-                    );
+                const updatedPositions = prev.map(furniture => 
+                    furniture.id === newId 
+                        ? { ...furniture, x: mouseX, y: mouseY, positions: newPositions }  // Update if exists
+                        : furniture
+                );
+                
+                // If it’s a new furniture position, add it to the array
+                if (!prev.some(furniture => furniture.id === newId)) {
+                    updatedPositions.push({
+                        id: newId,  
+                        x: mouseX,
+                        y: mouseY,
+                        variantId: variantId,  
+                        image: draggedFurniture.variants[variantId].icon, 
+                        width: draggedFurniture.width,
+                        length: draggedFurniture.length,
+                        positions: newPositions,
+                        rotation: 0,
+                    });
                 }
     
-                const variantEntry = Object.entries(draggedFurniture.variants).find(([variantId]) => variantId === draggedItem);
-                if (variantEntry) {
-                    const [variantId, variantData] = variantEntry;
-    
-                    return [
-                        ...prev,
-                        { 
-                            id: variantId,
-                            x: mouseX,
-                            y: mouseY,
-                            variantId, 
-                            image: variantData.icon,
-                            width: draggedFurniture.width,
-                            length: draggedFurniture.length,
-                            positions: newPositions,
-                            rotation: 0
-                        }
-                    ];
-                }
-    
-                return prev;
+                return updatedPositions;
             });
         }
     };
     
     const handleHover = (cellId) => {
         const [row, col] = cellId.split('-').slice(1).map(Number);
-
+    
         const cellWidth = imageDimensions.width / gridSize.cols;
         const cellHeight = imageDimensions.height / gridSize.rows;
     
         const draggedFurniture = categories
             .flatMap(category => category.furniture)
             .find(furnitureItem =>
-                Object.entries(furnitureItem.variants).some(([variantId]) => variantId === draggedItem)
+                Object.entries(furnitureItem.variants).some(([variantId]) => variantId === draggedItem.split('|')[0])
             );
     
         if (draggedFurniture) {
@@ -626,14 +594,39 @@ const FloorPlanPersonalization = () => {
                 }
             }
     
-            const isOverlapping = checkForOverlapping(newPositions, draggedItem);
+            // Calculate the corners of the dragged furniture
+            const newDraggedCorners = calculateCornersFromMouse(
+                currentPosition.x - imageRef.current.getBoundingClientRect().left,
+                currentPosition.y - imageRef.current.getBoundingClientRect().top,
+                furnitureWidthInPixels,
+                furnitureLengthInPixels,
+                0
+            );
     
-            if (isOverlapping) {
+            // Check for collisions with walls
+            const isOverlappingWithWalls = Array.from(wallPositions.values()).some(wallsInCell => {
+                return wallsInCell.some(wall => {
+                    const wallCorners = [
+                        { x: wall.x, y: wall.y },
+                        { x: wall.x + wall.width, y: wall.y },
+                        { x: wall.x + wall.width, y: wall.y + wall.height },
+                        { x: wall.x, y: wall.y + wall.height }
+                    ];
+                    return isCollidingWalls(newDraggedCorners, wallCorners);
+                });
+            });
+    
+            // Generate a unique ID for this instance of the furniture
+            const newId = draggedItem; 
+    
+            // Check for overlaps against existing furniture
+            const isOverlapping = checkForOverlapping(newId, newPositions);
+    
+            if (isOverlapping || isOverlappingWithWalls) {
                 setOverlappingCells(newPositions);
             } else {
                 setOverlappingCells([]);
             }
-
         }
     };
 
@@ -927,7 +920,8 @@ const FloorPlanPersonalization = () => {
                                                                 draggable
                                                                 onDragStart={(e) => {
                                                                     setIsDragging(true);
-                                                                    setDraggedItem(variantId);
+                                                                    const timestamp = Date.now();
+                                                                    setDraggedItem(`${variantId}|${timestamp}`);
                                                                 }}
                                                                 onDrag={(e) => {
                                                                     if (isDragging && draggedItem) {
@@ -948,9 +942,14 @@ const FloorPlanPersonalization = () => {
                                                                     boxSize="100%"
                                                                 />
                                                             </Box>
-                                                            <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"}>
-                                                                {furnitureItem.name}{' '} <Text color={"gray.800"}>{variant.color}</Text>
-                                                            </Text>
+                                                            <Flex direction="column">
+                                                                <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"}>
+                                                                    {furnitureItem.name}
+                                                                </Text>
+                                                                <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"} color={"gray.500"}>
+                                                                    {variant.color}
+                                                                </Text>
+                                                            </Flex>
                                                         </Flex>
                                                     );
                                                 });
@@ -995,7 +994,8 @@ const FloorPlanPersonalization = () => {
                                                                         draggable
                                                                         onDragStart={(e) => {
                                                                             setIsDragging(true);
-                                                                            setDraggedItem(variantId);
+                                                                            const timestamp = Date.now();
+                                                                            setDraggedItem(`${variantId}|${timestamp}`);
                                                                         }}
                                                                         onDrag={(e) => {
                                                                             if (isDragging && draggedItem) {
@@ -1016,9 +1016,14 @@ const FloorPlanPersonalization = () => {
                                                                             boxSize="100%"
                                                                         />
                                                                     </Box>
-                                                                    <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"}>
-                                                                        {furnitureItem.name}{' '} <Text color={"gray.800"}>{variant.color}</Text>
-                                                                    </Text>
+                                                                    <Flex>
+                                                                        <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"}>
+                                                                            {furnitureItem.name}{' '} {variant.color}
+                                                                        </Text>
+                                                                        <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"} color={variant.hex_code}>
+                                                                            {variant.color}
+                                                                        </Text>
+                                                                    </Flex>
                                                                 </Flex>
                                                             );
                                                         });
@@ -1119,10 +1124,10 @@ const FloorPlanPersonalization = () => {
                             const foundFurniture = categories
                                 .flatMap(category => category.furniture)
                                 .find(item => 
-                                    Object.keys(item.variants).includes(furniture.id)
+                                    Object.keys(item.variants).includes(furniture.variantId)
                                 );
 
-                            const variant = foundFurniture ? foundFurniture.variants[furniture.id] : null;
+                            const variant = foundFurniture ? foundFurniture.variants[furniture.variantId] : null;
 
                             const discountedPrice = foundFurniture ? foundFurniture.price - (foundFurniture.price * foundFurniture.discount / 100) : 0;
                         
@@ -1163,14 +1168,6 @@ const FloorPlanPersonalization = () => {
                                         onDragStart={(e) => {
                                             setIsDragging(true);
                                             setDraggedItem(furniture.id);
-
-                                            const initialMouseX = e.clientX;
-                                            const initialMouseY = e.clientY;
-                                        
-                                            const offsetX = initialMouseX - furniture.x;
-                                            const offsetY = initialMouseY - furniture.y;
-                                        
-                                            setDragOffset({ x: offsetX, y: offsetY });
                                         }}
                                         onDrag={(e) => {
                                             if (isDragging && draggedItem) {

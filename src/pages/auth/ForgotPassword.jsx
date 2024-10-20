@@ -2,7 +2,6 @@ import {
 	Box,
 	Button,
 	Center,
-	Checkbox,
 	Flex,
 	FormControl,
 	FormErrorMessage,
@@ -10,11 +9,12 @@ import {
 	Grid,
 	Image,
 	Input,
-	Link,
 	Text,
 	useToast
 } from "@chakra-ui/react";
 import { useForm } from "react-hook-form";
+import { db } from "../../../api/firebase";
+import { onValue, ref } from "firebase/database";
 import { forgot_password } from "../../../api/auth.js";
 
 function ForgotPassword() {
@@ -22,20 +22,41 @@ function ForgotPassword() {
 		handleSubmit,
 		register,
 		formState: {
-			errors, isSubmitting
+			errors
 		}
 	} = useForm();
 	const toast = useToast();
 	
 	const onSubmit = async (data) => {
+		const usersRef = ref(db, "users");
+		const users = [];
+		onValue(usersRef, (snapshot) => {
+			const data = snapshot.val();
+			for (let id in data) {
+				users.push(data[id]);
+			}
+		});
+
+		const user = users.find((user) => user.email === data.email);
+		if (!user) {
+			toast({
+				title: "Email not found.",
+				description: "Please try again with a valid email address.",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+				position: "top"
+			});
+			return;
+		}
+
 		const res = await forgot_password(data.email);
-		console.log(res);
-		
+
 		if (res) {
 			if (res.error) {
 				toast({
-					title: "Login failed.",
-					description: "Please try again with valid credentials.",
+					title: "Password reset email unsuccessful.",
+					description: "Please try again.",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -78,7 +99,7 @@ function ForgotPassword() {
 					<Box my={7} mr={5} w="full" h="full">
 						<form action="/api/login" method="post" onSubmit={handleSubmit(onSubmit)}>
 							<Text fontSize="xl" fontWeight="bold" mb={7}>
-								Forget Password
+								Forgot Password
 							</Text>
 							<Grid templateRows="auto 1fr" w="100%" h="100%" overflow="hidden">
 								<Box w="full" my={10}>
