@@ -420,6 +420,7 @@ function EditCategory() {
                 duration: 5000,
                 isClosable: true
             });
+            window.history.back();
         }
         catch (error) {
             toast({

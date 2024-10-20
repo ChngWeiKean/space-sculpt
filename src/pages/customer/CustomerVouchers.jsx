@@ -29,7 +29,10 @@ function CustomerVouchers() {
 
     useEffect(() => {
         const voucherRef = ref(db, `vouchers`);
-        const voucherCodes = Object.keys(user.vouchers).filter(voucherCode => user.vouchers[voucherCode]);
+        if (!user.vouchers) {
+            return;
+        }
+        const voucherCodes = Object.keys(user?.vouchers).filter(voucherCode => user?.vouchers[voucherCode]);
         onValue(voucherRef, (snapshot) => {
             const data = snapshot.val();
             const userVouchers = {};

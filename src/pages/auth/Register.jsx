@@ -18,6 +18,8 @@ import {
 } from '@chakra-ui/react';
 import {IoMdEye, IoMdEyeOff} from "react-icons/io";
 import {useState} from "react";
+import { db } from "../../../api/firebase";
+import { onValue, ref } from "firebase/database";
 import {register as registerUser} from "../../../api/auth.js";
 import {useForm} from "react-hook-form";
 import {useAuth} from "../../components/AuthCtx.jsx";
@@ -32,8 +34,6 @@ function Register() {
 	} = useForm();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [error, setError] = useState(null);
-    const {user, loading} = useAuth();
     const toast = useToast();
     
     const onSubmit = async (data) => {
@@ -44,6 +44,28 @@ function Register() {
             alert("Passwords do not match!");
             return;
         }
+
+        const usersRef = ref(db, "users");
+        const users = [];
+        onValue(usersRef, (snapshot) => {
+            const data = snapshot.val();
+            for (let id in data) {
+                users.push(data[id]);
+            }
+        });
+
+        const user = users.find((user) => user.email === data.email);
+        if (user) {
+            toast({
+                title: "Email already exists.",
+                description: "Please try again with a different email address.",
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+            });
+            return;
+        }
+
         const res = await registerUser(data);
         
 		if (res) {

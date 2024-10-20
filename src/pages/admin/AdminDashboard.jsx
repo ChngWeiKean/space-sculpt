@@ -326,8 +326,10 @@ function AdminDashboard() {
                                 
                                 // Get the total number of items sold for this category
                                 let quantity = 0;
-                                for (const order of furnitureData.orders) {
-                                    quantity += order.quantity;
+                                if (furnitureData.orders) {
+                                    for (const order of furnitureData.orders) {
+                                        quantity += order.quantity;
+                                    }
                                 }
 
                                 categorySoldCount[category.name] += quantity;
@@ -553,9 +555,9 @@ function AdminDashboard() {
                         >
                             {filteredCategories?.map((category, index) => (
                                 <NavLink to={`/admin/category/${category.id}`} key={index}>
-                                    <Box key={index} direction="column" alignItems="center" minW="200px" minH="200px" maxW="200px" maxH="200px" bgColor="#f8f8f8" borderRadius="md" mt={4} transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', shadow: 'md' }}>
-                                        <img src={category.image} alt={category.name} style={{ width: "100%", height: "80%", objectFit: "contain" }} />
-                                        <Text mt={1} textAlign="center" fontSize="md" fontWeight="600">{category.name}</Text>
+                                    <Box key={index} direction="column" alignItems="center" w={"200px"} h={"200px"} bgColor="#f8f8f8" borderRadius="md" mt={4} transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', shadow: 'md' }}>
+                                        <img src={category.image} alt={category.name} style={{ width: "100%", height: "70%", objectFit: "contain" }} />
+                                        <Text mt={1} mx={1} textAlign="center" fontSize="sm" fontWeight="600">{category.name}</Text>
                                     </Box>                            
                                 </NavLink>
                             ))}

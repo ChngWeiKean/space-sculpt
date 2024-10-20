@@ -271,12 +271,12 @@ function CustomerCategoryDetails() {
 
     return (
         <Flex w="full" h="full" p={4} gap={7} bg="#f4f4f4" direction="column">
-            <Flex w="full" h="14rem" direction="row" gap={4}>
+            <Flex w="full" h="11rem" direction="row" gap={4}>
                 <Flex direction="column" gap={1}>
                     <Text ml={2} color="#d69511" fontSize="xl" fontWeight="bold" textAlign="center">Category</Text>
                     <Flex direction="row" gap={4} alignItems="center">
                         <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
-                        <Box onClick={() => handleSubcategoryClick(null)} direction="column" alignItems="center" minW="200px" minH="200px" maxW="200px" maxH="200px" transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', color: '#d69511' }}>
+                        <Box onClick={() => handleSubcategoryClick(null)} direction="column" alignItems="center" w={"150px"} h={"150px"} transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', color: '#d69511' }}>
                             <img src={category?.image} alt={category?.name} style={{ width: "100%", height: "80%", objectFit: "contain" }} />
                             <Text mt={1} textAlign="center" fontSize="md" fontWeight="600">{category?.name}</Text>
                         </Box>                           
@@ -330,7 +330,7 @@ function CustomerCategoryDetails() {
                         }}
                     >
                         {filteredSubcategories?.map((subcategory, index) => (
-                            <Box key={index} onClick={() => handleSubcategoryClick(subcategory)} direction="column" alignItems="center" minW="200px" minH="200px" maxW="200px" maxH="200px" transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', color: '#d69511' }}>
+                            <Box key={index} onClick={() => handleSubcategoryClick(subcategory)} direction="column" alignItems="center" w={"150px"} h={"150px"} transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', color: '#d69511' }}>
                                 <img src={subcategory?.image} alt={subcategory?.name} style={{ width: "100%", height: "80%", objectFit: "contain" }} />
                                 <Text mt={1} textAlign="center" fontSize="md" fontWeight="600" color={subcategory === selectedSubcategory ? "#d69511" : "black"}>{subcategory?.name}</Text>
                             </Box>    
