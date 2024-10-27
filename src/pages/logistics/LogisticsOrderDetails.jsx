@@ -681,7 +681,7 @@ function LogisticsOrderDetails() {
                                 </FormControl>
                             </Flex>
                         </Flex>
-                        <Flex w="full" direction="row" gap={3} px={5}>
+                        <Flex w="full" direction="row" gap={3} px={5} pb={3}>
                             <FormControl>
                                 <FormLabel fontSize="sm" fontWeight="700" color="gray.500" letterSpacing="wide">Remarks</FormLabel>
                                 <Textarea
@@ -735,6 +735,7 @@ function LogisticsOrderDetails() {
                                                             size="md"
                                                             focusBorderColor="blue.500"
                                                             w="full"
+                                                            value={selectedDriver}
                                                             onChange={(e) => setSelectedDriver(e.target.value)}
                                                         >
                                                             <option value="">Select a driver</option>

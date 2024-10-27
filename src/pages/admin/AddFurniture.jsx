@@ -498,7 +498,7 @@ function AddFurniture() {
             }
             <Box w="90%" h="auto" bg="white" boxShadow="md" p={10}> 
                 <Flex w="full" direction="column">
-                    <Flex w="full" direction="row" justifyContent="space-between" mb={12}>
+                    <Flex w="full" direction="row" justifyContent="space-between" mb={3}>
                         <Flex w="full" direction="row" alignContent="center" gap={4}>
                             <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
                             <Text fontSize="2xl" fontWeight="700" color="#d69511">Add New Furniture</Text>

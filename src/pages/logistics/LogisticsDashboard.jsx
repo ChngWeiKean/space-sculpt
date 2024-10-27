@@ -193,8 +193,8 @@ function LogisticsDashboard() {
     const statusBodyTemplate = (rowData) => {
         console.log(rowData);
         return (
-            <Badge colorScheme={rowData.orders ? "red" : "green"}>
-                {rowData.orders ? (
+            <Badge colorScheme={rowData.orders && rowData.orders.some(order => !order.completion_status?.Completed) ? "red" : "green"}>
+                {rowData.orders && rowData.orders.some(order => !order.completion_status?.Completed) ? (
                     <Text fontSize="md" fontWeight="semibold" color="blue.500">Occupied</Text>
                 ) : (
                     <Text fontSize="md" fontWeight="semibold" color="blue.500">Available</Text>

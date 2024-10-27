@@ -7,8 +7,6 @@ import {deleteUser, signInWithEmailAndPassword, updateEmail, updatePassword} fro
 export const createCategoryAndSubcategories = async (categoryData, subcategoryData) => {
     const { category_name, category_image } = categoryData;
 
-    console.log("Category Image", category_image);
-
     const categoryRef = ref(db, 'categories');
     const newCategoryRef = push(categoryRef);
     const storageRef = sRef(storage, `categories/${newCategoryRef.key}`);

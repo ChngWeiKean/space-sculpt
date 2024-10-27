@@ -47,6 +47,7 @@ import CustomerVouchers from './pages/customer/CustomerVouchers.jsx'
 import ViewProfile from './pages/logistics/ViewProfile.jsx'
 import LayoutCustomization from './pages/customer/LayoutCustomization.jsx'
 import FloorPlanPersonalization from './pages/customer/FloorPlanPersonalization.jsx'
+import ViewDriverOrders from './pages/logistics/ViewDriverOrders.jsx'
 
 const HomeElement = () => {
 	const { user } = useAuth();
@@ -90,6 +91,7 @@ const router = createBrowserRouter(
 				<Route path="order-details/:id" element={<LogisticsOrderDetails/>}/>
 				<Route path="view/:id" element={<ViewProfile/>}/>
 				<Route path="settings" element={<LogisticsSettings/>}/>
+				<Route path="view-orders/:id" element={<ViewDriverOrders/>}/>
 			</Route>
 			<Route path='/admin' element={<AdminLayout/>}>
 				<Route path="users" element={<UserList/>}/>

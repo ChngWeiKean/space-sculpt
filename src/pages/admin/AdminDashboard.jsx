@@ -35,27 +35,11 @@ const FurnitureCategoryDoughnutChart = memo((data) => {
         datasets: [
             {
                 data: Object.values(data),
-                backgroundColor: [
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
+                backgroundColor: [ '#FF6384', '#36A2EB', '#FFCE56', '#FF6384',
+                    '#36A2EB', '#FFCE56', '#FF6384', '#36A2EB', '#FFCE56',
                 ],
-                hoverBackgroundColor: [
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
+                hoverBackgroundColor: [ '#FF6384', '#36A2EB', '#FFCE56', '#FF6384',
+                    '#36A2EB', '#FFCE56', '#FF6384', '#36A2EB', '#FFCE56',
                 ],
             },
         ],
@@ -79,33 +63,13 @@ const MonthlyProfitBarChart = memo((data) => {
                 maxBarThickness: 48,
                 minBarLength: 2,
                 data: Object.values(data),
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(153, 102, 255, 0.2)',
-                    'rgba(255, 159, 64, 0.2)',
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(153, 102, 255, 0.2)',
-                    'rgba(255, 159, 64, 0.2)',
+                backgroundColor: [ 'rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)', 'rgba(255, 159, 64, 0.2)', 'rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)', 'rgba(153, 102, 255, 0.2)', 'rgba(255, 159, 64, 0.2)',
                 ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)',
+                borderColor: [ 'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)', 'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)',
                 ],
                 borderWidth: 1,
             },
@@ -223,35 +187,19 @@ function AdminDashboard() {
         const fetchOrdersWithUserDetails = async () => {
             const orderRef = ref(db, 'orders');
             onValue(orderRef, async (snapshot) => {
-                let profitByMonths = {
-                    January: 0,
-                    February: 0,
-                    March: 0,
-                    April: 0,
-                    May: 0,
-                    June: 0,
-                    July: 0,
-                    August: 0,
-                    September: 0,
-                    October: 0,
-                    November: 0,
-                    December: 0,
+                let profitByMonths = { January: 0, February: 0, March: 0, April: 0, May: 0,
+                    June: 0, July: 0, August: 0, September: 0, October: 0, November: 0,  December: 0,
                 };
                 let profit = 0;
                 let count = 0;
-    
                 const fetchUserDetails = async (userId) => {
                     const userRef = ref(db, `users/${userId}`);
                     const userSnapshot = await get(userRef);
                     return userSnapshot.val();
                 };
-    
                 const promises = [];
-    
                 snapshot.forEach((childSnapshot) => {
-                    const data = {
-                        ...childSnapshot.val(),
-                    };
+                    const data = { ...childSnapshot.val(), };
                     data.ordered_on = new Date(data.created_on);
                     data.created_on = new Date(data.created_on).toLocaleString('en-GB', {
                         day: '2-digit',
@@ -262,18 +210,13 @@ function AdminDashboard() {
                         hour12: true
                     }).replace(',', '');
                     data.id = childSnapshot.key;
-                    // Get profit by month
                     const month = new Date(data.ordered_on).toLocaleString('en-GB', { month: 'long' });
-                    // Add the total revenue to the monthly profit after deducting the total cost of all items (including their quantity)
                     if (profitByMonths[month]) {
-                        // Add the total revenue to the profit for this month after subtracting the total cost (cost * quantity)
                         profitByMonths[month] += (Number(data.total) - data.items.reduce((sum, item) => sum + (Number(item.cost) * Number(item.quantity)), 0));
                     } else {
-                        // Initialize profit for the month
                         profitByMonths[month] = (Number(data.total) - data.items.reduce((sum, item) => sum + (Number(item.cost) * Number(item.quantity)), 0));
                     }
                     
-                    // Update the overall profit after accounting for the item costs and quantities
                     profit += (Number(data.total) - data.items.reduce((sum, item) => sum + (Number(item.cost) * Number(item.quantity)), 0));
                     count++;
     
@@ -286,7 +229,6 @@ function AdminDashboard() {
                 });
     
                 const ordersWithUserDetails = await Promise.all(promises);
-                // Sort orders by created_on date (most recent first)
                 ordersWithUserDetails.sort((a, b) => new Date(b.ordered_on) - new Date(a.ordered_on));
                 console.log(ordersWithUserDetails);
                 setOrderCount(count);
@@ -320,11 +262,6 @@ function AdminDashboard() {
     
                             if (furnitureSnapshot.exists()) {
                                 const furnitureData = furnitureSnapshot.val();
-                                const orderLength = furnitureData.orders
-                                    ? furnitureData.orders.length
-                                    : 0;
-                                
-                                // Get the total number of items sold for this category
                                 let quantity = 0;
                                 if (furnitureData.orders) {
                                     for (const order of furnitureData.orders) {
@@ -339,7 +276,6 @@ function AdminDashboard() {
                 }
             }
     
-            console.log("Furniture sold by category:", categorySoldCount);
             setCategoriesSold(categorySoldCount);
         };
     
