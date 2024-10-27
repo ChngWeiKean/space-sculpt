@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 import { IoMdArrowRoundBack, IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { useForm } from "react-hook-form";
 import { onValue, ref } from "firebase/database";
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { updateUserProfile } from '../../../api/admin.js';
 
 function ViewProfile() {
@@ -95,11 +95,18 @@ function ViewProfile() {
                             p={3}
                         >
                             <Box my={7} mx={5} w="full">
-                                <Flex w="full" direction="row" justifyContent="space-between" mb={4}>
-                                    <Flex w="full" direction="row" alignContent="center" gap={4}>
-                                        <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
+                                <Flex w="full" direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+                                    <Flex w="auto" direction="row" alignContent="center" gap={4}>
+                                        <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()} />
                                         <Text fontSize="2xl" fontWeight="700" color="#d69511">Edit User</Text>
                                     </Flex>
+                                    {
+                                        user?.role === "Delivery" && (
+                                            <Text w="auto" as="a" href={`/view-orders/${id}`} textColor="blue.500" fontSize="sm" fontWeight="medium" _hover={{ textDecoration: "underline" }}>
+                                                View Orders
+                                            </Text>                                            
+                                        )
+                                    }
                                 </Flex>
                                 <form action="/api/add_new_user" method="post" onSubmit={handleSubmit(onSubmit)}>
                                     <Flex w="full" direction="row" gap={8}>

@@ -867,7 +867,7 @@ function CustomerOrderDetails() {
                                             order?.items.map((item, index) => (
                                                 item.checked ? null 
                                                 : (
-                                                    <Flex w="full" direction="row" key={index} gap={5} alignItems="center" flexWrap="wrap">
+                                                    <Flex w="full" direction="row" key={index} gap={5} alignItems="center">
                                                         <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide" flexShrink={0}>
                                                             {item.name}
                                                         </Text>
@@ -899,7 +899,7 @@ function CustomerOrderDetails() {
                                                                 </Flex>
                                                             )
                                                         }
-                                                        <FormControl w="auto">
+                                                        <FormControl>
                                                             <Select
                                                                 placeholder="Select a report type"
                                                                 {...register(`reportedItems[${index}].reportType`, {

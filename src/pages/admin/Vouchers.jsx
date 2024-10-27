@@ -36,6 +36,7 @@ import { deleteVoucher, restoreVoucher } from '../../../api/admin.js';
 
 function Vouchers() {
     const [ vouchers, setVouchers ] = useState([]);
+    const [ redemptionCount, setRedemptionCount ] = useState(0);
     const [filters, setFilters] = useState({
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
         name: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -347,16 +348,21 @@ function Vouchers() {
     const header = renderHeader();
 
     useEffect(() => {
+        let redemptionCount = 0;
         const vouchersRef = ref(db, 'vouchers');
         const q = query(vouchersRef, orderByChild('date'));
         onValue(q, (snapshot) => {
             const vouchers = [];
             snapshot.forEach((childSnapshot) => {
+                if (childSnapshot.val().redemption_count) {
+                    redemptionCount += childSnapshot.val().redemption_count;
+                }
                 vouchers.push({
                     id: childSnapshot.key,
                     ...childSnapshot.val()
                 });
             });
+            setRedemptionCount(redemptionCount);
             setVouchers(vouchers);
         });
     }, []);
@@ -371,11 +377,11 @@ function Vouchers() {
                                 <RiCoupon2Line color='#d69511' size='30'/>
                                 <Box ml={4}>
                                     <Text fontWeight='bold' letterSpacing='wide' fontSize='sm'>No. of Vouchers Redeemed</Text>
-                                    <Text fontSize='lg'> </Text>                                
+                                    <Text fontSize='lg'>{redemptionCount}</Text>                                
                                 </Box>
                             </Flex>
                         </Box>
-                        <Box bg="white" boxShadow="md" p={4}>
+                        {/* <Box bg="white" boxShadow="md" p={4}>
                             <Flex justifyContent='center' alignItems='center'>
                                 <CiDiscount1 color='#d69511' size='30'/>
                                 <Box ml={4}>
@@ -383,7 +389,7 @@ function Vouchers() {
                                     <Text fontSize='lg'> </Text>                                
                                 </Box>
                             </Flex>
-                        </Box>
+                        </Box> */}
                     </Flex>
                     <Box>
                         <Button

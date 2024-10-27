@@ -18,7 +18,7 @@ import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
 import { RiEmotionHappyLine } from "react-icons/ri";
 import { IoBedOutline, IoCartOutline } from "react-icons/io5";
 import { AiOutlineUser } from "react-icons/ai";
-import { BiSearchAlt2 } from "react-icons/bi";
+import { BiSearchAlt2, BiCategoryAlt } from "react-icons/bi";
 import { NavLink } from 'react-router-dom';
 import { db } from "../../../api/firebase";
 import { onValue, ref } from "firebase/database";
@@ -37,6 +37,7 @@ function CustomerHome() {
     const [ categories, setCategories ] = useState([]);
     const [ furniture, setFurniture ] = useState([]);
     const [ topFurniture, setTopFurniture ] = useState([]);
+    const [ numOfCategories, setNumOfCategories ] = useState(0);
     const [ cart, setCart ] = useState({});
     const [ furnitureLength, setFurnitureLength ] = useState(0);
     const [ searchQuery, setSearchQuery ] = useState('');
@@ -52,6 +53,7 @@ function CustomerHome() {
                 };
                 categories.push(data);
             });
+            setNumOfCategories(categories.length);
             setCategories(categories);
         });
 
@@ -246,7 +248,7 @@ function CustomerHome() {
                                 <AiOutlineUser size={"45px"} color="#ffe873"/>
                             </Box>
                             <Flex direction="column" >
-                                <Text fontSize="md" color="gray.600" fontWeight="600">121 Customizations</Text>
+                                <Text fontSize="md" color="gray.600" fontWeight="600">{numOfCategories} Categories</Text>
                                 <Text fontSize="sm" color="gray.500" fontWeight="500">Customize your home layout with ease!</Text>
                             </Flex>
                         </Flex>

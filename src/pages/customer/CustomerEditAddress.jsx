@@ -54,20 +54,32 @@ function CustomerEditAddress() {
 	const handlePlaceSelect = () => {
 		if (inputRef.current && inputRef.current.getPlace) {
 			const place = inputRef.current.getPlace();
-			const place_id = place.place_id;
-			const { geometry, formatted_address, name } = place;
+			const { geometry, formatted_address, name, place_id } = place;
 			const { location } = geometry;
-			mapRef.panTo({ lat: location.lat(), lng: location.lng() });
-            let addressResult = {
-                name: name,
-                address: formatted_address,
-                place_id: place_id,
-                isDefault: address.isDefault,
-                lat: location.lat(),
-                lng: location.lng(),
-            }
-            setAddress(addressResult);
-            console.log("New Address", addressResult);
+			const lat = location.lat();
+			const lng = location.lng();
+
+			if (!isWithinPenang(lat, lng)) {
+				toast({
+					title: "Selected location is outside Penang!",
+					status: "error",
+					position: "top",
+					duration: 5000,
+					isClosable: true,
+				});
+				return;
+			}
+
+			mapRef.panTo({ lat, lng });
+			let addressResult = {
+				name,
+				address: formatted_address,
+				place_id,
+				isDefault: address?.isDefault || false,
+				lat,
+				lng,
+			};
+			setAddress(addressResult);
 		}
 	};
 	
@@ -122,6 +134,22 @@ function CustomerEditAddress() {
         getAddressDetails();
     }, [user, id, mapRef]);
 
+    const PENANG_BOUNDS = {
+        north: 5.4828, // Northernmost point of Penang Island
+        south: 5.2270, // Southernmost point of Penang Island
+        west: 100.2047, // Westernmost point of Penang Island
+        east: 100.3440, // Easternmost point of Penang Island
+    };
+    
+    const isWithinPenang = (lat, lng) => {
+        return (
+            lat <= PENANG_BOUNDS.north &&
+            lat >= PENANG_BOUNDS.south &&
+            lng <= PENANG_BOUNDS.east &&
+            lng >= PENANG_BOUNDS.west
+        );
+    };
+
     const handleUpdateAddress = async () => {
         try {
             await updateDefaultAddress(user.uid, id);
@@ -168,12 +196,23 @@ function CustomerEditAddress() {
     }
 
     const onSubmit = async (data) => {
-        const addressData = {
-            name: address.name,
-            formatted_address: address.address,
-            place_id: address.place_id,
-            isDefault: address.isDefault,
-        }
+		if (!address || !isWithinPenang(address.lat, address.lng)) {
+			toast({
+				title: "Address is outside Penang",
+				status: "error",
+				position: "top",
+				duration: 5000,
+				isClosable: true,
+			});
+			return;
+		}
+
+		const addressData = {
+			name: address.name,
+			formatted_address: address.address,
+			place_id: address.place_id,
+			isDefault: address.isDefault,
+		};
 
         try {
             await updateAddress(user.uid, id, addressData);

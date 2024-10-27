@@ -557,7 +557,7 @@ function AdminOrderDetails() {
                                     <Divider my={2} borderWidth='1px' borderColor="gray.300" />
                                     {
                                         report?.items.map((item, index) => (
-                                            <Flex w="full" direction="row" key={index} gap={5} alignItems="center" flexWrap="wrap">
+                                            <Flex w="full" direction="row" key={index} gap={5} alignItems="center">
                                                 <Text fontSize="md" fontWeight="500" color="gray.600" letterSpacing="wide" flexShrink={0}>
                                                     {item.name}
                                                 </Text>
@@ -588,7 +588,7 @@ function AdminOrderDetails() {
                                                         </Flex>
                                                     )
                                                 }
-                                                <FormControl w="auto">
+                                                <FormControl>
                                                     <Input
                                                         variant="unstyled"
                                                         type="text"

@@ -75,13 +75,54 @@ function CustomerAddAddress() {
 
     const toast = useToast();
 
-    const onSubmit = async (data) => {
-        const addressData = {
-            name: place.name,
-            formatted_address: place.address,
-            place_id: place.place_id,
-        }
+    const PENANG_BOUNDS = {
+        north: 5.4828, // Northernmost point of Penang Island
+        south: 5.2270, // Southernmost point of Penang Island
+        west: 100.2047, // Westernmost point of Penang Island
+        east: 100.3440, // Easternmost point of Penang Island
+    };
+    
+    const isWithinPenang = (lat, lng) => {
+        return (
+            lat <= PENANG_BOUNDS.north &&
+            lat >= PENANG_BOUNDS.south &&
+            lng <= PENANG_BOUNDS.east &&
+            lng >= PENANG_BOUNDS.west
+        );
+    };
 
+    const onSubmit = async (data) => {
+        if (!place) {
+            toast({
+                title: "Error",
+                description: "Please select an address.",
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+            });
+            return;
+        }
+    
+        const { lat, lng, name, address, place_id } = place;
+    
+        // Check if the selected place is within Penang Island
+        if (!isWithinPenang(lat, lng)) {
+            toast({
+                title: "Invalid Address",
+                description: "The selected address is not within Penang Island. Please choose an address on the island.",
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+            });
+            return;
+        }
+    
+        const addressData = {
+            name,
+            formatted_address: address,
+            place_id: place_id,
+        };
+    
         try {
             await addAddress(user.uid, addressData);
             toast({
@@ -91,7 +132,7 @@ function CustomerAddAddress() {
                 duration: 5000,
                 isClosable: true,
             });
-            window.history.back()
+            window.history.back();
         } catch (error) {
             console.error("Error adding address:", error);
             toast({
@@ -102,7 +143,7 @@ function CustomerAddAddress() {
                 isClosable: true,
             });
         }
-    }
+    };
 
     return (
         <Flex w="full" py={4} px={8} bg="#f4f4f4" direction="column">

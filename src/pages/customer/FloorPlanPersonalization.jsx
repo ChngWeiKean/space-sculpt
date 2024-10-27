@@ -686,19 +686,51 @@ const FloorPlanPersonalization = () => {
             setIsLoading(true);
     
             const preferences = {
+                budget: budget,
                 selectedStyles: selectedStyles,
                 selectedMaterials: selectedMaterials,
                 selectedRoomType: selectedRoomType,
                 selectedPalette: selectedPalette,
                 selectedTags: selectedTags
             };
+
+            if (!preferences.budget && !preferences.selectedStyles.length && !preferences.selectedMaterials.length && !preferences.selectedRoomType && !preferences.selectedPalette.length && !preferences.selectedTags.length) {
+                toast({
+                    title: "No preferences selected!",
+                    description: "Please select at least one preference to generate recommendations.",
+                    status: "error",
+                    duration: 3000,
+                    position: "top",
+                    isClosable: true,
+                });
+                setIsLoading(false);
+                return;
+            }
     
             const furnitureData = categories;
+            furnitureData.forEach(category => {
+                delete category.created_on;
+                delete category.created_by;
+                delete category.updated_by;
+                delete category.updated_on;
+                delete category.image;
+                category.furniture.forEach(furniture => {
+                    delete furniture.care_method;
+                    delete furniture.cost;
+                    delete furniture.favourites;
+                    delete furniture.orders;
+                    delete furniture.reviews;
+                    delete furniture.subcategory;
+                    delete furniture.updated_on;
+                    delete furniture.updated_by;
+                });
+            });
             console.log("Furniture Data", furnitureData);
             console.log("Preferences", preferences);
     
             const prompt = `
                 Based on the following preferences:
+                - Budget: ${preferences.budget}
                 - Preferred Styles: ${preferences.selectedStyles}
                 - Preferred Materials: ${preferences.selectedMaterials}
                 - Room Type: ${preferences.selectedRoomType}
@@ -706,14 +738,18 @@ const FloorPlanPersonalization = () => {
                 - Tags: ${preferences.selectedTags}
             
                 Recommend the best matching furniture from the available furniture data, following these rules:
-                1. Recommend only items that match the user's preferred styles, materials, and tags. If some preferences are not specified, prioritize the ones that are.
+                1. Recommend only items that match the user's preferred styles, budget, materials, and tags. If some preferences are not specified, prioritize the ones that are.
                 2. For the selected room type, recommend furniture that fits this use case.
-                3. If a color palette preference is specified, recommend furniture with variants that closely match the user's palette choice using the "hex_code" fields. Discard items that don't match.
+                3. If a color palette preference is specified, recommend furniture that has color hex codes close to the preferred palette. For accurate color matching:
+                    - Calculate the color difference based on hex code similarity, and include only items with a close match.
+                    - Include items with colors that match within a hex code distance threshold (e.g., a small color distance).
+                    - Exclude any furniture items with variants that don't match the specified palette preferences closely enough.
                 4. Ensure each recommendation includes the category, furniture name, price, style, material, and matching palette.
                 5. If no perfect match exists, recommend the closest match.
                 6. Return a valid JSON array of the recommended furniture in the same structure as the provided furnitureData.
                 7. Exclude any furniture variants that do not match the specified preferences (styles, materials, color palettes, tags).
-                8. Please ensure the response is in the correct format, and it follows the given structure of furnitureData, make sure there is category.furniture data.
+                8. Please ensure the response is in the correct format and follows the given structure of furnitureData.
+                9. Return an array of categories, containing the recommended furniture items only.
             
                 Furniture Data:
                 ${JSON.stringify(furnitureData, null, 2)}
@@ -730,22 +766,21 @@ const FloorPlanPersonalization = () => {
                 const recommendations = JSON.parse(aiResponse);
                 console.log("Recommendations", recommendations);
                 setRecommendations(recommendations);
+                toast({
+                    title: "Check the recommendations tab!",
+                    description: "Your furniture recommendations have been successfully generated.",
+                    status: "success",
+                    duration: 3000,
+                    position: "top",
+                    isClosable: true,
+                });
+                setIsLoading(false);                
             } catch (parseError) {
                 console.error("Failed to parse AI response:", parseError);
                 console.log("Cleaned Response:", aiResponse);
             }
         } catch (error) {
             console.error("Error generating recommendations:", error);
-        } finally {
-            toast({
-                title: "Check the recommendations tab!",
-                description: "Your furniture recommendations have been successfully generated.",
-                status: "success",
-                duration: 3000,
-                position: "top",
-                isClosable: true,
-            });
-            setIsLoading(false);
         }
     };    
 
@@ -1016,11 +1051,11 @@ const FloorPlanPersonalization = () => {
                                                                             boxSize="100%"
                                                                         />
                                                                     </Box>
-                                                                    <Flex>
+                                                                    <Flex direction="column">
                                                                         <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"}>
-                                                                            {furnitureItem.name}{' '} {variant.color}
+                                                                            {furnitureItem.name}
                                                                         </Text>
-                                                                        <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"} color={variant.hex_code}>
+                                                                        <Text fontSize="xs" fontWeight="500" textAlign="center" textOverflow={"ellipsis"} color={"gray.500"}>
                                                                             {variant.color}
                                                                         </Text>
                                                                     </Flex>

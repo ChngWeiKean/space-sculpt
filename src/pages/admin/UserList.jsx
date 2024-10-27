@@ -146,9 +146,13 @@ function UserList() {
 
     const actionBodyTemplate = (rowData) => {
         return (
-            <Flex justifyContent='center' alignItems='center' gap={2}>
+            <Flex alignItems='center' gap={2}>
                 <Button bg='transparent' as={NavLink} to={`/admin/users/${rowData.id}/view`}><FaEye color='#0078ff'/></Button>
-                <Button bg='transparent' _focus={{ boxShadow: 'none', outline: 'none' }} onClick={() => onOpenApprove(rowData.id)}><FaTrash color='#ff0004'/></Button>
+                {
+                    rowData.role !== 'Customer' && (
+                        <Button bg='transparent' _focus={{ boxShadow: 'none', outline: 'none' }} onClick={() => onOpenApprove(rowData.id)}><FaTrash color='#ff0004'/></Button>
+                    )
+                }
 
                 {isOpenApprove && selectedUserId === rowData.id && (
                     <Modal size='xl' isCentered isOpen={isOpenApprove} onClose={onCloseApprove}>
