@@ -249,7 +249,7 @@ function CustomerPaymentAndPlaceOrder() {
             total: order.total,
             shipping_date: shipping_date,
             shipping_time: shipping_time,
-            remarks: remarks,
+            remarks: remarks ? remarks : "",
         };
         console.log(data);
         

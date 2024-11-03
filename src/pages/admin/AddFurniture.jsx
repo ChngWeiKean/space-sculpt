@@ -251,14 +251,19 @@ function AddFurniture() {
             // Add lighting to the scene
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // soft white light
             scene.add(ambientLight);
-    
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // strong white light
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // strong white light from the front
             directionalLight.position.set(5, 5, 5);
             scene.add(directionalLight);
-    
+
             const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5); // softer white light from the opposite side
             directionalLight2.position.set(-5, -5, -5);
             scene.add(directionalLight2);
+
+            // Add a light directly above
+            const topLight = new THREE.DirectionalLight(0xffffff, 0.8); // white light from above
+            topLight.position.set(0, 10, 0); // Positioned directly above the scene
+            scene.add(topLight);
     
             let loader = new GLTFLoader();
     

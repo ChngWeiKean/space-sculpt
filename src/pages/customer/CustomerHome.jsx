@@ -173,7 +173,7 @@ function CustomerHome() {
     const DimensionTemplate = (rowData) => {
         return (
             <Flex>
-                <Text color="gray.500" fontWeight={500} fontSize="sm">{rowData.width} x {rowData.height} x {rowData.length} cm</Text>
+                <Text color="gray.500" fontWeight={500} fontSize="sm" textOverflow={"ellipsis"}>{rowData.width} x {rowData.height} x {rowData.length} cm</Text>
             </Flex>
         );
     }
@@ -390,7 +390,7 @@ function CustomerHome() {
                                     <Flex w="full" direction="row" alignItems="center" justifyContent="space-between" mt={2}>
                                         <Flex direction="row" gap={3} alignItems="center">
                                             <Text fontSize="xl" fontWeight="700">{furniture.name}</Text>
-                                            <Text fontSize="sm" fontWeight="500" color="gray.500">{furniture?.selectedColor}</Text>
+                                            <Text fontSize="sm" fontWeight="500" color="gray.500" textOverflow={"ellipsis"}>{furniture?.selectedColor}</Text>
                                         </Flex>
                                         
                                         {
@@ -400,7 +400,7 @@ function CustomerHome() {
                                         }
                                     </Flex>
                                     <Flex w="full" direction="row" alignItems="center" gap={2}>
-                                        <Text fontSize="sm" fontWeight="500" color="gray.500">{furniture?.subcategoryName}</Text>
+                                        <Text fontSize="sm" fontWeight="500" color="gray.500" textOverflow={"ellipsis"}>{furniture?.subcategoryName}</Text>
                                         <Divider h="1rem" borderWidth="1px" variant="solid" orientation="vertical" borderColor="gray.500"/>
                                         <DimensionTemplate {...furniture}/>
                                     </Flex>
