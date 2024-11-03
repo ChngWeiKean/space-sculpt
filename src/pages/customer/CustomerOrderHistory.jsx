@@ -388,7 +388,7 @@ function CustomerOrderHistory() {
                                                             <Slider {...settings}>
                                                                 {order.items.map((item, itemIndex) => (
                                                                     <Flex key={itemIndex}>
-                                                                        <img src={item.image} alt={item.color} style={{ width: "100%", height: "100%", objectFit: "cover", border:"none" }} />
+                                                                        <img src={item.image} alt={item.color} style={{ width: "100%", height: "17rem", objectFit: "contain", border:"none" }} />
                                                                     </Flex>
                                                                 ))}
                                                             </Slider>                                                

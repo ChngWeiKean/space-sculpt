@@ -590,7 +590,7 @@ function CategoryDetails() {
 
     return (
         <Flex w="full" h="auto" p={4} gap={7} bg="#f4f4f4" direction="column">
-            <Flex w="full" h="11rem" direction="row" gap={4}>
+            <Flex w="full" h="12rem" direction="row" gap={4}>
                 <Flex direction="row" gap={4} alignItems="center">
                     <IoMdArrowRoundBack size="40px" onClick={() => window.history.back()}/>
                     <Box direction="column" alignItems="center" w={"150px"} h={"150px"}>

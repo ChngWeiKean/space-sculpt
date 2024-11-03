@@ -170,6 +170,11 @@ function CustomerFurnitureDetails() {
             const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5); // softer white light from the opposite side
             directionalLight2.position.set(-5, -5, -5);
             scene.add(directionalLight2);
+            
+            // Add a light directly above
+            const topLight = new THREE.DirectionalLight(0xffffff, 0.8); // white light from above
+            topLight.position.set(0, 10, 0); // Positioned directly above the scene
+            scene.add(topLight);
     
             let loader = new GLTFLoader();
     
