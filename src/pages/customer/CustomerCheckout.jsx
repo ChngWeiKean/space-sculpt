@@ -910,9 +910,9 @@ function CustomerCheckout() {
                                                                                     placement="top"
                                                                                 >
                                                                                     <Flex
-                                                                                        minW="460px"
+                                                                                        minW="400px"
                                                                                         minH="10rem"
-                                                                                        maxW="460px"
+                                                                                        maxW="400px"
                                                                                         maxH="10rem"
                                                                                         direction="column"
                                                                                         gap={2}

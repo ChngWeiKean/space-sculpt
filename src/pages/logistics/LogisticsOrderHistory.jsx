@@ -43,29 +43,29 @@ function LogisticsOrderHistory() {
     useEffect(() => {
         const orderRef = ref(db, 'orders');
         const userRef = ref(db, 'users');
-
+    
         onValue(orderRef, async (snapshot) => {
             let newPendingOrders = [];
             let newOrderHistory = [];
             let newReports = [];
             const orderPromises = [];
-
+    
             if (!snapshot.exists()) {
                 return;
             }
-
+    
             snapshot.forEach((orderSnapshot) => {
                 const order = orderSnapshot.val();
-
+    
                 const date = new Date(order.created_on);
                 const formattedDate = date.getDate() + " " + date.toLocaleString('default', { month: 'long' }) + " " + date.getFullYear();
                 const shippingDate = new Date(order.shipping_date);
                 const formattedShippingDate = shippingDate.getDate() + " " + shippingDate.toLocaleString('default', { month: 'long' }) + " " + shippingDate.getFullYear();
-
+    
                 order.created_on = formattedDate;
                 order.shipping_date = formattedShippingDate;
                 order.id = orderSnapshot.key;
-
+    
                 const userPromise = new Promise((resolve) => {
                     const userQuery = query(userRef, orderByChild('uid'), equalTo(order.user_id));
                     onValue(userQuery, (userSnapshot) => {
@@ -76,12 +76,12 @@ function LogisticsOrderHistory() {
                         resolve(order);
                     });
                 });
-
+    
                 orderPromises.push(userPromise);
             });
-
+    
             const orders = await Promise.all(orderPromises);
-
+    
             orders.forEach((order) => {
                 if (!order.completion_status.Completed && !order.completion_status.OnHold) {
                     newPendingOrders.push(order);
@@ -91,10 +91,14 @@ function LogisticsOrderHistory() {
                     newOrderHistory.push(order);
                 }
             });
-
-            setPendingOrders(newPendingOrders);
-            setOrderHistory(newOrderHistory);
-            setReports(newReports);
+    
+            // Sorting each category by shipping_date
+            const sortByShippingDate = (orders) =>
+                orders.sort((a, b) => new Date(a.shipping_date) - new Date(b.shipping_date));
+    
+            setPendingOrders(sortByShippingDate(newPendingOrders));
+            setOrderHistory(sortByShippingDate(newOrderHistory));
+            setReports(sortByShippingDate(newReports));
         });
     }, []);
 

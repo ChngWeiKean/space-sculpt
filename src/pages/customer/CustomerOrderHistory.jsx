@@ -86,17 +86,21 @@ function CustomerOrderHistory() {
     
                         if (!order.completion_status.Completed && !order.completion_status.OnHold) {
                             newPendingOrders.push(order);
+                            newPendingOrders.sort((a, b) => new Date(b.created_on) - new Date(a.created_on));
                             setPendingOrders([...newPendingOrders]);
                         } else if (order.completion_status.OnHold) {
                             newReports.push(order);
+                            newReports.sort((a, b) => new Date(b.created_on) - new Date(a.created_on));
                             setReports([...newReports]);
                         } else {
                             newOrderHistory.push(order);
+                            newOrderHistory.sort((a, b) => new Date(b.created_on) - new Date(a.created_on));
                             setOrderHistory([...newOrderHistory]);
                             for (let i = 0; i < order.items.length; i++) {
                                 // Check if any item in the order has not been reviewed
                                 if (!order.items[i].reviewed) {
                                     newToReviews.push(order);
+                                    newToReviews.sort((a, b) => new Date(b.created_on) - new Date(a.created_on));
                                     setToReviews([...newToReviews]);
                                     break;
                                 }
@@ -271,7 +275,7 @@ function CustomerOrderHistory() {
                                                             <Slider {...settings}>
                                                                 {order.items.map((item, itemIndex) => (
                                                                     <Flex key={itemIndex}>
-                                                                        <img src={item.image} alt={item.color} style={{ width: "100%", height: "100%", objectFit: "cover", border:"none" }} />
+                                                                        <img src={item.image} alt={item.color} style={{ width: "100%", height: "17rem", objectFit: "contain", border:"none" }} />
                                                                     </Flex>
                                                                 ))}
                                                             </Slider>                                                
@@ -581,7 +585,7 @@ function CustomerOrderHistory() {
                                                             <Slider {...settings}>
                                                                 {order.items.map((item, itemIndex) => (
                                                                     <Flex key={itemIndex}>
-                                                                        <img src={item.image} alt={item.color} style={{ width: "100%", height: "100%", objectFit: "cover", border:"none" }} />
+                                                                        <img src={item.image} alt={item.color} style={{ width: "100%", height: "17rem", objectFit: "contain", border:"none" }} />
                                                                     </Flex>
                                                                 ))}
                                                             </Slider>                                                
