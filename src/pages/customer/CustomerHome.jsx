@@ -68,11 +68,12 @@ function CustomerHome() {
                 };
                 console.log(data);
                 const variants = Object.values(data.variants);
-                data.mainImage = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).image : null;
+                console.log("Variants", variants)
+                data.mainImage = variants.length > 0 ? variants.find((variant) => variant.inventory > 0)?.image : null;
                 data.selectedVariant = variants.length > 0 ? Object.keys(childSnapshot.val().variants).find((variant) => childSnapshot.val().variants[variant].inventory > 0) : null;
-                data.selectedColor = variants.length > 0 ? variants.find((variant) => variant.inventory > 0).color : null;
+                data.selectedColor = variants.length > 0 ? variants.find((variant) => variant.inventory > 0)?.color : null;
                 if (data.orders) {
-                    order_length = Object.keys(data.orders).length;
+                    order_length = data.orders.length;
                 } else {
                     order_length = 0;
                 }
@@ -108,7 +109,7 @@ function CustomerHome() {
                 .filter((furniture) => furniture.order_length > 0)
                 .sort((a, b) => b.order_length - a.order_length)
                 .slice(0, 10);     
-            console.log(topFurniture);
+            console.log("MEOWWW", topFurniture);
             setTopFurniture(topFurniture);
         }
     }, [furniture]);

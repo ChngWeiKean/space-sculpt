@@ -310,34 +310,39 @@ function CategoryDetails() {
     };
 
     const ratingBodyTemplate = (rowData) => {
+        let ratings = 0;
+        if (rowData.reviews) {
+            const reviews = Object.values(rowData.reviews);
+            ratings = reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length;
+        } else {
+            ratings = 0;
+        }
+
+        rowData.ratings = ratings;
+
         return (
             <Flex w="full" direction="column" gap={1}>
                 <Flex w="full" direction="row" gap={2}>
-                    {
-                        Array(5)
-                            .fill('')
-                            .map((_, i) => (
-                                i < Math.floor(rowData.ratings) ? (
-                                <FaStar key={i} color='#d69511' />
-                                ) : (
-                                i === Math.floor(rowData.ratings) && rowData.ratings % 1 !== 0 ? (
-                                    <FaStarHalf key={i} color='#d69511' />
-                                ) : (
-                                    <FaStar key={i} color='gray' />
-                                )
-                                )
-                            ))
-                    }
-                    <Box as='span' ml='2' color='gray.600' fontSize='sm'>
+                    {Array(5)
+                        .fill('')
+                        .map((_, i) => (
+                            i < Math.floor(rowData.ratings) ? (
+                                <FaStar key={i} color="#d69511" />
+                            ) : i === Math.floor(rowData.ratings) && rowData.ratings % 1 !== 0 ? (
+                                <FaStarHalf key={i} color="#d69511" />
+                            ) : (
+                                <FaStar key={i} color="gray" />
+                            )
+                        ))}
+                    <Box as="span" ml="2" color="gray.600" fontSize="sm">
                         {rowData.ratings || 0} ratings
                     </Box>
-                </Flex>         
+                </Flex>
                 <Flex w="full" direction="row" gap={2}>
-                    <IoIosHeart color='red' size='25'/>
-                    <Text color='gray.600' fontSize='sm'>{rowData?.favourites?.length || 0} favourites</Text>
-                </Flex>       
+                    <IoIosHeart color="red" size="25" />
+                    <Text color="gray.600" fontSize="sm">{rowData?.favourites?.length || 0} favourites</Text>
+                </Flex>
             </Flex>
-
         );
     };
 
@@ -623,7 +628,7 @@ function CategoryDetails() {
                         {subcategories?.map((subcategory, index) => (
                             <Box as={NavLink} to={`/admin/subcategory/add-furniture/${subcategory.id}`} key={index} direction="column" alignItems="center" w={'150px'} h={'150px'} transition="transform 0.2s" _hover={{ transform: 'scale(1.05)', color: "blue" }}>
                                 <img src={subcategory?.image} alt={subcategory?.name} style={{ width: "100%", height: "80%", objectFit: "contain" }} />
-                                <Text mt={1} textAlign="center" fontSize="md" fontWeight="600" >{subcategory?.name}</Text>
+                                <Text mt={1} textAlign="center" fontSize="sm" fontWeight="600" >{subcategory?.name}</Text>
                             </Box>    
                         ))}
                     </Flex>                       
