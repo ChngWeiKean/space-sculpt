@@ -750,6 +750,7 @@ const FloorPlanPersonalization = () => {
                 7. Exclude any furniture variants that do not match the specified preferences (styles, materials, color palettes, tags).
                 8. Please ensure the response is in the correct format and follows the given structure of furnitureData.
                 9. Return an array of categories, containing the recommended furniture items only.
+                10. Return a valid JSON that can be parsed into JSON
             
                 Furniture Data:
                 ${JSON.stringify(furnitureData, null, 2)}
@@ -778,9 +779,11 @@ const FloorPlanPersonalization = () => {
             } catch (parseError) {
                 console.error("Failed to parse AI response:", parseError);
                 console.log("Cleaned Response:", aiResponse);
+                setIsLoading(false);
             }
         } catch (error) {
             console.error("Error generating recommendations:", error);
+            setIsLoading(false);
         }
     };    
 
@@ -995,8 +998,8 @@ const FloorPlanPersonalization = () => {
                             </TabPanel>
                             <TabPanel>
                                 {
-                                    recommendations.length > 0 ? (
-                                        recommendations.map((recommendation) => (
+                                    recommendations ? (
+                                        recommendations?.categories?.map((recommendation) => (
                                             <Flex
                                                 key={recommendation.id}
                                                 flexDirection="column"
