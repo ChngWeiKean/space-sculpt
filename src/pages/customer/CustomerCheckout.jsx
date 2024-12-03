@@ -452,7 +452,7 @@ function CustomerCheckout() {
             discount: discount,
             total: total,
             payment: selectedCard ? "card" : selectedCashPayment ? "cash" : selectedEWallet ? "ewallet" : null,
-            payment_method: selectedCard ? selectedCard : selectedCashPayment ? "Cash On Delivery" : selectedEWallet ? "E-Wallet" : null,
+            payment_method: selectedCard ? "Credit/Debit Card" : selectedCashPayment ? "Cash On Delivery" : selectedEWallet ? "E-Wallet" : null,
             voucher: selectedVoucher ? selectedVoucher : null,
         };
 
